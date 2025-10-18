@@ -1,11 +1,11 @@
 
+
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 
 const StartInterview = () => {
   const navigate = useNavigate();
   const location = useLocation();
-
   const { interviewType } = location.state || { interviewType: "Interview" };
 
   const [isRecording, setIsRecording] = useState(false);
@@ -51,6 +51,7 @@ const StartInterview = () => {
 
   const stopCamera = () => {
     mediaStreamRef.current?.getTracks().forEach((t) => t.stop());
+    mediaStreamRef.current = null;
   };
 
   const startSpeechToText = () => {
@@ -92,36 +93,33 @@ const StartInterview = () => {
     setTranscript("");
 
     try {
-      // Video stream
-      const videoStream = await navigator.mediaDevices.getUserMedia({
+      // Capture video+audio together
+      const stream = await navigator.mediaDevices.getUserMedia({
         video: { width: 480, height: 360 },
-        audio: false,
+        audio: true,
       });
-      mediaStreamRef.current = videoStream;
-      videoRef.current.srcObject = videoStream;
-
-      // Audio stream
-      const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaStreamRef.current = stream;
+      if (videoRef.current) videoRef.current.srcObject = stream;
 
       startSpeechToText();
       startTimer();
 
-      // Video Recorder
+      // Video+Audio Recorder
       videoChunksRef.current = [];
-      videoRecorderRef.current = new MediaRecorder(videoStream, { mimeType: "video/webm" });
+      videoRecorderRef.current = new MediaRecorder(stream, { mimeType: "video/webm" });
       videoRecorderRef.current.ondataavailable = (e) => {
         if (e.data.size > 0) videoChunksRef.current.push(e.data);
       };
       videoRecorderRef.current.start();
 
-      // Audio Recorder
+      // Audio-only Recorder
+      const audioStream = new MediaStream(stream.getAudioTracks());
       audioChunksRef.current = [];
       audioRecorderRef.current = new MediaRecorder(audioStream, { mimeType: "audio/webm" });
       audioRecorderRef.current.ondataavailable = (e) => {
         if (e.data.size > 0) audioChunksRef.current.push(e.data);
       };
       audioRecorderRef.current.start();
-
     } catch (err) {
       console.error(err);
     }
@@ -136,16 +134,16 @@ const StartInterview = () => {
     recognitionRef.current?.stop();
     clearInterval(timerRef.current);
 
-    // Delay to ensure recording finished before downloading
+    // Delay to ensure recording finished
     setTimeout(downloadFiles, 1000);
   };
 
   const downloadFiles = () => {
     const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-    const userId = "101"; // Replace with dynamic userId if needed
-    const userName = "Vineela"; // Replace with dynamic userName if needed
+    const userId = "101";
+    const userName = "Vineela";
 
-    // Download Video
+    // Video+Audio
     const videoBlob = new Blob(videoChunksRef.current, { type: "video/webm" });
     const videoUrl = URL.createObjectURL(videoBlob);
     const aVideo = document.createElement("a");
@@ -153,7 +151,7 @@ const StartInterview = () => {
     aVideo.download = `${userId}_${timestamp}_${userName}_video.webm`;
     aVideo.click();
 
-    // Download Audio
+    // Audio-only
     const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
     const audioUrl = URL.createObjectURL(audioBlob);
     const aAudio = document.createElement("a");
@@ -161,7 +159,7 @@ const StartInterview = () => {
     aAudio.download = `${userId}_${timestamp}_${userName}_audio.webm`;
     aAudio.click();
 
-    // Download Transcript
+    // Transcript
     const transcriptBlob = new Blob([transcript], { type: "text/plain" });
     const transcriptUrl = URL.createObjectURL(transcriptBlob);
     const aText = document.createElement("a");
