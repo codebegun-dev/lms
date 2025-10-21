@@ -1,0 +1,506 @@
+.student-dashboard {
+  min-height: 100vh;
+  background: #f5f7fa;
+}
+
+/* Navbar Styles */
+.student-navbar {
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  padding: 1rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+.navbar-left {
+  display: flex;
+  align-items: center;
+}
+
+.logo-container {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.logo-text {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #0d6efd;
+}
+
+.navbar-right {
+  position: relative;
+}
+
+.profile-wrapper {
+  cursor: pointer;
+}
+
+.profile-circle {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  position: relative;
+  border: 3px solid #0d6efd;
+}
+
+.profile-img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.profile-placeholder {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+.completion-badge {
+  position: absolute;
+  bottom: -5px;
+  right: -5px;
+  background: #28a745;
+  color: white;
+  font-size: 0.7rem;
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-weight: bold;
+  border: 2px solid white;
+}
+
+.profile-dropdown-menu {
+  position: absolute;
+  top: 60px;
+  right: 0;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  min-width: 180px;
+  overflow: hidden;
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dropdown-menu-item {
+  width: 100%;
+  padding: 0.75rem 1.25rem;
+  border: none;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.2s;
+  font-size: 0.95rem;
+}
+
+.dropdown-menu-item:hover {
+  background: #f8f9fa;
+}
+
+.logout-item {
+  color: #dc3545;
+  border-top: 1px solid #e9ecef;
+}
+
+.logout-item:hover {
+  background: #fff5f5;
+}
+
+/* Main Content */
+.dashboard-main {
+  padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.welcome-section {
+  text-align: center;
+  padding: 2rem;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin-bottom: 2rem;
+}
+
+.welcome-section h1 {
+  color: #333;
+  margin-bottom: 0.5rem;
+}
+
+.welcome-section p {
+  color: #666;
+}
+
+/* Dashboard Cards */
+.dashboard-cards-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.dashboard-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.dashboard-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+.schedule-card {
+  grid-column: span 2;
+}
+
+.card-header {
+  background: #f8f9fa;
+  padding: 1rem 1.5rem;
+  border-bottom: 2px solid #e9ecef;
+}
+
+.card-header h3 {
+  margin: 0;
+  color: #333;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.card-body {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.card-select {
+  padding: 0.65rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  transition: border-color 0.3s;
+  background: white;
+}
+
+.card-select:focus {
+  outline: none;
+  border-color: #0d6efd;
+}
+
+.card-input {
+  padding: 0.65rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  transition: border-color 0.3s;
+}
+
+.card-input:focus {
+  outline: none;
+  border-color: #0d6efd;
+}
+
+.card-btn {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  font-weight: 500;
+}
+
+.btn-primary {
+  background: #0d6efd;
+  color: white;
+}
+
+.btn-primary:hover {
+  background: #0b5ed7;
+}
+
+.btn-info {
+  background: #17a2b8;
+  color: white;
+  width: 100%;
+  margin-top: auto;
+}
+
+.btn-info:hover {
+  background: #138496;
+}
+
+/* Schedule Interview Styles */
+.schedule-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+}
+
+.schedule-left,
+.schedule-right {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.schedule-label {
+  font-weight: 500;
+  color: #555;
+  font-size: 0.9rem;
+}
+
+.duration-text {
+  color: #666;
+  font-size: 0.85rem;
+  margin: -0.5rem 0 0 0;
+}
+
+.time-slots-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.time-slot {
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.3s;
+  font-size: 0.85rem;
+}
+
+.time-slot:hover {
+  border-color: #0d6efd;
+  background: #f8f9ff;
+}
+
+.time-slot.active {
+  background: #0d6efd;
+  color: white;
+  border-color: #0d6efd;
+}
+
+.full-width {
+  width: 100%;
+}
+
+/* Progress Bar */
+.progress-bar-wrapper {
+  width: 100%;
+  height: 30px;
+  background: #e9ecef;
+  border-radius: 15px;
+  overflow: hidden;
+  margin-bottom: 1rem;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #28a745, #20c997);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 600;
+  transition: width 0.5s ease;
+  font-size: 0.9rem;
+}
+
+/* Profile Action Section */
+.profile-action-section {
+  text-align: center;
+  padding: 2rem;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.btn-complete-profile {
+  background: #0d6efd;
+  color: white;
+  border: none;
+  padding: 0.75rem 2rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.btn-complete-profile:hover {
+  background: #0b5ed7;
+}
+
+.profile-container {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.profile-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #e9ecef;
+}
+
+.profile-header h2 {
+  color: #333;
+  margin: 0;
+}
+
+.btn-back {
+  background: #6c757d;
+  color: white;
+  border: none;
+  padding: 0.5rem 1.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.btn-back:hover {
+  background: #5a6268;
+}
+
+.profile-sections-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* Modal Styles */
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+.modal-box {
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  max-width: 400px;
+  width: 90%;
+}
+
+.modal-box h3 {
+  margin-top: 0;
+  color: #333;
+}
+
+.modal-box p {
+  color: #666;
+  margin-bottom: 1.5rem;
+}
+
+.modal-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+}
+
+.btn-modal-cancel,
+.btn-modal-confirm {
+  padding: 0.5rem 1.5rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  transition: all 0.3s;
+}
+
+.btn-modal-cancel {
+  background: #6c757d;
+  color: white;
+}
+
+.btn-modal-cancel:hover {
+  background: #5a6268;
+}
+
+.btn-modal-confirm {
+  background: #dc3545;
+  color: white;
+}
+
+.btn-modal-confirm:hover {
+  background: #c82333;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .schedule-card {
+    grid-column: span 1;
+  }
+
+  .schedule-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .student-navbar {
+    padding: 1rem;
+  }
+
+  .logo-text {
+    font-size: 1.2rem;
+  }
+
+  .dashboard-main {
+    padding: 1rem;
+  }
+
+  .dashboard-cards-container {
+    grid-template-columns: 1fr;
+  }
+
+  .time-slots-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .profile-container {
+    padding: 1rem;
+  }
+}
