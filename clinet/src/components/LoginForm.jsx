@@ -1,118 +1,152 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import registrationImage from "../assets/registrationImage.png";
-import { FaEye, FaEyeSlash } from "react-icons/fa";
+import axios from "axios";
+import { useNavigate, Link } from "react-router-dom";
+import registrationImage from "../assets/registrationImage.png"; // using the registration image
 
-const LoginForm = () => {
-  const [formData, setFormData] = useState({ email: "", password: "" });
+function LoginForm() {
+  const [formData, setFormData] = useState({
+    emailOrPhone: "",
+    password: "",
+    role: "STUDENT",
+  });
+
   const [errors, setErrors] = useState({});
-  const [showPassword, setShowPassword] = useState(false);
+  const [generalError, setGeneralError] = useState("");
+
   const navigate = useNavigate();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData({ ...formData, [name]: value });
+    setErrors({ ...errors, [name]: "" });
+    setGeneralError("");
   };
 
-  const validate = () => {
-    const newErrors = {};
+  const validateForm = () => {
+    const tempErrors = {};
+    if (!formData.emailOrPhone.trim())
+      tempErrors.emailOrPhone = "Email or Phone is required";
+    if (!formData.password.trim())
+      tempErrors.password = "Password is required";
 
-    if (!formData.email) newErrors.email = "Email is required";
-    else if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(formData.email))
-      newErrors.email = "Invalid email format";
-
-    if (!formData.password) newErrors.password = "Password is required";
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    setErrors(tempErrors);
+    return Object.keys(tempErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (validate()) {
-      const storedUser = JSON.parse(localStorage.getItem("user"));
-      if (storedUser && formData.email === storedUser.email && formData.password === storedUser.password) {
-        setErrors({});
-        navigate("/dashboard");
+    if (!validateForm()) return;
+
+    try {
+      const response = await axios.post(
+        "http://localhost:8080/api/user/login",
+        formData
+      );
+
+      const { role, userId, firstName, email } = response.data;
+      localStorage.setItem("user", JSON.stringify({ userId, firstName, email, role }));
+
+      if (role === "STUDENT") navigate("/student-dashboard");
+      else if (role === "ADMIN") navigate("/admin-dashboard");
+      else if (role === "INTERVIEWER") navigate("/interviewer-dashboard");
+    } catch (error) {
+      if (error.response && error.response.data) {
+        setGeneralError(error.response.data.message || "Invalid credentials");
       } else {
-        setErrors({ general: "Invalid email or password" });
+        setGeneralError("Unable to connect to server");
       }
     }
   };
 
   return (
     <div className="container mt-5">
-      <div className="row shadow rounded overflow-hidden flex-column flex-md-row">
-        {/* Left Image */}
-        <div className="col-md-6 p-0">
+      <div className="row shadow-lg rounded-4 overflow-hidden">
+        {/* Left Side: Image with title & text */}
+        <div className="col-md-6 d-none d-md-flex flex-column align-items-center justify-content-center text-center bg-light p-4">
           <img
             src={registrationImage}
             alt="Login"
-            className="img-fluid w-100 image"
-                      />
-          <div className="text-center py-3 bg-light">
-            <h4>Welcome Back!</h4>
-            <p>Log in to access your account</p>
-          </div>
+            className="img-fluid mb-4"
+            style={{ maxHeight: "280px", objectFit: "cover" }}
+          />
+          <h2 className="fw-bold text-primary mb-3">Welcome Back!</h2>
+           
+          <p className="mb-2 text-secondary">
+            Sign in to continue your journey towards new skills, knowledge, and opportunities.
+          </p>
         </div>
 
-        {/* Right Form */}
-        <div className="col-md-6 p-4 bg-light d-flex align-items-center flex-column">
-          <div className="w-100">
-            <h2 className="text-center mb-4 text-primary">Login</h2>
+        {/* Right Side: Login Form */}
+        <div className="col-md-6 p-4">
+          <h3 className="text-center mb-4 text-primary fw-bold">Login</h3>
 
-            {errors.general && (
-              <div className="alert alert-danger text-center">{errors.general}</div>
-            )}
+          {generalError && (
+            <p className="alert alert-danger text-center fw-bold fs-5">{generalError}</p>
+          )}
 
-            <form onSubmit={handleSubmit}>
-              <div className="mb-3">
-                <label className="form-label">Email</label>
-                <input
-                  type="email"
-                  name="email"
-                  className={`form-control ${errors.email ? "is-invalid" : ""}`}
-                  placeholder="Enter email"
-                  value={formData.email}
-                  onChange={handleChange}
-                />
-                {errors.email && <div className="invalid-feedback">{errors.email}</div>}
+          <form onSubmit={handleSubmit}>
+            <div className="mb-3">
+              <label className="form-label fw-semibold">Login as</label>
+              <select
+                className="form-select"
+                name="role"
+                value={formData.role}
+                onChange={handleChange}
+              >
+                <option value="STUDENT">Student</option>
+                <option value="ADMIN">Admin</option>
+                <option value="INTERVIEWER">Interviewer</option>
+              </select>
+            </div>
+
+            <div className="mb-3">
+              <label className="form-label fw-semibold">Email or Phone</label>
+              <input
+                type="text"
+                className={`form-control ${errors.emailOrPhone ? "is-invalid" : ""}`}
+                name="emailOrPhone"
+                value={formData.emailOrPhone}
+                onChange={handleChange}
+                placeholder="Enter email or phone"
+              />
+              {errors.emailOrPhone && (
+                <div className="invalid-feedback">{errors.emailOrPhone}</div>
+              )}
+            </div>
+
+            <div className="mb-3">
+              <label className="form-label fw-semibold">Password</label>
+              <input
+                type="password"
+                className={`form-control ${errors.password ? "is-invalid" : ""}`}
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                placeholder="Enter password"
+              />
+              {errors.password && (
+                <div className="invalid-feedback">{errors.password}</div>
+              )}
+              <div className="text-end mt-1">
+                <Link to="/sendresetmail" className="text-primary fw-semibold">
+                  Forgot Password?
+                </Link>
               </div>
+            </div>
 
-              <div className="mb-3 position-relative">
-                <label className="form-label">Password</label>
-                <input
-                  type={showPassword ? "text" : "password"}
-                  name="password"
-                  className={`form-control ${errors.password ? "is-invalid" : ""}`}
-                  placeholder="Enter password"
-                  value={formData.password}
-                  onChange={handleChange}
-                />
-                <span
-                  className="position-absolute eye-icon "
-                   onClick={() => setShowPassword(!showPassword)}
-                >
-                  {showPassword ? <FaEye /> : <FaEyeSlash />}
-                </span>
-                {errors.password && <div className="invalid-feedback">{errors.password}</div>}
-              </div>
-
-              <div className="d-flex justify-content-between mb-3">
-                <Link to="/sendresetmail" className="text-primary">Forgot Password?</Link>
-              </div>
-
+            <div className="text-center">
               <button type="submit" className="btn btn-primary w-100">Login</button>
+            </div>
 
-              <p className="text-center mt-3">
-                Don't have an account? <Link to="/" className="text-primary">Register</Link>
-              </p>
-            </form>
-          </div>
+            <p className="text-center mt-3">
+              Don't have an account?{" "}
+              <Link to="/" className="text-primary fw-semibold">Register</Link>
+            </p>
+          </form>
         </div>
       </div>
     </div>
   );
-};
+}
 
 export default LoginForm;
