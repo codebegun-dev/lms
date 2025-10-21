@@ -89,8 +89,7 @@ public class UserServiceImpl implements UserService {
         tokenRepository.save(resetToken);
 
         String resetLink = "http://localhost:5173/reset-password?token=" + token;
-
-        try {
+         try {
             emailService.sendResetPasswordEmail(user.getEmail(), resetLink);
         } catch (Exception e) {
             throw new RuntimeException("Failed to send reset email: " + e.getMessage());

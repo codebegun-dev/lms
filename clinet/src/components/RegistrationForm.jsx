@@ -1,496 +1,257 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import React, { useState } from "react";
+import axios from "axios";
+import { Link, useNavigate } from "react-router-dom";
+import { Eye, EyeOff } from "react-feather";
 import registrationImage from "../assets/registrationImage.png";
-import { FaEye, FaEyeSlash } from "react-icons/fa";
 
-const RegistrationForm = () => {
+function RegistrationForm() {
+  const navigate = useNavigate();
+
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
     email: "",
     phone: "",
     password: "",
-    role: "",
+    confirmPassword: "",
+    role: "STUDENT",
+  });
+
+  const [showPassword, setShowPassword] = useState({
+    password: false,
+    confirmPassword: false,
   });
 
   const [errors, setErrors] = useState({});
-  const [success, setSuccess] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-
-  const navigate = useNavigate();
+  const [success, setSuccess] = useState("");
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData({ ...formData, [name]: value });
+    setErrors({ ...errors, [name]: "" });
   };
 
-  const validate = () => {
-    const newErrors = {};
+  const validateForm = () => {
+    const tempErrors = {};
 
-    if (!formData.firstName) newErrors.firstName = "First name is required";
-    else if (!/^[A-Za-z]+$/.test(formData.firstName))
-      newErrors.firstName = "Only letters allowed";
+    if (!formData.firstName.trim()) tempErrors.firstName = "First name is required";
+    else if (formData.firstName.length < 3 || formData.firstName.length > 30)
+      tempErrors.firstName = "First name should be 3-30 characters";
 
-    if (!formData.lastName) newErrors.lastName = "Last name is required";
-    else if (!/^[A-Za-z]+$/.test(formData.lastName))
-      newErrors.lastName = "Only letters allowed";
+    if (!formData.lastName.trim()) tempErrors.lastName = "Last name is required";
+    else if (formData.lastName.length < 3 || formData.lastName.length > 30)
+      tempErrors.lastName = "Last name should be 3-30 characters";
 
-    if (!formData.email) newErrors.email = "Email is required";
+    if (!formData.email.trim()) tempErrors.email = "Email is required";
+    else if (!/\S+@\S+\.\S+/.test(formData.email)) tempErrors.email = "Invalid email format";
+
+    if (!formData.phone.trim()) tempErrors.phone = "Phone number is required";
+    else if (!/^\d{10}$/.test(formData.phone)) tempErrors.phone = "Phone must be 10 digits";
+
+    if (!formData.password.trim()) tempErrors.password = "Password is required";
     else if (
-      !/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(formData.email)
-    )
-      newErrors.email = "Invalid email";
-
-    if (!formData.phone) newErrors.phone = "Phone number is required";
-    else if (!/^[6-9]\d{9}$/.test(formData.phone))
-      newErrors.phone = "Enter valid 10-digit phone number";
-
-    if (!formData.password)
-      newErrors.password = "Password is required";
-    else if (
-      !/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,12}$/.test(
+      !/^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[@$!%?&#])[A-Za-z\d@$!%?&#]{8,}$/.test(
         formData.password
       )
     )
-      newErrors.password =
-        "8-12 chars, 1 uppercase, 1 lowercase, 1 number, 1 special char";
+      tempErrors.password =
+        "Password must have 1 uppercase, 1 lowercase, 1 number, 1 special character & min 8 chars";
 
-    if (!formData.role) newErrors.role = "Please select a role";
+    if (formData.password !== formData.confirmPassword)
+      tempErrors.confirmPassword = "Passwords do not match";
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    setErrors(tempErrors);
+    return Object.keys(tempErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (validate()) {
-      // Store user in localStorage
-      localStorage.setItem("user", JSON.stringify(formData));
-      setSuccess(true);
+    setSuccess("");
+    setErrors({});
 
-      setTimeout(() => {
-        navigate("/login");
-      }, 1500);
+    if (!validateForm()) return;
 
+    try {
+      await axios.post("http://localhost:8080/api/user", formData);
+      setSuccess("User registered successfully!");
       setFormData({
         firstName: "",
         lastName: "",
         email: "",
         phone: "",
         password: "",
-        role: "",
+        confirmPassword: "",
+        role: "STUDENT",
       });
+      setTimeout(() => {
+        navigate("/login");
+      }, 2000);
+    } catch (error) {
+      if (error.response && error.response.data) setErrors(error.response.data);
+      else setErrors({ general: "Unable to connect to server" });
     }
   };
 
   return (
     <div className="container mt-5">
-      <div className="row shadow rounded overflow-hidden flex-column flex-md-row">
-        {/* Left Image */}
-        <div className="col-md-6 p-0">
+      <div className="row shadow-lg p-4 rounded-4">
+        {/* Left Image with professional title and text */}
+        <div className="col-md-6 d-none d-md-flex flex-column align-items-center justify-content-center text-center px-4">
           <img
             src={registrationImage}
-            alt="Registration"
-            className="img-fluid w-100 image"
-           />
-          <div className="text-center py-3 bg-light">
-            <h4>Join Our Community</h4>
-            <p>Create your account to access exclusive features</p>
-          </div>
+            alt="Register"
+            className="img-fluid mb-4"
+            style={{ maxHeight: "280px" }}
+          />
+          <h2 className="fw-bold text-primary mb-3">Join Our Community</h2>
+           
+          <p className="mb-2 text-secondary">
+            Join our community of learners and professionals. Access exclusive resources and connect with experts to grow your career.
+          </p>
+           
         </div>
 
         {/* Right Form */}
-        <div className="col-md-6 p-4 bg-light d-flex align-items-center flex-column">
-          <div className="w-100">
-            <h2 className="text-center mb-4 text-primary">Registration Form</h2>
+        <div className="col-12 col-md-6 p-4">
+          <h3 className="text-center mb-4 text-primary fw-bold">Register</h3>
 
-            {success && (
-              <div className="alert alert-success text-center">
-                Registration Successful! Redirecting to Login...
-              </div>
-            )}
+          {success && <div className="alert alert-success text-center">{success}</div>}
+          {errors.general && <div className="alert alert-danger text-center">{errors.general}</div>}
 
-            <form onSubmit={handleSubmit}>
-              {/* Name */}
-              <div className="row mb-3">
-                <div className="col-md-6 mb-3 mb-md-0">
-                  <label className="form-label">First Name</label>
-                  <input
-                    type="text"
-                    name="firstName"
-                    className={`form-control ${errors.firstName ? "is-invalid" : ""}`}
-                    placeholder="Enter first name"
-                    value={formData.firstName}
-                    onChange={handleChange}
-                  />
-                  {errors.firstName && <div className="invalid-feedback">{errors.firstName}</div>}
-                </div>
-                <div className="col-md-6">
-                  <label className="form-label">Last Name</label>
-                  <input
-                    type="text"
-                    name="lastName"
-                    className={`form-control ${errors.lastName ? "is-invalid" : ""}`}
-                    placeholder="Enter last name"
-                    value={formData.lastName}
-                    onChange={handleChange}
-                  />
-                  {errors.lastName && <div className="invalid-feedback">{errors.lastName}</div>}
-                </div>
-              </div>
+          <form onSubmit={handleSubmit}>
+            {/* First Name */}
+            <div className="mb-3">
+              <label className="form-label fw-semibold">First Name</label>
+              <input
+                type="text"
+                className={`form-control ${errors.firstName ? "is-invalid" : ""}`}
+                name="firstName"
+                value={formData.firstName}
+                onChange={handleChange}
+                placeholder="Enter first name"
+              />
+              {errors.firstName && <div className="invalid-feedback">{errors.firstName}</div>}
+            </div>
 
-              {/* Email */}
-              <div className="mb-3">
-                <label className="form-label">Email</label>
-                <input
-                  type="email"
-                  name="email"
-                  className={`form-control ${errors.email ? "is-invalid" : ""}`}
-                  placeholder="Enter email"
-                  value={formData.email}
-                  onChange={handleChange}
-                />
-                {errors.email && <div className="invalid-feedback">{errors.email}</div>}
-              </div>
+            {/* Last Name */}
+            <div className="mb-3">
+              <label className="form-label fw-semibold">Last Name</label>
+              <input
+                type="text"
+                className={`form-control ${errors.lastName ? "is-invalid" : ""}`}
+                name="lastName"
+                value={formData.lastName}
+                onChange={handleChange}
+                placeholder="Enter last name"
+              />
+              {errors.lastName && <div className="invalid-feedback">{errors.lastName}</div>}
+            </div>
 
-              {/* Phone */}
-              <div className="mb-3">
-                <label className="form-label">Phone</label>
-                <input
-                  type="text"
-                  name="phone"
-                  className={`form-control ${errors.phone ? "is-invalid" : ""}`}
-                  placeholder="Enter phone number"
-                  value={formData.phone}
-                  onChange={handleChange}
-                />
-                {errors.phone && <div className="invalid-feedback">{errors.phone}</div>}
-              </div>
+            {/* Email */}
+            <div className="mb-3">
+              <label className="form-label fw-semibold">Email</label>
+              <input
+                type="email"
+                className={`form-control ${errors.email ? "is-invalid" : ""}`}
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                placeholder="Enter email"
+              />
+              {errors.email && <div className="invalid-feedback">{errors.email}</div>}
+            </div>
 
-              {/* Password */}
-              <div className="mb-3 position-relative">
-                <label className="form-label">Password</label>
-                <input
-                  type={showPassword ? "text" : "password"}
-                  name="password"
-                  className={`form-control ${errors.password ? "is-invalid" : ""}`}
-                  placeholder="Enter password"
-                  value={formData.password}
-                  onChange={handleChange}
-                />
-                <span
-                  className="position-absolute eye-icon"
-                   onClick={() => setShowPassword(!showPassword)}
-                >
-                  {showPassword ? <FaEye /> : <FaEyeSlash />}
-                </span>
-                {errors.password && <div className="invalid-feedback">{errors.password}</div>}
-              </div>
+            {/* Phone */}
+            <div className="mb-3">
+              <label className="form-label fw-semibold">Phone</label>
+              <input
+                type="text"
+                className={`form-control ${errors.phone ? "is-invalid" : ""}`}
+                name="phone"
+                value={formData.phone}
+                onChange={handleChange}
+                placeholder="Enter phone number"
+              />
+              {errors.phone && <div className="invalid-feedback">{errors.phone}</div>}
+            </div>
 
-              {/* Role */}
-              <div className="mb-4">
-                <label className="form-label">Role</label>
-                <select
-                  name="role"
-                  className={`form-select ${errors.role ? "is-invalid" : ""}`}
-                  value={formData.role}
-                  onChange={handleChange}
-                >
-                  <option value="">Select Role</option>
-                  <option value="Student">Student</option>
-                  <option value="Admin">Admin</option>
-                  <option value="Interviewer">Interviewer</option>
-                </select>
-                {errors.role && <div className="invalid-feedback">{errors.role}</div>}
-              </div>
+            {/* Password */}
+            <div className="mb-3 position-relative">
+              <label className="form-label fw-semibold">Password</label>
+              <input
+                type={showPassword.password ? "text" : "password"}
+                className={`form-control ${errors.password ? "is-invalid" : ""}`}
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                placeholder="Enter password"
+              />
+              <span
+                className="position-absolute"
+                style={{ right: "10px", top: "38px", cursor: "pointer" }}
+                onClick={() => setShowPassword({ ...showPassword, password: !showPassword.password })}
+              >
+                {showPassword.password ? <EyeOff size={18} /> : <Eye size={18} />}
+              </span>
+              {errors.password && <div className="invalid-feedback">{errors.password}</div>}
+            </div>
 
-              <button type="submit" className="btn btn-primary w-100 mb-3">
-                Register
-              </button>
+            {/* Confirm Password */}
+            <div className="mb-3 position-relative">
+              <label className="form-label fw-semibold">Confirm Password</label>
+              <input
+                type={showPassword.confirmPassword ? "text" : "password"}
+                className={`form-control ${errors.confirmPassword ? "is-invalid" : ""}`}
+                name="confirmPassword"
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                placeholder="Confirm password"
+              />
+              <span
+                className="position-absolute"
+                style={{ right: "10px", top: "38px", cursor: "pointer" }}
+                onClick={() =>
+                  setShowPassword({
+                    ...showPassword,
+                    confirmPassword: !showPassword.confirmPassword,
+                  })
+                }
+              >
+                {showPassword.confirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </span>
+              {errors.confirmPassword && (
+                <div className="invalid-feedback">{errors.confirmPassword}</div>
+              )}
+            </div>
 
-              <p className="text-center">
-                Already have an account? <Link to="/login" className="text-primary">Login</Link>
-              </p>
-            </form>
-          </div>
+            {/* Role */}
+            <div className="mb-3">
+              <label className="form-label fw-semibold">Role</label>
+              <select
+                className={`form-select ${errors.role ? "is-invalid" : ""}`}
+                name="role"
+                value={formData.role}
+                onChange={handleChange}
+              >
+                <option value="STUDENT">Student</option>
+                <option value="ADMIN">Admin</option>
+                <option value="INTERVIEWER">Interviewer</option>
+              </select>
+              {errors.role && <div className="invalid-feedback">{errors.role}</div>}
+            </div>
+
+            <button type="submit" className="btn btn-primary w-100">
+              Register
+            </button>
+
+            <p className="text-center mt-3">
+              Already have an account? <Link to="/login" className="text-primary fw-semibold">Login</Link>
+            </p>
+          </form>
         </div>
       </div>
     </div>
   );
-};
+}
 
 export default RegistrationForm;
-
-
-
-
-
-// import React, { useState, useEffect } from "react";
-// import registrationImage from "../assets/registrationImage.png";
-// import { FaEye, FaEyeSlash } from "react-icons/fa";
-
-// const RegistrationForm = () => {
-//   const [formData, setFormData] = useState({
-//     firstName: "",
-//     lastName: "",
-//     email: "",
-//     phone: "",
-//     password: "",
-//     role: "",
-//   });
-
-//   const [errors, setErrors] = useState({});
-//   const [success, setSuccess] = useState(false);
-//   const [apiError, setApiError] = useState("");
-//   const [showPassword, setShowPassword] = useState(false);
-
-//   const handleChange = (e) => {
-//     const { name, value } = e.target;
-//     setFormData((prev) => ({ ...prev, [name]: value }));
-//   };
-
-//   const validate = () => {
-//     const newErrors = {};
-//     if (!formData.firstName) newErrors.firstName = "First name is required";
-//     else if (!/^[A-Za-z]+$/.test(formData.firstName))
-//       newErrors.firstName = "Only letters allowed";
-
-//     if (!formData.lastName) newErrors.lastName = "Last name is required";
-//     else if (!/^[A-Za-z]+$/.test(formData.lastName))
-//       newErrors.lastName = "Only letters allowed";
-
-//     if (!formData.email) newErrors.email = "Email is required";
-//     else if (
-//       !/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(formData.email)
-//     )
-//       newErrors.email = "Invalid email";
-
-//     if (!formData.phone) newErrors.phone = "phone number is required";
-//     else if (!/^[6-9]\d{9}$/.test(formData.phone))
-//       newErrors.phone = "Enter valid 10-digit phone number";
-
-//     if (!formData.password)
-//       newErrors.password = "Password is required";
-//     else if (
-//       !/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,12}$/.test(
-//         formData.password
-//       )
-//     )
-//       newErrors.password =
-//         "8-12 chars, 1 uppercase, 1 lowercase, 1 number, 1 special char";
-
-//     if (!formData.role) newErrors.role = "Please select a role";
-
-//     setErrors(newErrors);
-//     return Object.keys(newErrors).length === 0;
-//   };
-
-//   const handleSubmit = async (e) => {
-//     e.preventDefault();
-//     setApiError("");
-
-//     if (validate()) {
-//       try {
-//         const response = await fetch("http://localhost:8080/api/user", {
-//           method: "POST",
-//           headers: {
-//             "Content-Type": "application/json",
-//           },
-//           body: JSON.stringify({
-//             firstName: formData.firstName,
-//             lastName: formData.lastName,
-//             email: formData.email,
-//             phone: formData.phone, // backend expects 'phone'
-//             password: formData.password,
-//             role: formData.role.toUpperCase(), // uppercase for API
-//           }),
-//         });
-
-//         if (!response.ok) {
-//           const errorData = await response.json();
-//           throw new Error(errorData.message || "Registration failed");
-//         }
-
-//         setSuccess(true);
-//         setFormData({
-//           firstName: "",
-//           lastName: "",
-//           email: "",
-//           phone: "",
-//           password: "",
-//           role: "",
-//         });
-//       } catch (error) {
-//         setApiError(error.message);
-//         setSuccess(false);
-//       }
-//     } else {
-//       setSuccess(false);
-//     }
-//   };
-
-//   useEffect(() => {
-//     if (success) {
-//       const timer = setTimeout(() => setSuccess(false), 3000);
-//       return () => clearTimeout(timer);
-//     }
-//   }, [success]);
-
-//   return (
-//     <div className="container mt-5">
-//       <div className="row shadow rounded overflow-hidden flex-column flex-md-row">
-//         {/* Left Image */}
-//         <div className="col-md-6 p-0">
-//           <img
-//             src={registrationImage}
-//             alt="Registration"
-//             className="img-fluid w-100"
-//             style={{ objectFit: "cover", maxHeight: "500px" }}
-//           />
-//           <div className="text-center py-3 bg-light">
-//             <h4>Join Our Professional Community</h4>
-//             <p>Create your account to access exclusive features and opportunities</p>
-//           </div>
-//         </div>
-
-//         {/* Right Form */}
-//         <div className="col-md-6 p-4 bg-light d-flex align-items-center flex-column">
-//           <div className="w-100">
-//             <h2 className="text-center mb-4 text-primary">Registration Form</h2>
-
-//             {success && (
-//               <div className="alert alert-success">Registration Successful!</div>
-//             )}
-//             {apiError && (
-//               <div className="alert alert-danger">{apiError}</div>
-//             )}
-
-//             <form onSubmit={handleSubmit}>
-//               {/* First & Last Name */}
-//               <div className="row mb-3">
-//                 <div className="col-md-6 mb-3 mb-md-0">
-//                   <label className="form-label">First Name</label>
-//                   <input
-//                     type="text"
-//                     name="firstName"
-//                     className={`form-control ${errors.firstName ? "is-invalid" : ""}`}
-//                     placeholder="Enter first name"
-//                     value={formData.firstName}
-//                     onChange={handleChange}
-//                   />
-//                   {errors.firstName && (
-//                     <div className="invalid-feedback">{errors.firstName}</div>
-//                   )}
-//                 </div>
-//                 <div className="col-md-6">
-//                   <label className="form-label">Last Name</label>
-//                   <input
-//                     type="text"
-//                     name="lastName"
-//                     className={`form-control ${errors.lastName ? "is-invalid" : ""}`}
-//                     placeholder="Enter last name"
-//                     value={formData.lastName}
-//                     onChange={handleChange}
-//                   />
-//                   {errors.lastName && (
-//                     <div className="invalid-feedback">{errors.lastName}</div>
-//                   )}
-//                 </div>
-//               </div>
-
-//               {/* Email */}
-//               <div className="mb-3">
-//                 <label className="form-label">Email</label>
-//                 <input
-//                   type="email"
-//                   name="email"
-//                   className={`form-control ${errors.email ? "is-invalid" : ""}`}
-//                   placeholder="Enter email"
-//                   value={formData.email}
-//                   onChange={handleChange}
-//                 />
-//                 {errors.email && (
-//                   <div className="invalid-feedback">{errors.email}</div>
-//                 )}
-//               </div>
-
-//               {/* phone */}
-//               <div className="mb-3">
-//                 <label className="form-label">phone Number</label>
-//                 <input
-//                   type="text"
-//                   name="phone"
-//                   className={`form-control ${errors.phone ? "is-invalid" : ""}`}
-//                   placeholder="Enter phone number"
-//                   value={formData.phone}
-//                   onChange={handleChange}
-//                 />
-//                 {errors.phone && (
-//                   <div className="invalid-feedback">{errors.phone}</div>
-//                 )}
-//               </div>
-
-//               {/* Password */}
-//               <div className="mb-3 position-relative">
-//                 <label className="form-label">Password</label>
-//                 <input
-//                   type={showPassword ? "text" : "password"}
-//                   name="password"
-//                   className={`form-control ${errors.password ? "is-invalid" : ""}`}
-//                   placeholder="Enter password"
-//                   value={formData.password}
-//                   onChange={handleChange}
-//                 />
-//                 <span
-//                   className="position-absolute"
-//                   style={{ top: "38px", right: "10px", cursor: "pointer" }}
-//                   onClick={() => setShowPassword(!showPassword)}
-//                 >
-//                   {showPassword ? <FaEyeSlash /> : <FaEye />}
-//                 </span>
-//                 {errors.password && (
-//                   <div className="invalid-feedback">{errors.password}</div>
-//                 )}
-//               </div>
-
-//               {/* Role */}
-//               <div className="mb-4">
-//                 <label className="form-label">Role</label>
-//                 <select
-//                   name="role"
-//                   className={`form-select ${errors.role ? "is-invalid" : ""}`}
-//                   value={formData.role}
-//                   onChange={handleChange}
-//                 >
-//                   <option value="">Select Role</option>
-//                   <option value="Student">Student</option>
-//                   <option value="Admin">Admin</option>
-//                   <option value="Interviewer">Interviewer</option>
-//                 </select>
-//                 {errors.role && (
-//                   <div className="invalid-feedback">{errors.role}</div>
-//                 )}
-//               </div>
-
-//               {/* Register Button */}
-//               <button type="submit" className="btn btn-primary w-100 mb-3">
-//                 Register
-//               </button>
-
-//               {/* Sign In Link */}
-//               <p className="text-center">
-//                 Already have an account?{" "}
-//                 <a href="/login" className="text-decoration-none text-primary">
-//                   Sign in
-//                 </a>
-//               </p>
-//             </form>
-//           </div>
-//         </div>
-//       </div>
-//     </div>
-//   );
-// };
-
-// export default RegistrationForm;
-
