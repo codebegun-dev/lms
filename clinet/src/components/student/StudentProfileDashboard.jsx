@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import './StudentDashboard.css';
+import './StudentProfileDashboard.css';
 import PersonalInformation from './sections/PersonalInformation';
 import GenericDetails from './sections/GenericDetails';
 import TenthGrade from './sections/TenthGrade';
@@ -10,7 +10,7 @@ import PGDetails from './sections/PGDetails';
 import CourseDetails from './sections/CourseDetails';
 import FeeDetails from './sections/FeeDetails';
 
-const StudentDashboard = () => {
+const StudentProfileDashboard = () => {
   const navigate = useNavigate();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showMyProfile, setShowMyProfile] = useState(false);
@@ -380,4 +380,4 @@ const StudentDashboard = () => {
   );
 };
 
-export default StudentDashboard;
+export default StudentProfileDashboard;
