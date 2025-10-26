@@ -24,7 +24,6 @@ function App() {
     <>
       <Routes>
 
-
         {/* Public Routes */}
         <Route path='/' element={<RegistrationForm />} />
         <Route path='/login' element={<LoginForm />} />
