@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import './GenericDetails.css';
 
 const indianStates = [
@@ -17,12 +17,17 @@ const GenericDetails = ({ onCompletionChange }) => {
     workExperience: '',
     careerGap: '',
     currentState: '',
+    currentDistrict: '',
+    currentSubDistrict: '',
+    currentVillage: '',
+    currentStreet: '',
+    currentPincode: '',
     permanentState: '',
     permanentDistrict: '',
     permanentSubDistrict: '',
     permanentVillage: '',
-    pincode: '',
-    preferredLocations: [],
+    permanentStreet: '',
+    permanentPincode: '',
     githubProfile: '',
     linkedinProfile: '',
     adhaarCard: null,
@@ -31,104 +36,60 @@ const GenericDetails = ({ onCompletionChange }) => {
 
   const [adhaarFileName, setAdhaarFileName] = useState('');
   const [resumeFileName, setResumeFileName] = useState('');
-  const [showLocationDropdown, setShowLocationDropdown] = useState(false);
-  const dropdownRef = useRef(null);
 
   useEffect(() => {
     calculateCompletion();
   }, [formData]);
 
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setShowLocationDropdown(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
-
   const handleChange = (e) => {
     const { name, value } = e.target;
-    if (name === 'pincode' && value.length > 6) return;
+    if ((name === 'currentPincode' || name === 'permanentPincode') && value.length > 6) return;
     setFormData(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleLocationChange = (location) => {
-    setFormData(prev => {
-      const currentLocations = prev.preferredLocations || [];
-      const isSelected = currentLocations.includes(location);
-      
-      const updatedLocations = isSelected
-        ? currentLocations.filter(loc => loc !== location)
-        : [...currentLocations, location];
-      
-      return { ...prev, preferredLocations: updatedLocations };
-    });
   };
 
   const handleFileChange = (e, type) => {
     const file = e.target.files[0];
     if (file) {
-      if (type === 'adhaar') {
-        setFormData(prev => ({ ...prev, adhaarCard: file }));
-        setAdhaarFileName(file.name);
-      } else if (type === 'resume') {
-        setFormData(prev => ({ ...prev, resume: file }));
-        setResumeFileName(file.name);
-      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (type === 'adhaar') {
+          setFormData(prev => ({ ...prev, adhaarCard: reader.result }));
+          setAdhaarFileName(file.name);
+        } else if (type === 'resume') {
+          setFormData(prev => ({ ...prev, resume: reader.result }));
+          setResumeFileName(file.name);
+        }
+      };
+      reader.readAsDataURL(file);
     }
   };
 
   const calculateCompletion = () => {
-    const fields = Object.entries(formData);
-    const filled = fields.filter(([key, value]) => {
-      if (key === 'preferredLocations') {
-        return Array.isArray(value) && value.length > 0;
-      }
-      return value !== '' && value !== null;
-    }).length;
+    const fields = Object.values(formData);
+    const filled = fields.filter(f => f !== '' && f !== null).length;
     const percentage = Math.round((filled / fields.length) * 100);
     onCompletionChange(percentage);
   };
 
-  const handleSave = () => {
-    setIsEditing(false);
-    setShowLocationDropdown(false);
-  };
-
-  const handleCancel = () => {
-    setIsEditing(false);
-    setShowLocationDropdown(false);
-  };
+  const handleSave = () => setIsEditing(false);
+  const handleCancel = () => setIsEditing(false);
 
   const viewDocument = (type) => {
-    if (type === 'adhaar' && formData.adhaarCard) {
-      alert('Opening Adhaar Card...');
-    } else if (type === 'resume' && formData.resume) {
-      alert('Opening Resume...');
+    const doc = type === 'adhaar' ? formData.adhaarCard : formData.resume;
+    if (doc) {
+      const win = window.open();
+      win.document.write(`<iframe src="${doc}" frameborder="0" style="border:0; width:100%; height:100%;" allowfullscreen></iframe>`);
+    } else {
+      alert(`No ${type} uploaded`);
     }
-  };
-
-  const getSelectedLocationsText = () => {
-    const locations = formData.preferredLocations || [];
-    if (locations.length === 0) return 'Select Preferred Locations';
-    if (locations.length === 1) return locations[0];
-    if (locations.length === 2) return locations.join(', ');
-    return `${locations.slice(0, 2).join(', ')} +${locations.length - 2} more`;
   };
 
   return (
     <div className="section-card">
       <div className="section-header">
-        <h3>Section 2: Generic Details</h3>
+        <h3>Generic Details</h3>
         {!isEditing ? (
-          <button className="btn-edit" onClick={() => setIsEditing(true)}>
-            Edit
-          </button>
+          <button className="btn-edit" onClick={() => setIsEditing(true)}>Edit</button>
         ) : (
           <div className="header-actions">
             <button className="btn-cancel" onClick={handleCancel}>Cancel</button>
@@ -139,6 +100,7 @@ const GenericDetails = ({ onCompletionChange }) => {
 
       <div className="section-body">
         <div className="form-grid">
+          {/* Work Experience */}
           <div className="form-field">
             <label className="form-label">Work Experience *</label>
             <select
@@ -158,6 +120,7 @@ const GenericDetails = ({ onCompletionChange }) => {
             </select>
           </div>
 
+          {/* Career Gap */}
           <div className="form-field">
             <label className="form-label">Career Gap</label>
             <select
@@ -176,8 +139,13 @@ const GenericDetails = ({ onCompletionChange }) => {
             </select>
           </div>
 
+          {/* Current Address */}
+          <div className="form-field full-width">
+            <label className="form-label">Current Address</label>
+          </div>
+
           <div className="form-field">
-            <label className="form-label">Current State *</label>
+            <label className="form-label">State *</label>
             <select
               name="currentState"
               value={formData.currentState}
@@ -186,12 +154,78 @@ const GenericDetails = ({ onCompletionChange }) => {
               className="form-input"
             >
               <option value="">Select State</option>
-              {indianStates.map(state => (
-                <option key={state} value={state}>{state}</option>
-              ))}
+              {indianStates.map(state => <option key={state} value={state}>{state}</option>)}
             </select>
           </div>
 
+          <div className="form-field">
+            <label className="form-label">District *</label>
+            <input
+              type="text"
+              name="currentDistrict"
+              value={formData.currentDistrict}
+              onChange={handleChange}
+              disabled={!isEditing}
+              className="form-input"
+              placeholder="Enter district"
+            />
+          </div>
+
+          <div className="form-field">
+            <label className="form-label">Sub District</label>
+            <input
+              type="text"
+              name="currentSubDistrict"
+              value={formData.currentSubDistrict}
+              onChange={handleChange}
+              disabled={!isEditing}
+              className="form-input"
+              placeholder="Enter sub district"
+            />
+          </div>
+
+          <div className="form-field">
+            <label className="form-label">Village/Town *</label>
+            <input
+              type="text"
+              name="currentVillage"
+              value={formData.currentVillage}
+              onChange={handleChange}
+              disabled={!isEditing}
+              className="form-input"
+              placeholder="Enter village/town"
+            />
+          </div>
+
+          <div className="form-field">
+            <label className="form-label">Street/Building No/Floor</label>
+            <input
+              type="text"
+              name="currentStreet"
+              value={formData.currentStreet}
+              onChange={handleChange}
+              disabled={!isEditing}
+              className="form-input"
+              placeholder="Enter street/building no/floor"
+            />
+          </div>
+
+          <div className="form-field">
+            <label className="form-label">Pincode *</label>
+            <input
+              type="text"
+              name="currentPincode"
+              value={formData.currentPincode}
+              onChange={handleChange}
+              disabled={!isEditing}
+              className="form-input"
+              placeholder="Enter 6-digit pincode"
+              pattern="[0-9]{6}"
+              maxLength="6"
+            />
+          </div>
+
+          {/* Permanent Address */}
           <div className="form-field full-width">
             <label className="form-label">Permanent Address</label>
           </div>
@@ -206,9 +240,7 @@ const GenericDetails = ({ onCompletionChange }) => {
               className="form-input"
             >
               <option value="">Select State</option>
-              {indianStates.map(state => (
-                <option key={state} value={state}>{state}</option>
-              ))}
+              {indianStates.map(state => <option key={state} value={state}>{state}</option>)}
             </select>
           </div>
 
@@ -252,11 +284,24 @@ const GenericDetails = ({ onCompletionChange }) => {
           </div>
 
           <div className="form-field">
+            <label className="form-label">Street/Building No/Floor</label>
+            <input
+              type="text"
+              name="permanentStreet"
+              value={formData.permanentStreet}
+              onChange={handleChange}
+              disabled={!isEditing}
+              className="form-input"
+              placeholder="Enter street/building no/floor"
+            />
+          </div>
+
+          <div className="form-field">
             <label className="form-label">Pincode *</label>
             <input
               type="text"
-              name="pincode"
-              value={formData.pincode}
+              name="permanentPincode"
+              value={formData.permanentPincode}
               onChange={handleChange}
               disabled={!isEditing}
               className="form-input"
@@ -266,59 +311,7 @@ const GenericDetails = ({ onCompletionChange }) => {
             />
           </div>
 
-          <div className="form-field">
-            <label className="form-label">Preferred Locations *</label>
-            <div className="multi-select-wrapper" ref={dropdownRef}>
-              <div
-                className={`multi-select-input ${!isEditing ? 'disabled' : ''}`}
-                onClick={() => isEditing && setShowLocationDropdown(!showLocationDropdown)}
-              >
-                <span className={formData.preferredLocations?.length > 0 ? '' : 'placeholder'}>
-                  {getSelectedLocationsText()}
-                </span>
-                <span className="dropdown-arrow">▼</span>
-              </div>
-
-              {showLocationDropdown && isEditing && (
-                <div className="multi-select-dropdown">
-                  <div className="dropdown-header">
-                    <span>Select Locations (Multiple)</span>
-                    {formData.preferredLocations?.length > 0 && (
-                      <button
-                        className="clear-all-btn"
-                        onClick={() => setFormData(prev => ({ ...prev, preferredLocations: [] }))}
-                      >
-                        Clear All
-                      </button>
-                    )}
-                  </div>
-                  <div className="dropdown-options">
-                    {indianStates.map(state => (
-                      <label key={state} className="checkbox-option">
-                        <input
-                          type="checkbox"
-                          checked={formData.preferredLocations?.includes(state) || false}
-                          onChange={() => handleLocationChange(state)}
-                        />
-                        <span>{state}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {!isEditing && formData.preferredLocations?.length > 0 && (
-                <div className="selected-tags">
-                  {formData.preferredLocations.map(location => (
-                    <span key={location} className="tag">
-                      {location}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-
+          {/* GitHub & LinkedIn */}
           <div className="form-field">
             <label className="form-label">GitHub Profile</label>
             <input
@@ -345,27 +338,31 @@ const GenericDetails = ({ onCompletionChange }) => {
             />
           </div>
 
+          {/* Adhaar & Resume */}
           <div className="form-field">
             <label className="form-label">Adhaar Card *</label>
             {!isEditing ? (
               <div className="document-view">
                 {formData.adhaarCard ? (
-                  <button className="btn-view" onClick={() => viewDocument('adhaar')}>
-                    View Adhaar
-                  </button>
-                ) : (
-                  <span className="no-document">No document uploaded</span>
-                )}
+                  <button className="btn-view" onClick={() => viewDocument('adhaar')}>View Adhaar</button>
+                ) : <span className="no-document">No document uploaded</span>}
               </div>
             ) : (
-              <div>
+              <div className="file-upload-container">
                 <input
                   type="file"
                   accept=".pdf,.jpg,.jpeg,.png"
                   onChange={(e) => handleFileChange(e, 'adhaar')}
                   className="file-input"
+                  id="adhaar-upload"
                 />
-                {adhaarFileName && <span className="file-name">{adhaarFileName}</span>}
+                <label htmlFor="adhaar-upload" className="file-label">Choose File</label>
+                {adhaarFileName && (
+                  <div className="file-info">
+                    <span className="file-name">{adhaarFileName}</span>
+                    <button className="btn-view-small" onClick={() => viewDocument('adhaar')} type="button">View</button>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -375,22 +372,25 @@ const GenericDetails = ({ onCompletionChange }) => {
             {!isEditing ? (
               <div className="document-view">
                 {formData.resume ? (
-                  <button className="btn-view" onClick={() => viewDocument('resume')}>
-                    View Resume
-                  </button>
-                ) : (
-                  <span className="no-document">No document uploaded</span>
-                )}
+                  <button className="btn-view" onClick={() => viewDocument('resume')}>View Resume</button>
+                ) : <span className="no-document">No document uploaded</span>}
               </div>
             ) : (
-              <div>
+              <div className="file-upload-container">
                 <input
                   type="file"
                   accept=".pdf,.doc,.docx"
                   onChange={(e) => handleFileChange(e, 'resume')}
                   className="file-input"
+                  id="resume-upload"
                 />
-                {resumeFileName && <span className="file-name">{resumeFileName}</span>}
+                <label htmlFor="resume-upload" className="file-label">Choose File</label>
+                {resumeFileName && (
+                  <div className="file-info">
+                    <span className="file-name">{resumeFileName}</span>
+                    <button className="btn-view-small" onClick={() => viewDocument('resume')} type="button">View</button>
+                  </div>
+                )}
               </div>
             )}
           </div>

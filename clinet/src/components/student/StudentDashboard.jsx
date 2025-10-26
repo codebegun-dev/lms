@@ -9,6 +9,7 @@ import UGDetails from './sections/UGDetails';
 import PGDetails from './sections/PGDetails';
 import CourseDetails from './sections/CourseDetails';
 import FeeDetails from './sections/FeeDetails';
+import Projects from './sections/Projects'; // ✅ add this line
 
 const StudentDashboard = () => {
   const navigate = useNavigate();
@@ -17,7 +18,6 @@ const StudentDashboard = () => {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [profilePic, setProfilePic] = useState('');
 
-  // Dashboard state
   const [selectedInterviewType, setSelectedInterviewType] = useState('');
   const [scheduledInterviewType, setScheduledInterviewType] = useState('');
   const [scheduledDate, setScheduledDate] = useState('');
@@ -31,17 +31,16 @@ const StudentDashboard = () => {
     twelfth: 0,
     ug: 0,
     pg: 0,
-    course: 0
+    course: 0,
+    projects: 0,
   });
 
-  // Interview durations
   const interviewDurations = {
     "Technical Interview": 20,
     "Behavioral Interview": 10,
     "Communication Interview": 30,
   };
 
-  // Time slots
   const timeSlots = [
     "9:00 AM", "9:30 AM", "10:00 AM", "10:30 AM", "11:00 AM", "11:30 AM",
     "1:00 PM", "1:30 PM", "2:00 PM", "2:30 PM", "3:00 PM", "3:30 PM",
@@ -53,9 +52,7 @@ const StudentDashboard = () => {
     return Math.round(total / values.length);
   };
 
-  const handleLogout = () => {
-    setShowLogoutConfirm(true);
-  };
+  const handleLogout = () => setShowLogoutConfirm(true);
 
   const confirmLogout = () => {
     localStorage.removeItem('user');
@@ -70,23 +67,19 @@ const StudentDashboard = () => {
     }));
   };
 
-  const handleProfilePicUpdate = (pic) => {
-    setProfilePic(pic);
-  };
+  const handleProfilePicUpdate = (pic) => setProfilePic(pic);
 
-  // Get user info safely
   const getUserInfo = () => {
     try {
       const user = JSON.parse(localStorage.getItem('user'));
       return user || { firstName: 'Student' };
-    } catch (error) {
+    } catch {
       return { firstName: 'Student' };
     }
   };
 
   const userInfo = getUserInfo();
 
-  // Handle Start Interview
   const handleStartInterviewClick = () => {
     if (!selectedInterviewType) {
       alert("Please select an interview type!");
@@ -97,26 +90,18 @@ const StudentDashboard = () => {
     });
   };
 
-  // Handle Schedule Interview
   const handleScheduleInterviewSubmit = () => {
     if (!scheduledInterviewType || !scheduledDate || !selectedTime) {
       alert("Please select interview type, date, and time!");
       return;
     }
 
-    alert(
-      `${scheduledInterviewType} scheduled on ${new Date(
-        `${scheduledDate} ${selectedTime}`
-      ).toLocaleString()}`
-    );
-
-    // Reset fields
+    alert(`${scheduledInterviewType} scheduled on ${new Date(`${scheduledDate} ${selectedTime}`).toLocaleString()}`);
     setScheduledInterviewType("");
     setScheduledDate("");
     setSelectedTime("");
   };
 
-  // Handle Progress Update
   const handleMarkProgressClick = () => {
     const nextProgress = completedInterviews + 1;
     if (nextProgress > 20) {
@@ -135,7 +120,7 @@ const StudentDashboard = () => {
             <span className="logo-text">CodeBeGun</span>
           </div>
         </div>
-        
+
         <div className="navbar-right">
           <div 
             className="profile-wrapper"
@@ -162,20 +147,20 @@ const StudentDashboard = () => {
                   setShowProfileMenu(false);
                 }}
               >
-                <span>My Profile</span>
+                My Profile
               </button>
               <button 
                 className="dropdown-menu-item logout-item"
                 onClick={handleLogout}
               >
-                <span>Logout</span>
+                Logout
               </button>
             </div>
           )}
         </div>
       </nav>
 
-      {/* Main Content */}
+      {/* Main Dashboard */}
       <div className="dashboard-main">
         {!showMyProfile ? (
           <>
@@ -184,9 +169,9 @@ const StudentDashboard = () => {
               <p>Manage your interviews and track your progress</p>
             </div>
 
-            {/* Dashboard Cards */}
+            {/* Cards */}
             <div className="dashboard-cards-container">
-              {/* Card 1: Take Interview */}
+              {/* Take Interview */}
               <div className="dashboard-card">
                 <div className="card-header">
                   <h3>Take Interview</h3>
@@ -211,7 +196,7 @@ const StudentDashboard = () => {
                 </div>
               </div>
 
-              {/* Card 2: Schedule Interview */}
+              {/* Schedule Interview */}
               <div className="dashboard-card schedule-card">
                 <div className="card-header">
                   <h3>Schedule a Mock Interview</h3>
@@ -278,7 +263,7 @@ const StudentDashboard = () => {
                 </div>
               </div>
 
-              {/* Card 3: Student Progress */}
+              {/* Progress */}
               <div className="dashboard-card">
                 <div className="card-header">
                   <h3>Student Interview Progress</h3>
@@ -323,7 +308,7 @@ const StudentDashboard = () => {
                 Back to Dashboard
               </button>
             </div>
-            
+
             <div className="profile-sections-wrapper">
               <PersonalInformation 
                 onCompletionChange={(percent) => updateSectionCompletion('personal', percent)}
@@ -346,6 +331,9 @@ const StudentDashboard = () => {
               />
               <CourseDetails 
                 onCompletionChange={(percent) => updateSectionCompletion('course', percent)}
+              />
+              <Projects 
+                onCompletionChange={(percent) => updateSectionCompletion('projects', percent)}
               />
               <FeeDetails />
             </div>

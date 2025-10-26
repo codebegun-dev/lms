@@ -4,10 +4,39 @@ import './TwelfthGrade.css';
 const TwelfthGrade = ({ onCompletionChange }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
+    board: '',
+    group: '',
     collegeName: '',
     yearOfPassout: '',
     marksPercentage: ''
   });
+
+  const boards = [
+    'CBSE',
+    'ICSE',
+    'State Board',
+    'IB (International Baccalaureate)',
+    'NIOS',
+    'Other'
+  ];
+
+  const groups = [
+    'Science (PCM)',
+    'Science (PCB)',
+    'Science (PCMB)',
+    'Commerce',
+    'Arts/Humanities',
+    'Vocational',
+    'Other'
+  ];
+
+  useEffect(() => {
+    const savedData = localStorage.getItem('studentTwelfthGrade');
+    if (savedData) {
+      setFormData(JSON.parse(savedData));
+    }
+    calculateCompletion();
+  }, []);
 
   useEffect(() => {
     calculateCompletion();
@@ -27,16 +56,21 @@ const TwelfthGrade = ({ onCompletionChange }) => {
 
   const handleSave = () => {
     setIsEditing(false);
+    localStorage.setItem('studentTwelfthGrade', JSON.stringify(formData));
   };
 
   const handleCancel = () => {
     setIsEditing(false);
+    const savedData = localStorage.getItem('studentTwelfthGrade');
+    if (savedData) {
+      setFormData(JSON.parse(savedData));
+    }
   };
 
   return (
     <div className="section-card">
       <div className="section-header">
-        <h3>Section 4: 12th/Intermediate/Diploma</h3>
+        <h3>12th/Intermediate/Diploma</h3>
         {!isEditing ? (
           <button className="btn-edit" onClick={() => setIsEditing(true)}>
             Edit
@@ -51,6 +85,38 @@ const TwelfthGrade = ({ onCompletionChange }) => {
 
       <div className="section-body">
         <div className="form-grid">
+          <div className="form-field">
+            <label className="form-label">Board *</label>
+            <select
+              name="board"
+              value={formData.board}
+              onChange={handleChange}
+              disabled={!isEditing}
+              className="form-input"
+            >
+              <option value="">Select Board</option>
+              {boards.map(board => (
+                <option key={board} value={board}>{board}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="form-field">
+            <label className="form-label">Group *</label>
+            <select
+              name="group"
+              value={formData.group}
+              onChange={handleChange}
+              disabled={!isEditing}
+              className="form-input"
+            >
+              <option value="">Select Group</option>
+              {groups.map(group => (
+                <option key={group} value={group}>{group}</option>
+              ))}
+            </select>
+          </div>
+
           <div className="form-field">
             <label className="form-label">College Name *</label>
             <input

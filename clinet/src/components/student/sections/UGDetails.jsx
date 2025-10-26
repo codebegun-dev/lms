@@ -14,11 +14,26 @@ const UGDetails = ({ onCompletionChange }) => {
     activeBacklogs: ''
   });
 
-  const ugCourses = ['B.Tech', 'B.E', 'BCA', 'B.Sc', 'B.Com', 'BBA', 'Other'];
-  const branches = [
-    'Computer Science', 'Information Technology', 'Electronics', 'Electrical',
-    'Mechanical', 'Civil', 'Chemical', 'Biotechnology', 'Other'
-  ];
+  const ugCourses = ['B.Tech', 'B.E', 'BCA', 'B.Sc', 'B.Com', 'BBA', 'BA', 'Other'];
+  
+  const courseBranches = {
+    'B.Tech': ['Computer Science', 'Information Technology', 'Electronics', 'Electrical', 'Mechanical', 'Civil', 'Chemical', 'Biotechnology'],
+    'B.E': ['Computer Science', 'Information Technology', 'Electronics', 'Electrical', 'Mechanical', 'Civil', 'Chemical'],
+    'BCA': ['Computer Applications', 'Data Science', 'Cyber Security', 'Software Development'],
+    'B.Sc': ['Computer Science', 'Information Technology', 'Physics', 'Chemistry', 'Mathematics', 'Biology', 'Statistics'],
+    'B.Com': ['General', 'Accounting & Finance', 'Banking', 'E-Commerce'],
+    'BBA': ['General', 'Finance', 'Marketing', 'Human Resources', 'International Business'],
+    'BA': ['Economics', 'English', 'History', 'Political Science', 'Psychology', 'Sociology'],
+    'Other': ['Other']
+  };
+
+  useEffect(() => {
+    const savedData = localStorage.getItem('studentUGDetails');
+    if (savedData) {
+      setFormData(JSON.parse(savedData));
+    }
+    calculateCompletion();
+  }, []);
 
   useEffect(() => {
     calculateCompletion();
@@ -26,7 +41,13 @@ const UGDetails = ({ onCompletionChange }) => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    
+    // Reset branch when course changes
+    if (name === 'courseName') {
+      setFormData(prev => ({ ...prev, [name]: value, branch: '' }));
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
   };
 
   const calculateCompletion = () => {
@@ -38,16 +59,25 @@ const UGDetails = ({ onCompletionChange }) => {
 
   const handleSave = () => {
     setIsEditing(false);
+    localStorage.setItem('studentUGDetails', JSON.stringify(formData));
   };
 
   const handleCancel = () => {
     setIsEditing(false);
+    const savedData = localStorage.getItem('studentUGDetails');
+    if (savedData) {
+      setFormData(JSON.parse(savedData));
+    }
+  };
+
+  const getAvailableBranches = () => {
+    return courseBranches[formData.courseName] || [];
   };
 
   return (
     <div className="section-card">
       <div className="section-header">
-        <h3>Section 5: UG Details</h3>
+        <h3>UG Details</h3>
         {!isEditing ? (
           <button className="btn-edit" onClick={() => setIsEditing(true)}>
             Edit
@@ -110,14 +140,17 @@ const UGDetails = ({ onCompletionChange }) => {
               name="branch"
               value={formData.branch}
               onChange={handleChange}
-              disabled={!isEditing}
+              disabled={!isEditing || !formData.courseName}
               className="form-input"
             >
               <option value="">Select Branch</option>
-              {branches.map(branch => (
+              {getAvailableBranches().map(branch => (
                 <option key={branch} value={branch}>{branch}</option>
               ))}
             </select>
+            {!formData.courseName && isEditing && (
+              <small className="text-muted">Please select a course first</small>
+            )}
           </div>
 
           <div className="form-field">

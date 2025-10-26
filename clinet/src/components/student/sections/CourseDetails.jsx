@@ -43,7 +43,7 @@ const CourseDetails = ({ onCompletionChange }) => {
   return (
     <div className="section-card">
       <div className="section-header">
-        <h3>Section 7: Institute Course Details</h3>
+        <h3>Institute Course Details</h3>
         {!isEditing ? (
           <button className="btn-edit" onClick={() => setIsEditing(true)}>
             Edit

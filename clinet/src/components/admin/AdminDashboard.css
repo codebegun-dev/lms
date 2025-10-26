@@ -1,0 +1,114 @@
+.admin-dashboard {
+  min-height: 100vh;
+  background: #f5f7fa;
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-content-wrapper {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.admin-main-content {
+  flex: 1;
+  padding: 2rem;
+  overflow-y: auto;
+  background: #f5f7fa;
+}
+
+.dashboard-welcome {
+  background: white;
+  padding: 3rem;
+  border-radius: 12px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.dashboard-welcome h1 {
+  color: #333;
+  margin-bottom: 1rem;
+}
+
+.dashboard-welcome p {
+  color: #666;
+  font-size: 1.1rem;
+}
+
+/* Modal Styles */
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+.modal-box {
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  max-width: 400px;
+  width: 90%;
+}
+
+.modal-box h3 {
+  margin-top: 0;
+  color: #333;
+}
+
+.modal-box p {
+  color: #666;
+  margin-bottom: 1.5rem;
+}
+
+.modal-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+}
+
+.btn-modal-cancel,
+.btn-modal-confirm {
+  padding: 0.5rem 1.5rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  transition: all 0.3s;
+}
+
+.btn-modal-cancel {
+  background: #6c757d;
+  color: white;
+}
+
+.btn-modal-cancel:hover {
+  background: #5a6268;
+}
+
+.btn-modal-confirm {
+  background: #dc3545;
+  color: white;
+}
+
+.btn-modal-confirm:hover {
+  background: #c82333;
+}
+
+@media (max-width: 768px) {
+  .admin-content-wrapper {
+    flex-direction: column;
+  }
+
+  .admin-main-content {
+    padding: 1rem;
+  }
+}

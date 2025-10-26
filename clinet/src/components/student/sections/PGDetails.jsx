@@ -16,10 +16,16 @@ const PGDetails = ({ onCompletionChange }) => {
   });
 
   const pgCourses = ['M.Tech', 'M.E', 'MCA', 'M.Sc', 'MBA', 'M.Com', 'Other'];
-  const branches = [
-    'Computer Science', 'Information Technology', 'Electronics', 'Electrical',
-    'Mechanical', 'Civil', 'Chemical', 'Data Science', 'AI/ML', 'Other'
-  ];
+  
+  const branchesByCourse = {
+    'M.Tech': ['Computer Science', 'Information Technology', 'Electronics', 'Electrical', 'Mechanical', 'Civil', 'Chemical', 'Data Science', 'AI/ML', 'VLSI', 'Embedded Systems', 'Other'],
+    'M.E': ['Computer Science', 'Information Technology', 'Electronics', 'Electrical', 'Mechanical', 'Civil', 'Chemical', 'Structural Engineering', 'Power Systems', 'Other'],
+    'MCA': ['Computer Applications', 'Information Technology', 'Data Science', 'AI/ML', 'Software Engineering', 'Cyber Security', 'Other'],
+    'M.Sc': ['Computer Science', 'Information Technology', 'Physics', 'Chemistry', 'Mathematics', 'Data Science', 'Statistics', 'Biotechnology', 'Other'],
+    'MBA': ['Finance', 'Marketing', 'Human Resources', 'Operations', 'Information Technology', 'Business Analytics', 'International Business', 'Entrepreneurship', 'Other'],
+    'M.Com': ['Accounting', 'Finance', 'Banking', 'Taxation', 'Business Economics', 'International Business', 'Other'],
+    'Other': ['Computer Science', 'Information Technology', 'Electronics', 'Electrical', 'Mechanical', 'Civil', 'Chemical', 'Data Science', 'AI/ML', 'Other']
+  };
 
   useEffect(() => {
     calculateCompletion();
@@ -27,7 +33,13 @@ const PGDetails = ({ onCompletionChange }) => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    
+    // If course changes, reset branch selection
+    if (name === 'courseName') {
+      setFormData(prev => ({ ...prev, [name]: value, branch: '' }));
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
   };
 
   const calculateCompletion = () => {
@@ -49,10 +61,16 @@ const PGDetails = ({ onCompletionChange }) => {
     setIsEditing(false);
   };
 
+  // Get branches based on selected course
+  const getAvailableBranches = () => {
+    if (!formData.courseName) return [];
+    return branchesByCourse[formData.courseName] || [];
+  };
+
   return (
     <div className="section-card">
       <div className="section-header">
-        <h3>Section 6: PG Details</h3>
+        <h3>PG Details</h3>
         {!isEditing ? (
           <button className="btn-edit" onClick={() => setIsEditing(true)}>
             Edit
@@ -129,11 +147,13 @@ const PGDetails = ({ onCompletionChange }) => {
                 name="branch"
                 value={formData.branch}
                 onChange={handleChange}
-                disabled={!isEditing}
+                disabled={!isEditing || !formData.courseName}
                 className="form-input"
               >
-                <option value="">Select Branch</option>
-                {branches.map(branch => (
+                <option value="">
+                  {formData.courseName ? 'Select Branch' : 'Select Course First'}
+                </option>
+                {getAvailableBranches().map(branch => (
                   <option key={branch} value={branch}>{branch}</option>
                 ))}
               </select>

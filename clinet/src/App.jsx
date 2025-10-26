@@ -7,6 +7,7 @@ import Dashboard from './components/Dashboard'
 import SendResetMail from './components/SendResetMail'
 import StartInterview from './components/StartInterview'
 import StudentDashboard from './components/student/StudentDashboard'
+import AdminDashboard from './components/admin/AdminDashboard'
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
         <Route path='/forgot-password' element={<ForgotPasswordForm />} />
         <Route path='/dashboard' element={<Dashboard />} /> 
         <Route path='/student-dashboard' element={<StudentDashboard />} />
+        <Route path='/admin-dashboard' element={<AdminDashboard />} />
         <Route path='/start-interview' element={<StartInterview />} />
       </Routes>
     </>

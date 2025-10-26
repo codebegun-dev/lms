@@ -12,8 +12,7 @@ const FeeDetails = () => {
   return (
     <div className="section-card">
       <div className="section-header">
-        <h3>Section 8: Fee Details</h3>
-        <span className="read-only-badge">Read Only</span>
+        <h3>Fee Details</h3>
       </div>
 
       <div className="section-body">
