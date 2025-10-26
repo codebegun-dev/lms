@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Edit, Trash2 } from "lucide-react";
 import { FiSearch } from "react-icons/fi";
+import axios from "axios";
 
 const QuestionBank = () => {
   const [questions, setQuestions] = useState([]);
@@ -14,22 +15,28 @@ const QuestionBank = () => {
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const questionsPerPage = 6;
+  const [errors, setErrors] = useState({});
 
-  // Category -> Topics mapping
   const categoryTopics = {
     Technical: ["Java", "HTML", "CSS", "Bootstrap", "JavaScript", "React JS", "Springboot", "JDBC"],
     Communication: ["Verbal", "Non-verbal", "Listening", "Presentation", "Negotiation"],
     Behavioral: ["Adaptability", "Teamwork", "Problem Solving", "Time Management"],
-   };
+    HR: ["Recruitment", "Policies", "Payroll", "Performance", "Training"], 
+
+  };
+
+  const API_BASE = "http://localhost:8080/api/questions";
 
   useEffect(() => {
-    const saved = localStorage.getItem("questions");
-    if (saved) setQuestions(JSON.parse(saved));
+    fetchQuestions();
   }, []);
 
-  useEffect(() => {
-    localStorage.setItem("questions", JSON.stringify(questions));
-  }, [questions]);
+  const fetchQuestions = () => {
+    axios
+      .get(API_BASE)
+      .then((res) => setQuestions(res.data))
+      .catch((err) => console.error(err));
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -38,46 +45,70 @@ const QuestionBank = () => {
       setFormData({
         ...formData,
         category: value,
-        topic: categoryTopics[value][0], // auto-select first topic
+        topic: categoryTopics[value][0],
       });
     } else {
       setFormData({ ...formData, [name]: value });
     }
+
+    setErrors({ ...errors, [name]: false });
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+    if (!formData.title.trim()) newErrors.title = true;
+    if (!formData.topic.trim()) newErrors.topic = true;
+    if (!formData.category.trim()) newErrors.category = true;
+    if (!formData.difficulty.trim()) newErrors.difficulty = true;
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleAddOrUpdate = () => {
-    if (!formData.title.trim() || !formData.topic.trim()) {
-      alert("Please fill in all required fields!");
-      return;
-    }
+    if (!validateForm()) return;
 
     if (formData.id) {
-      setQuestions((prev) =>
-        prev.map((q) => (q.id === formData.id ? { ...formData } : q))
-      );
-      alert("Question updated successfully!");
+      axios
+        .put(`${API_BASE}/${formData.id}`, formData)
+        .then(() => {
+          fetchQuestions();
+          alert("Question updated successfully!");
+          handleReset();
+        })
+        .catch((err) => console.error(err));
     } else {
-      const newQ = {
-        ...formData,
-        id: Date.now(),
-        createdBy: "Admin",
-        createdDate: new Date().toISOString().split("T")[0],
-      };
-      setQuestions([...questions, newQ]);
-      alert("Question added successfully!");
+      axios
+        .post(API_BASE, formData)
+        .then(() => {
+          fetchQuestions();
+          alert("Question added successfully!");
+          handleReset();
+        })
+        .catch((err) => console.error(err));
     }
-    handleReset();
   };
 
   const handleEdit = (id) => {
     const selected = questions.find((q) => q.id === id);
-    setFormData(selected);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    if (selected) {
+      setFormData({
+        id: selected.id,
+        category: selected.category,
+        difficulty: selected.difficulty,
+        title: selected.title,
+        topic: selected.topic,
+      });
+      setErrors({});
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
   };
 
   const handleDelete = (id) => {
     if (window.confirm("Are you sure you want to delete this question?")) {
-      setQuestions(questions.filter((q) => q.id !== id));
+      axios
+        .delete(`${API_BASE}/${id}`)
+        .then(() => fetchQuestions())
+        .catch((err) => console.error(err));
     }
   };
 
@@ -89,6 +120,7 @@ const QuestionBank = () => {
       title: "",
       topic: "Java",
     });
+    setErrors({});
   };
 
   const filtered = questions.filter(
@@ -107,25 +139,70 @@ const QuestionBank = () => {
   const nextPage = () => currentPage < totalPages && setCurrentPage(currentPage + 1);
   const prevPage = () => currentPage > 1 && setCurrentPage(currentPage - 1);
 
+  // --- Statistics ---
+  const totalQuestions = questions.length;
+  const technicalCount = questions.filter((q) => q.category === "Technical").length;
+  const communicationCount = questions.filter((q) => q.category === "Communication").length;
+  const behavioralCount = questions.filter((q) => q.category === "Behavioral").length;
+
   return (
     <div className="container my-4">
-      <h1 className="mb-4">Question Bank</h1>
+      {/* Four Cards Section */}
+      <div className="row text-center mb-4">
+        <div className="col-md-3">
+          <div className="card shadow-sm border-primary">
+            <div className="card-body">
+              <h6>Total Questions</h6>
+              <h3>{totalQuestions}</h3>
+            </div>
+          </div>
+        </div>
+        <div className="col-md-3">
+          <div className="card shadow-sm border-success">
+            <div className="card-body">
+              <h6>Technical Questions</h6>
+              <h3>{technicalCount}</h3>
+            </div>
+          </div>
+        </div>
+        <div className="col-md-3">
+          <div className="card shadow-sm border-info">
+            <div className="card-body">
+              <h6>Communication Questions</h6>
+              <h3>{communicationCount}</h3>
+            </div>
+          </div>
+        </div>
+        <div className="col-md-3">
+          <div className="card shadow-sm">
+            <div className="card-body">
+              <h6>Behavioral & HR questions</h6>
+              <h3>{behavioralCount}</h3>
+            </div>
+          </div>
+        </div>
+      </div>
 
-      {/* Manage Questions */}
+ 
+      <h1 className="mb-4 text-center fw-bold">Question Bank</h1>
+
+      {/* --- Manage Questions Section --- */}
       <div className="card mb-3 shadow-sm">
         <div className="card-body">
           <h5 className="card-title">Manage Questions</h5>
           <p className="text-muted">Add new questions or filter existing ones.</p>
 
-          {/* Category + Difficulty in one row */}
           <div className="row mb-1">
             <div className="col-md-6 mb-1">
-              <label className="form-label">Category</label>
+              <label className="form-label">
+                Category <span style={{ color: "red" }}>*</span>
+              </label>
               <select
                 name="category"
                 value={formData.category}
                 onChange={handleChange}
                 className="form-select"
+                style={{ borderColor: errors.category ? "red" : "" }}
               >
                 {Object.keys(categoryTopics).map((cat) => (
                   <option key={cat}>{cat}</option>
@@ -134,7 +211,9 @@ const QuestionBank = () => {
             </div>
 
             <div className="col-md-6 mb-1">
-              <label className="form-label">Difficulty Level</label>
+              <label className="form-label">
+                Difficulty Level <span style={{ color: "red" }}>*</span>
+              </label>
               <div className="d-flex gap-3 align-items-center">
                 {["Easy", "Medium", "Hard"].map((lvl) => (
                   <div className="form-check" key={lvl}>
@@ -153,14 +232,16 @@ const QuestionBank = () => {
             </div>
           </div>
 
-          {/* Topic */}
           <div className="mb-1">
-            <label className="form-label">Topic</label>
+            <label className="form-label">
+              Topic <span style={{ color: "red" }}>*</span>
+            </label>
             <select
               name="topic"
               value={formData.topic}
               onChange={handleChange}
               className="form-select"
+              style={{ borderColor: errors.topic ? "red" : "" }}
             >
               {categoryTopics[formData.category].map((topic) => (
                 <option key={topic}>{topic}</option>
@@ -168,9 +249,10 @@ const QuestionBank = () => {
             </select>
           </div>
 
-          {/* Question Title */}
           <div className="mb-1">
-            <label className="form-label">Question Title</label>
+            <label className="form-label">
+              Question Title <span style={{ color: "red" }}>*</span>
+            </label>
             <input
               type="text"
               name="title"
@@ -178,10 +260,10 @@ const QuestionBank = () => {
               onChange={handleChange}
               className="form-control"
               placeholder="Enter question title..."
+              style={{ borderColor: errors.title ? "red" : "" }}
             />
           </div>
 
-          {/* Search with icon */}
           <div className="mb-1">
             <label className="form-label">Search Questions</label>
             <div className="input-group">
@@ -201,7 +283,6 @@ const QuestionBank = () => {
             </div>
           </div>
 
-          {/* Buttons */}
           <div className="d-flex gap-2">
             <button className="btn btn-primary" onClick={handleAddOrUpdate}>
               {formData.id ? "Update Question" : "Add Question"}
@@ -213,7 +294,7 @@ const QuestionBank = () => {
         </div>
       </div>
 
-      {/* Question List */}
+      {/* --- Question List Section --- */}
       <div className="card shadow-sm">
         <div className="card-body">
           <h5 className="card-title">Question List</h5>
@@ -265,7 +346,6 @@ const QuestionBank = () => {
             </div>
           )}
 
-          {/* Pagination */}
           {filtered.length > questionsPerPage && (
             <div className="d-flex justify-content-end gap-2 mt-3">
               <button
