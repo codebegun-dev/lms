@@ -321,7 +321,7 @@ const BatchManagement = () => {
 
             {/* Total Fee & Overall CTC */}
             <div className="row g-3 mt-3">
-              <div className="col-md-3">
+              <div className="col-md-6">
                 <label className="form-label">Total Fee</label>
                 <input
                   type="number"
@@ -331,7 +331,7 @@ const BatchManagement = () => {
                   onChange={handleChange}
                 />
               </div>
-              <div className="col-md-3">
+              <div className="col-md-6">
                 <label className="form-label">Overall CTC</label>
                 <input
                   type="text"
@@ -345,7 +345,7 @@ const BatchManagement = () => {
 
             {/* Single Installment Row */}
             <div className="row g-3 mt-2">
-              <div className="col-md-3">
+              <div className="col-md-6">
                 <label className="form-label">Single Installment Fee</label>
                 <input
                   type="number"
@@ -355,7 +355,7 @@ const BatchManagement = () => {
                   onChange={handleChange}
                 />
               </div>
-              <div className="col-md-3">
+              <div className="col-md-6">
                 <label className="form-label">CTC % (Single)</label>
                 <input
                   type="text"
@@ -369,7 +369,7 @@ const BatchManagement = () => {
 
             {/* Dual Installments Row */}
             <div className="row g-3 mt-2">
-              <div className="col-md-3">
+              <div className="col-md-4">
                 <label className="form-label">First Installment</label>
                 <input
                   type="number"
@@ -379,7 +379,7 @@ const BatchManagement = () => {
                   onChange={handleChange}
                 />
               </div>
-              <div className="col-md-3">
+              <div className="col-md-4">
                 <label className="form-label">Second Installment</label>
                 <input
                   type="number"
@@ -389,7 +389,7 @@ const BatchManagement = () => {
                   onChange={handleChange}
                 />
               </div>
-              <div className="col-md-3">
+              <div className="col-md-4">
                 <label className="form-label">CTC % (Dual)</label>
                 <input
                   type="text"

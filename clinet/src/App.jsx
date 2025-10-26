@@ -16,7 +16,6 @@ import StartInterview from './Student_Dashboard/StartInterview';
 import AdminDashboard from './Admin_Dashboard/AdminDashboard';
 import CourseManagement from './Admin_Dashboard/CourseManagement';
 import BatchManagement from './Admin_Dashboard/BatchManagement';
-import StudentProfileDashboard from './components/student/StudentProfileDashboard';
 import QuestionBank from './Admin_Dashboard/QuestionBank';
 import StudentNavbar from './Student_Dashboard/StudentNavbar';
 
@@ -32,9 +31,8 @@ function App() {
         <Route path='/sendresetmail' element={<SendResetMail />} />
         <Route path='/reset-password' element={<ForgotPasswordForm />} />
         <Route path='/start-interview' element={<StartInterview />} />
-        <Route path='/student-profile' element={<StudentProfileDashboard />} />
         <Route path='/studentnavbar' element={<StudentNavbar />} />
-       
+        
        
         {/* Student Dashboard with nested routes */}
         <Route path="/dashboard" element={<Dashboard />}>
@@ -59,3 +57,6 @@ function App() {
 }
 
 export default App
+
+ 
+ 

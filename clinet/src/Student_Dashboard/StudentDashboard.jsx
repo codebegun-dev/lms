@@ -74,7 +74,7 @@ const StudentDashboard = () => {
   ];
 
   return (
-    <div className="container mt-5">
+    <div className="container-fluid">
       <h2 className="mb-4 text-center text-primary">StudentDashboard</h2>
 
       {/* --- 3 Cards in One Row --- */}

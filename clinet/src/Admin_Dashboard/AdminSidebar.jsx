@@ -14,7 +14,8 @@ const AdminSidebar = () => {
         <Link to="question-bank" className="nav-link text-dark mb-2 rounded px-2">
           Question Bank
         </Link>
-      </nav>
+        
+       </nav>
     </div>
   );
 };
