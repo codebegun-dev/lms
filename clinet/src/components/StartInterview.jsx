@@ -1,10 +1,11 @@
+
+
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 
 const StartInterview = () => {
   const navigate = useNavigate();
   const location = useLocation();
-
   const { interviewType } = location.state || { interviewType: "Interview" };
 
   const [isRecording, setIsRecording] = useState(false);
@@ -13,8 +14,10 @@ const StartInterview = () => {
 
   const videoRef = useRef(null);
   const mediaStreamRef = useRef(null);
-  const mediaRecorderRef = useRef(null);
-  const recordedChunksRef = useRef([]);
+  const videoRecorderRef = useRef(null);
+  const audioRecorderRef = useRef(null);
+  const videoChunksRef = useRef([]);
+  const audioChunksRef = useRef([]);
   const recognitionRef = useRef(null);
   const timerRef = useRef(null);
 
@@ -48,6 +51,7 @@ const StartInterview = () => {
 
   const stopCamera = () => {
     mediaStreamRef.current?.getTracks().forEach((t) => t.stop());
+    mediaStreamRef.current = null;
   };
 
   const startSpeechToText = () => {
@@ -89,24 +93,33 @@ const StartInterview = () => {
     setTranscript("");
 
     try {
+      // Capture video+audio together
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { width: 480, height: 360 },
         audio: true,
       });
       mediaStreamRef.current = stream;
-      videoRef.current.srcObject = stream;
+      if (videoRef.current) videoRef.current.srcObject = stream;
 
       startSpeechToText();
       startTimer();
 
-      recordedChunksRef.current = [];
-      mediaRecorderRef.current = new MediaRecorder(stream, {
-        mimeType: "video/webm",
-      });
-      mediaRecorderRef.current.ondataavailable = (e) => {
-        if (e.data.size > 0) recordedChunksRef.current.push(e.data);
+      // Video+Audio Recorder
+      videoChunksRef.current = [];
+      videoRecorderRef.current = new MediaRecorder(stream, { mimeType: "video/webm" });
+      videoRecorderRef.current.ondataavailable = (e) => {
+        if (e.data.size > 0) videoChunksRef.current.push(e.data);
       };
-      mediaRecorderRef.current.start();
+      videoRecorderRef.current.start();
+
+      // Audio-only Recorder
+      const audioStream = new MediaStream(stream.getAudioTracks());
+      audioChunksRef.current = [];
+      audioRecorderRef.current = new MediaRecorder(audioStream, { mimeType: "audio/webm" });
+      audioRecorderRef.current.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunksRef.current.push(e.data);
+      };
+      audioRecorderRef.current.start();
     } catch (err) {
       console.error(err);
     }
@@ -115,9 +128,44 @@ const StartInterview = () => {
   const stopRecording = () => {
     if (!isRecording) return;
     setIsRecording(false);
-    mediaRecorderRef.current?.stop();
+
+    videoRecorderRef.current?.stop();
+    audioRecorderRef.current?.stop();
     recognitionRef.current?.stop();
     clearInterval(timerRef.current);
+
+    // Delay to ensure recording finished
+    setTimeout(downloadFiles, 1000);
+  };
+
+  const downloadFiles = () => {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+    const userId = "101";
+    const userName = "Vineela";
+
+    // Video+Audio
+    const videoBlob = new Blob(videoChunksRef.current, { type: "video/webm" });
+    const videoUrl = URL.createObjectURL(videoBlob);
+    const aVideo = document.createElement("a");
+    aVideo.href = videoUrl;
+    aVideo.download = `${userId}_${timestamp}_${userName}_video.webm`;
+    aVideo.click();
+
+    // Audio-only
+    const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+    const audioUrl = URL.createObjectURL(audioBlob);
+    const aAudio = document.createElement("a");
+    aAudio.href = audioUrl;
+    aAudio.download = `${userId}_${timestamp}_${userName}_audio.webm`;
+    aAudio.click();
+
+    // Transcript
+    const transcriptBlob = new Blob([transcript], { type: "text/plain" });
+    const transcriptUrl = URL.createObjectURL(transcriptBlob);
+    const aText = document.createElement("a");
+    aText.href = transcriptUrl;
+    aText.download = `${userId}_${timestamp}_${userName}_transcript.txt`;
+    aText.click();
   };
 
   const formatTime = (s) => {
@@ -134,7 +182,7 @@ const StartInterview = () => {
 
   return (
     <div className="container-fluid vh-100 d-flex flex-column bg-dark bg-opacity-50 overflow-hidden">
-      {/* Navbar Section */}
+      {/* Navbar */}
       <div className="d-flex justify-content-between align-items-center p-3 bg-secondary bg-opacity-25 flex-shrink-0">
         <h5 className="text-white mb-0">{interviewType}</h5>
         <span className="text-white fw-bold">
@@ -144,7 +192,7 @@ const StartInterview = () => {
 
       {/* Main Section */}
       <div className="row flex-grow-1 p-3 m-0 g-3">
-        {/* Left: Camera */}
+        {/* Camera */}
         <div className="col-md-6 d-flex justify-content-center align-items-center position-relative bg-dark bg-opacity-25 rounded-3 p-0">
           <video
             ref={videoRef}
@@ -153,11 +201,9 @@ const StartInterview = () => {
             className="w-100 h-auto rounded-3"
             style={{ transform: "scaleX(-1)", objectFit: "cover" }}
           ></video>
-
-
         </div>
 
-        {/* Right: Speech-to-Text */}
+        {/* Speech-to-Text */}
         <div className="col-md-6 d-flex flex-column bg-dark bg-opacity-25 rounded-3 p-3">
           <h6 className="text-white mb-2">Speech-to-Text</h6>
           <textarea
@@ -169,7 +215,7 @@ const StartInterview = () => {
         </div>
       </div>
 
-      {/* Combined Button Section */}
+      {/* Buttons */}
       <div className="d-flex justify-content-between align-items-center mb-4 px-3">
         <div className="d-flex justify-content-center flex-grow-1">
           {!isRecording ? (
@@ -178,18 +224,17 @@ const StartInterview = () => {
             </button>
           ) : (
             <button className="btn btn-danger px-4" onClick={stopRecording}>
-              Stop Recording
+              Stop & Download
             </button>
           )}
         </div>
 
-        <div className="me-3 ">
+        <div className="me-3">
           <button className="btn btn-primary px-5" onClick={handleBack}>
             Back
           </button>
         </div>
       </div>
-
     </div>
   );
 };
