@@ -1,0 +1,301 @@
+import os
+import sys
+import mysql.connector
+import json
+
+class MySQLAIAnalyzer:
+    def __init__(self):
+        self.setup_database()
+    
+    def setup_database(self):
+        """Setup MySQL database connection"""
+        try:
+            self.conn = mysql.connector.connect(
+                host='localhost',
+                user='root',
+                password='root',
+                database='ai_feedback_db'
+            )
+            self.cursor = self.conn.cursor()
+            self.create_table()
+        except mysql.connector.Error as e:
+            print(f"MySQL Connection Error: {e}")
+            raise
+    
+    def create_table(self):
+        """Create table in MySQL"""
+        create_table_query = '''
+            CREATE TABLE IF NOT EXISTS ai_feedback (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                audio_file VARCHAR(255) NOT NULL,
+                extracted_text TEXT NOT NULL,
+                content_type VARCHAR(100),
+                key_topics TEXT,
+                communication_score INT,
+                content_analysis TEXT,
+                ai_recommendations TEXT,
+                skill_insights TEXT,
+                overall_rating VARCHAR(50),
+                analysis_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        '''
+        self.cursor.execute(create_table_query)
+        self.conn.commit()
+    
+    def audio_to_text(self, audio_path):
+        """Convert audio to text using Whisper"""
+        try:
+            import whisper
+            model = whisper.load_model("base")
+            result = model.transcribe(audio_path)
+            return result["text"].strip()
+        except Exception as e:
+            print(f"Audio conversion failed: {e}")
+            return None
+    
+    def generate_ai_feedback(self, text):
+        """Generate AI feedback"""
+        if not text:
+            return None
+        
+        # Your existing AI analysis logic here
+        # ... (keep all your existing analysis methods)
+        
+        # For brevity, including a simplified version
+        import re
+        words = text.split()
+        sentences = [s.strip() for s in re.split(r'[.!?]+', text) if s.strip()]
+        
+        content_type = self._ai_detect_content_type(text.lower())
+        key_topics = self._ai_extract_key_topics(text, words)
+        communication_score = self._ai_analyze_communication(text, words, sentences)
+        content_analysis = self._ai_analyze_content(text, words, sentences)
+        ai_recommendations = self._ai_generate_recommendations(text, content_type, words)
+        skill_insights = self._ai_identify_skills(text, content_type)
+        overall_rating = self._ai_determine_rating(communication_score)
+        
+        return {
+            "content_type": content_type,
+            "key_topics": key_topics,
+            "communication_score": communication_score,
+            "content_analysis": content_analysis,
+            "ai_recommendations": ai_recommendations,
+            "skill_insights": skill_insights,
+            "overall_rating": overall_rating
+        }
+    
+    def _ai_detect_content_type(self, text):
+        programming_terms = ['python', 'javascript', 'java', 'code', 'programming', 'algorithm']
+        story_terms = ['story', 'once', 'lived', 'house', 'garden', 'butterfly', 'cat']
+        business_terms = ['business', 'company', 'market', 'customer', 'product']
+        
+        programming_count = sum(1 for term in programming_terms if term in text)
+        story_count = sum(1 for term in story_terms if term in text)
+        business_count = sum(1 for term in business_terms if term in text)
+        
+        if programming_count > 0:
+            return "Programming/Technical"
+        elif story_count > 0:
+            return "Story/Narrative"
+        elif business_count > 0:
+            return "Business/Professional"
+        else:
+            return "General Conversation"
+    
+    def _ai_extract_key_topics(self, text, words):
+        topics = []
+        text_lower = text.lower()
+        
+        topic_categories = {
+            'Technology': ['python', 'javascript', 'code', 'software', 'app'],
+            'Creativity': ['story', 'creative', 'imagine', 'art', 'design'],
+            'Business': ['business', 'company', 'market', 'customer'],
+            'Learning': ['learn', 'study', 'education', 'knowledge'],
+            'Problem Solving': ['problem', 'solve', 'solution', 'challenge']
+        }
+        
+        for category, keywords in topic_categories.items():
+            if any(keyword in text_lower for keyword in keywords):
+                topics.append(category)
+        
+        return ", ".join(topics) if topics else "General Discussion"
+    
+    def _ai_analyze_communication(self, text, words, sentences):
+        score = 5
+        word_count = len(words)
+        if word_count > 50:
+            score += 2
+        elif word_count > 20:
+            score += 1
+        
+        if sentences:
+            avg_sentence_length = word_count / len(sentences)
+            if 8 <= avg_sentence_length <= 20:
+                score += 2
+        
+        unique_words = len(set(words))
+        diversity_ratio = unique_words / word_count if word_count > 0 else 0
+        if diversity_ratio > 0.6:
+            score += 2
+        
+        if '?' in text or '!' in text:
+            score += 1
+        
+        return min(10, score)
+    
+    def _ai_analyze_content(self, text, words, sentences):
+        analysis_points = []
+        word_count = len(words)
+        
+        if word_count > 80:
+            analysis_points.append("Comprehensive and detailed content")
+        elif word_count > 40:
+            analysis_points.append("Well-developed with good substance")
+        elif word_count > 20:
+            analysis_points.append("Clear and concise communication")
+        else:
+            analysis_points.append("Brief message - consider expanding")
+        
+        if len(sentences) >= 3:
+            analysis_points.append("Good structural organization")
+        
+        return " | ".join(analysis_points)
+    
+    def _ai_generate_recommendations(self, text, content_type, words):
+        recommendations = []
+        
+        if content_type == "Programming/Technical":
+            recommendations.extend([
+                "Consider sharing specific code examples",
+                "Discuss real-world applications",
+                "Explain technical concepts with analogies"
+            ])
+        elif content_type == "Story/Narrative":
+            recommendations.extend([
+                "Add more descriptive details",
+                "Consider character development",
+                "Use varied sentence structures"
+            ])
+        else:
+            recommendations.extend([
+                "Add specific examples",
+                "Consider your target audience",
+                "Use varied vocabulary"
+            ])
+        
+        word_count = len(words)
+        if word_count < 30:
+            recommendations.append("Expand with more detailed explanations")
+        
+        return " | ".join(recommendations[:3])
+    
+    def _ai_identify_skills(self, text, content_type):
+        skills = ["Clear Communication"]
+        
+        if content_type == "Programming/Technical":
+            skills.append("Technical Knowledge")
+        elif content_type == "Story/Narrative":
+            skills.append("Creative Expression")
+        elif content_type == "Business/Professional":
+            skills.append("Professional Insight")
+        
+        return ", ".join(skills)
+    
+    def _ai_determine_rating(self, score):
+        if score >= 8:
+            return "Excellent"
+        elif score >= 6:
+            return "Good"
+        else:
+            return "Satisfactory"
+    
+    def save_to_mysql(self, audio_file, text, feedback):
+        """Save AI feedback to MySQL database"""
+        try:
+            insert_query = '''
+                INSERT INTO ai_feedback 
+                (audio_file, extracted_text, content_type, key_topics, communication_score, 
+                 content_analysis, ai_recommendations, skill_insights, overall_rating)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            '''
+            
+            self.cursor.execute(insert_query, (
+                audio_file,
+                text,
+                feedback["content_type"],
+                feedback["key_topics"],
+                feedback["communication_score"],
+                feedback["content_analysis"],
+                feedback["ai_recommendations"],
+                feedback["skill_insights"],
+                feedback["overall_rating"]
+            ))
+            
+            self.conn.commit()
+            return self.cursor.lastrowid
+        except mysql.connector.Error as e:
+            print(f"Database save error: {e}")
+            return None
+    
+    def analyze_audio(self, audio_path):
+        """Complete AI analysis pipeline"""
+        if not os.path.exists(audio_path):
+            return {"error": "Audio file not found"}
+        
+        # Convert audio to text
+        text = self.audio_to_text(audio_path)
+        if not text:
+            return {"error": "Failed to extract text from audio"}
+        
+        # Generate AI feedback
+        feedback = self.generate_ai_feedback(text)
+        if not feedback:
+            return {"error": "Failed to generate AI feedback"}
+        
+        # Save to MySQL database
+        feedback_id = self.save_to_mysql(audio_path, text, feedback)
+        
+        if feedback_id:
+            result = {
+                "status": "success",
+                "extracted_text": text,
+                "content_type": feedback["content_type"],
+                "key_topics": feedback["key_topics"],
+                "communication_score": feedback["communication_score"],
+                "content_analysis": feedback["content_analysis"],
+                "ai_recommendations": feedback["ai_recommendations"],
+                "skill_insights": feedback["skill_insights"],
+                "overall_rating": feedback["overall_rating"],
+                "record_id": feedback_id
+            }
+            
+            # Print in format that Java can parse
+            print(f"EXTRACTED_TEXT: {text}")
+            print(f"CONTENT_TYPE: {feedback['content_type']}")
+            print(f"KEY_TOPICS: {feedback['key_topics']}")
+            print(f"COMMUNICATION_SCORE: {feedback['communication_score']}/10")
+            print(f"CONTENT_ANALYSIS: {feedback['content_analysis']}")
+            print(f"AI_RECOMMENDATIONS: {feedback['ai_recommendations']}")
+            print(f"SKILL_INSIGHTS: {feedback['skill_insights']}")
+            print(f"OVERALL_RATING: {feedback['overall_rating']}")
+            print(f"RECORD_ID: {feedback_id}")
+            
+            return result
+        else:
+            return {"error": "Failed to save to database"}
+
+def main():
+    if len(sys.argv) != 2:
+        print("Usage: python ai_analyzer.py <audio_file_path>")
+        sys.exit(1)
+    
+    audio_path = sys.argv[1]
+    analyzer = MySQLAIAnalyzer()
+    result = analyzer.analyze_audio(audio_path)
+    
+    if "error" in result:
+        print(f"ERROR: {result['error']}")
+        sys.exit(1)
+
+if __name__ == "__main__":
+    main()

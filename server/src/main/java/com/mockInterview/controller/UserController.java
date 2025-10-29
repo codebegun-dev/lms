@@ -1,8 +1,14 @@
 package com.mockInterview.controller;
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
@@ -46,5 +52,26 @@ UserService userService;
 	    return userService.resetPassword(dto.getToken(), dto.getNewPassword());
 	}
 
+	
+	@GetMapping("/all")
+    public List<UserResponseDto> getAllUsers() {
+        return userService.getAllUsers();
+    }
+
+    @GetMapping("/{userId}")
+    public UserResponseDto getUserById(@PathVariable Long userId) {
+        return userService.getUserById(userId);
+    }
+
+    @PutMapping("/update/{userId}")
+    public UserResponseDto updateUser(@PathVariable Long userId, @Valid @RequestBody UserRequestDto dto) {
+        return userService.updateUser(userId, dto);
+    }
+
+    @DeleteMapping("/delete/{userId}")
+    public String deleteUser(@PathVariable Long userId) {
+        userService.deleteUser(userId);
+        return "User deleted successfully";
+    }
 
 }
