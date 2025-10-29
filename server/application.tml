@@ -1,0 +1,14 @@
+spring:
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+app:
+  assemblyai:
+    apikey: "47f09c6d2f994145a37a300952a0a2be"
+
+logging:
+  level:
+    com.yourproject: DEBUG
+    org.springframework.web: DEBUG
