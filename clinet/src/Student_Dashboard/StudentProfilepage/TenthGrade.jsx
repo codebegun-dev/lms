@@ -1,13 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import './TenthGrade.css';
+import React, { useState, useEffect } from "react";
 
 const TenthGrade = ({ onCompletionChange }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
-    hallTicketNumber: '',
-    schoolName: '',
-    yearOfPassout: '',
-    marksPercentage: ''
+    hallTicketNumber: "",
+    schoolName: "",
+    yearOfPassout: "",
+    marksPercentage: "",
   });
 
   useEffect(() => {
@@ -16,14 +15,14 @@ const TenthGrade = ({ onCompletionChange }) => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const calculateCompletion = () => {
     const fields = Object.values(formData);
-    const filled = fields.filter(f => f !== '').length;
+    const filled = fields.filter((f) => f !== "").length;
     const percentage = Math.round((filled / fields.length) * 100);
-    onCompletionChange(percentage);
+    if (onCompletionChange) onCompletionChange(percentage);
   };
 
   const handleSave = () => {
@@ -35,73 +34,93 @@ const TenthGrade = ({ onCompletionChange }) => {
   };
 
   return (
-    <div className="section-card">
-      <div className="section-header">
-        <h3>Section 3: 10th Grade</h3>
+    <div className="card shadow-sm mb-4">
+      {/* Header */}
+      <div className="card-header bg-light d-flex flex-wrap justify-content-between align-items-center">
+        <h5 className="mb-0">Section 3: 10th Grade</h5>
+
         {!isEditing ? (
-          <button className="btn-edit" onClick={() => setIsEditing(true)}>
+          <button
+            className="btn btn-primary btn-sm px-3"
+            onClick={() => setIsEditing(true)}
+          >
             Edit
           </button>
         ) : (
-          <div className="header-actions">
-            <button className="btn-cancel" onClick={handleCancel}>Cancel</button>
-            <button className="btn-save" onClick={handleSave}>Save</button>
+          <div className="d-flex gap-2">
+            <button
+              className="btn btn-secondary btn-sm px-3"
+              onClick={handleCancel}
+            >
+              Cancel
+            </button>
+            <button
+              className="btn btn-success btn-sm px-3"
+              onClick={handleSave}
+            >
+              Save
+            </button>
           </div>
         )}
       </div>
 
-      <div className="section-body">
-        <div className="form-grid">
-          <div className="form-field">
-            <label className="form-label">Hall Ticket Number *</label>
+      {/* Body */}
+      <div className="card-body">
+        <div className="row g-3">
+          {/* Hall Ticket */}
+          <div className="col-md-4">
+            <label className="form-label fw-semibold">Hall Ticket Number *</label>
             <input
               type="text"
               name="hallTicketNumber"
               value={formData.hallTicketNumber}
               onChange={handleChange}
               disabled={!isEditing}
-              className="form-input"
+              className="form-control"
               placeholder="Enter hall ticket number"
             />
           </div>
 
-          <div className="form-field">
-            <label className="form-label">School Name *</label>
+          {/* School Name */}
+          <div className="col-md-4">
+            <label className="form-label fw-semibold">School Name *</label>
             <input
               type="text"
               name="schoolName"
               value={formData.schoolName}
               onChange={handleChange}
               disabled={!isEditing}
-              className="form-input"
+              className="form-control"
               placeholder="Enter school name"
             />
           </div>
 
-          <div className="form-field">
-            <label className="form-label">Year of Passout *</label>
+          {/* Year of Passout */}
+          <div className="col-md-4">
+            <label className="form-label fw-semibold">Year of Passout *</label>
             <input
               type="number"
               name="yearOfPassout"
               value={formData.yearOfPassout}
               onChange={handleChange}
               disabled={!isEditing}
-              className="form-input"
+              className="form-control"
               placeholder="YYYY"
               min="1950"
               max="2030"
             />
           </div>
 
-          <div className="form-field">
-            <label className="form-label">Marks in % *</label>
+          {/* Marks Percentage */}
+          <div className="col-md-4">
+            <label className="form-label fw-semibold">Marks in % *</label>
             <input
               type="number"
               name="marksPercentage"
               value={formData.marksPercentage}
               onChange={handleChange}
               disabled={!isEditing}
-              className="form-input"
+              className="form-control"
               placeholder="Enter percentage"
               min="0"
               max="100"

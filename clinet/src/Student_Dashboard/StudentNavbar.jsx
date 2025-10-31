@@ -1,13 +1,14 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import PersonalInformation from "../components/student/sections/PersonalInformation";
-import GenericDetails from "../components/student/sections/GenericDetails";
-import TenthGrade from "../components/student/sections/TenthGrade";
-import TwelfthGrade from "../components/student/sections/TwelfthGrade";
-import UGDetails from "../components/student/sections/UGDetails";
-import PGDetails from "../components/student/sections/PGDetails";
-import CourseDetails from "../components/student/sections/CourseDetails";
-import FeeDetails from "../components/student/sections/FeeDetails";
+import PersonalInformation from "./StudentProfilepage/PersonalInformation";
+import GenericDetails from "./StudentProfilepage/GenericDetails";
+import TenthGrade from "./StudentProfilepage/TenthGrade";
+import TwelfthGrade from "./StudentProfilepage/TwelfthGrade";
+import UGDetails from "./StudentProfilepage/UGDetails";
+import PGDetails from "./StudentProfilepage/PGDetails";
+
+import FeeDetails from "./StudentProfilepage/FeeDetails";
+import CourseDetails from "./StudentProfilepage/CourseDetails";
 
 const StudentNavbar = () => {
   const navigate = useNavigate();
@@ -15,6 +16,7 @@ const StudentNavbar = () => {
   const [showMyProfile, setShowMyProfile] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [profilePic, setProfilePic] = useState("");
+  
 
   const [sectionCompletion, setSectionCompletion] = useState({
     personal: 0,

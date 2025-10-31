@@ -1,18 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import './PersonalInformation.css';
+import React, { useState, useEffect } from "react";
 
 const PersonalInformation = ({ onCompletionChange, onProfilePicChange }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
-    profilePic: '',
-    firstName: '',
-    lastName: '',
-    surName: '',
-    gender: '',
-    dob: '',
-    mobileNumber: '',
-    parentMobile: '',
-    bloodGroup: ''
+    profilePic: "",
+    firstName: "",
+    lastName: "",
+    surName: "",
+    gender: "",
+    dob: "",
+    mobileNumber: "",
+    parentMobile: "",
+    bloodGroup: "",
   });
 
   useEffect(() => {
@@ -21,7 +20,7 @@ const PersonalInformation = ({ onCompletionChange, onProfilePicChange }) => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleFileChange = (e) => {
@@ -29,7 +28,7 @@ const PersonalInformation = ({ onCompletionChange, onProfilePicChange }) => {
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setFormData(prev => ({ ...prev, profilePic: reader.result }));
+        setFormData((prev) => ({ ...prev, profilePic: reader.result }));
         onProfilePicChange(reader.result);
       };
       reader.readAsDataURL(file);
@@ -38,57 +37,76 @@ const PersonalInformation = ({ onCompletionChange, onProfilePicChange }) => {
 
   const calculateCompletion = () => {
     const fields = Object.values(formData);
-    const filled = fields.filter(f => f !== '').length;
+    const filled = fields.filter((f) => f !== "").length;
     const percentage = Math.round((filled / fields.length) * 100);
     onCompletionChange(percentage);
   };
 
-  const handleSave = () => {
-    setIsEditing(false);
-  };
-
-  const handleCancel = () => {
-    setIsEditing(false);
-  };
+  const handleSave = () => setIsEditing(false);
+  const handleCancel = () => setIsEditing(false);
 
   return (
-    <div className="section-card">
-      <div className="section-header">
-        <h3>Section 1: Personal Information</h3>
+    <div className="card mb-4 shadow-sm border-0">
+      <div className="card-header bg-light d-flex justify-content-between align-items-center">
+        <h5 className="mb-0 fw-semibold text-secondary">
+          Section 1: Personal Information
+        </h5>
         {!isEditing ? (
-          <button className="btn-edit" onClick={() => setIsEditing(true)}>
+          <button
+            className="btn btn-primary btn-sm px-3"
+            onClick={() => setIsEditing(true)}
+          >
             Edit
           </button>
         ) : (
-          <div className="header-actions">
-            <button className="btn-cancel" onClick={handleCancel}>Cancel</button>
-            <button className="btn-save" onClick={handleSave}>Save</button>
+          <div className="d-flex gap-2">
+            <button className="btn btn-secondary btn-sm" onClick={handleCancel}>
+              Cancel
+            </button>
+            <button className="btn btn-success btn-sm" onClick={handleSave}>
+              Save
+            </button>
           </div>
         )}
       </div>
 
-      <div className="section-body">
-        <div className="profile-pic-section">
-          <label className="form-label">Profile Picture</label>
-          <div className="pic-preview-box">
+      <div className="card-body">
+        {/* Profile Picture Section */}
+        <div className="text-center mb-4">
+          <label className="form-label fw-semibold d-block">Profile Picture</label>
+          <div
+            className="d-flex justify-content-center align-items-center border border-primary rounded-circle overflow-hidden bg-light mx-auto ratio ratio-1x1"
+            style={{ maxWidth: "150px" }}
+          >
             {formData.profilePic ? (
-              <img src={formData.profilePic} alt="Profile" className="preview-img" />
+              <img
+                src={formData.profilePic}
+                alt="Profile"
+                className="img-fluid rounded-circle object-fit-cover w-100 h-100"
+              />
             ) : (
-              <div className="no-image">No Image</div>
+              <div className="d-flex justify-content-center align-items-center text-muted small w-100 h-100">
+                No Image
+              </div>
             )}
           </div>
+
+
           {isEditing && (
-            <input 
-              type="file" 
-              accept="image/*" 
-              onChange={handleFileChange}
-              className="file-input"
-            />
+            <div className="mt-3 d-flex justify-content-center">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+                className="form-control w-50"
+              />
+            </div>
           )}
         </div>
 
-        <div className="form-grid">
-          <div className="form-field">
+        {/* Form Grid */}
+        <div className="row g-3">
+          <div className="col-md-4">
             <label className="form-label">First Name *</label>
             <input
               type="text"
@@ -96,11 +114,11 @@ const PersonalInformation = ({ onCompletionChange, onProfilePicChange }) => {
               value={formData.firstName}
               onChange={handleChange}
               disabled={!isEditing}
-              className="form-input"
+              className="form-control"
             />
           </div>
 
-          <div className="form-field">
+          <div className="col-md-4">
             <label className="form-label">Last Name *</label>
             <input
               type="text"
@@ -108,39 +126,39 @@ const PersonalInformation = ({ onCompletionChange, onProfilePicChange }) => {
               value={formData.lastName}
               onChange={handleChange}
               disabled={!isEditing}
-              className="form-input"
+              className="form-control"
             />
           </div>
 
-          <div className="form-field">
-            <label className="form-label">Sure Name</label>
+          <div className="col-md-4">
+            <label className="form-label">Sur Name</label>
             <input
               type="text"
               name="surName"
               value={formData.surName}
               onChange={handleChange}
               disabled={!isEditing}
-              className="form-input"
+              className="form-control"
             />
           </div>
 
-          <div className="form-field">
+          <div className="col-md-4">
             <label className="form-label">Gender *</label>
             <select
               name="gender"
               value={formData.gender}
               onChange={handleChange}
               disabled={!isEditing}
-              className="form-input"
+              className="form-select"
             >
               <option value="">Select Gender</option>
-              <option value="Male">Male</option>
-              <option value="Female">Female</option>
-              <option value="Other">Other</option>
+              <option>Male</option>
+              <option>Female</option>
+              <option>Other</option>
             </select>
           </div>
 
-          <div className="form-field">
+          <div className="col-md-4">
             <label className="form-label">Date of Birth *</label>
             <input
               type="date"
@@ -148,11 +166,11 @@ const PersonalInformation = ({ onCompletionChange, onProfilePicChange }) => {
               value={formData.dob}
               onChange={handleChange}
               disabled={!isEditing}
-              className="form-input"
+              className="form-control"
             />
           </div>
 
-          <div className="form-field">
+          <div className="col-md-4">
             <label className="form-label">Mobile Number *</label>
             <input
               type="tel"
@@ -160,13 +178,13 @@ const PersonalInformation = ({ onCompletionChange, onProfilePicChange }) => {
               value={formData.mobileNumber}
               onChange={handleChange}
               disabled={!isEditing}
-              className="form-input"
+              className="form-control"
               maxLength="10"
               pattern="[0-9]{10}"
             />
           </div>
 
-          <div className="form-field">
+          <div className="col-md-4">
             <label className="form-label">Parent Mobile Number *</label>
             <input
               type="tel"
@@ -174,30 +192,30 @@ const PersonalInformation = ({ onCompletionChange, onProfilePicChange }) => {
               value={formData.parentMobile}
               onChange={handleChange}
               disabled={!isEditing}
-              className="form-input"
+              className="form-control"
               maxLength="10"
               pattern="[0-9]{10}"
             />
           </div>
 
-          <div className="form-field">
+          <div className="col-md-4">
             <label className="form-label">Blood Group *</label>
             <select
               name="bloodGroup"
               value={formData.bloodGroup}
               onChange={handleChange}
               disabled={!isEditing}
-              className="form-input"
+              className="form-select"
             >
               <option value="">Select Blood Group</option>
-              <option value="A+">A+</option>
-              <option value="A-">A-</option>
-              <option value="B+">B+</option>
-              <option value="B-">B-</option>
-              <option value="O+">O+</option>
-              <option value="O-">O-</option>
-              <option value="AB+">AB+</option>
-              <option value="AB-">AB-</option>
+              <option>A+</option>
+              <option>A-</option>
+              <option>B+</option>
+              <option>B-</option>
+              <option>O+</option>
+              <option>O-</option>
+              <option>AB+</option>
+              <option>AB-</option>
             </select>
           </div>
         </div>
