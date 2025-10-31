@@ -14,6 +14,25 @@ const AdminSidebar = () => {
         <Link to="question-bank" className="nav-link text-dark mb-2 rounded px-2">
           Question Bank
         </Link>
+        <Link to="category" className="nav-link text-dark mb-2 rounded px-2">
+          Create Category
+        </Link>
+        <Link to="topic" className="nav-link text-dark mb-2 rounded px-2">
+          Create Topic
+        </Link>
+        <Link to="sub-topic" className="nav-link text-dark mb-2 rounded px-2">
+          Create Sub-Topic
+        </Link>
+        <Link to="usermanagement" className="nav-link text-dark mb-2 rounded px-2">
+          User Management
+        </Link>
+        <Link to="editusermodel" className="nav-link text-dark mb-2 rounded px-2">
+          Edit User Model
+        </Link>
+        <Link to="viewusermodel" className="nav-link text-dark mb-2 rounded px-2">
+          View User Model
+        </Link>
+        
         
        </nav>
     </div>

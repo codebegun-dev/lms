@@ -18,12 +18,17 @@ import CourseManagement from './Admin_Dashboard/CourseManagement';
 import BatchManagement from './Admin_Dashboard/BatchManagement';
 import QuestionBank from './Admin_Dashboard/QuestionBank';
 import StudentNavbar from './Student_Dashboard/StudentNavbar';
-
+import Category from './Admin_Dashboard/CreateCategory';
+import CreateTopic from './Admin_Dashboard/CreateTopic';
+import CreateSubTopic from './Admin_Dashboard/CreateSubTopic';
+import UserManagement from './Admin_Dashboard/UserManagement';
+import ViewUserModel from './Admin_Dashboard/UserViewModel';
+import EditUserModel from './Admin_Dashboard/EditUserModel'
+   
 function App() {
   return (
     <>
       <Routes>
-
 
         {/* Public Routes */}
         <Route path='/' element={<RegistrationForm />} />
@@ -32,7 +37,9 @@ function App() {
         <Route path='/reset-password' element={<ForgotPasswordForm />} />
         <Route path='/start-interview' element={<StartInterview />} />
         <Route path='/studentnavbar' element={<StudentNavbar />} />
-        
+
+ 
+         
        
         {/* Student Dashboard with nested routes */}
         <Route path="/dashboard" element={<Dashboard />}>
@@ -47,11 +54,21 @@ function App() {
           <Route path="course-management" element={<CourseManagement />} />
           <Route path="batch-management" element={<BatchManagement />} />
           <Route path="question-bank" element={<QuestionBank />} />
+          <Route path="category" element={<Category/>} />     
+          <Route path="topic" element={<CreateTopic/>} />
+          <Route path="sub-topic" element={<CreateSubTopic/>} />  
+          <Route path="usermanagement" element={<UserManagement/>} />
+          <Route path="editusermodel" element={<EditUserModel/>} />
+          <Route path="viewusermodel" element={<ViewUserModel/>} />  
+
         </Route>
 
         {/* Fallback route (optional) */}
         <Route path="*" element={<h2 className="text-center my-5">Page Not Found</h2>} />
-      </Routes>
+
+
+
+       </Routes>
     </>
   )
 }
