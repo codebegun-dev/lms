@@ -100,7 +100,7 @@ export default function StartInterview() {
         if (mediaStreamRef.current) {
           mediaStreamRef.current.getAudioTracks().forEach((t) => (t.enabled = next));
         }
-      } catch (e) {}
+      } catch (e) { }
       return next;
     });
   };
@@ -129,7 +129,7 @@ export default function StartInterview() {
         if (isRecording && micOn) {
           try {
             recognition.start();
-          } catch (e) {}
+          } catch (e) { }
         }
       };
 
@@ -144,7 +144,7 @@ export default function StartInterview() {
     try {
       recognitionRef.current?.stop();
       recognitionRef.current = null;
-    } catch (err) {}
+    } catch (err) { }
   };
 
   // ----------------- timers -----------------
@@ -253,7 +253,7 @@ export default function StartInterview() {
           mediaStreamRef.current.getTracks().forEach((t) => t.stop());
           mediaStreamRef.current = null;
         }
-      } catch (e) {}
+      } catch (e) { }
 
       safeClearVideoSrc();
       setIsRecording(false);
@@ -359,10 +359,10 @@ export default function StartInterview() {
       try {
         if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") mediaRecorderRef.current.stop();
         if (audioRecorderRef.current && audioRecorderRef.current.state !== "inactive") audioRecorderRef.current.stop();
-      } catch (e) {}
+      } catch (e) { }
       try {
         if (mediaStreamRef.current) mediaStreamRef.current.getTracks().forEach((t) => t.stop());
-      } catch (e) {}
+      } catch (e) { }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -431,15 +431,7 @@ export default function StartInterview() {
 
             <div className="border rounded p-3 mb-3" style={{ minHeight: 150 }}>{question}</div>
 
-            <div className="d-flex gap-2">
-              <button className="btn btn-primary" onClick={handleNextQuestion} disabled={loadingQuestion}>
-                Next Question
-              </button>
 
-              <button className={`btn ${isRecording ? "btn-danger" : "btn-success"}`} onClick={isRecording ? stopRecordingInternal : handleStart}>
-                {isRecording ? "Stop (local)" : "Start Interview"}
-              </button>
-            </div>
           </div>
 
           <div className="card p-3">
@@ -447,6 +439,19 @@ export default function StartInterview() {
             <div className="border rounded p-3" style={{ minHeight: 120, whiteSpace: "pre-wrap" }}>
               {transcript || "Speak into the microphone..."}
             </div>
+            <div className="my-2">
+              <div className="d-flex gap-2">
+                <button className="btn btn-primary" onClick={handleNextQuestion} disabled={loadingQuestion}>
+                  Next Question
+                </button>
+
+                <button className={`btn ${isRecording ? "btn-danger" : "btn-success"}`} onClick={isRecording ? stopRecordingInternal : handleStart}>
+                  {isRecording ? "Stop (local)" : "Start Interview"}
+                </button>
+              </div>
+            </div>
+
+
           </div>
         </div>
       </div>

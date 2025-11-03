@@ -1,12 +1,41 @@
-import React, { useState, useEffect } from "react";
-
+import React, { useState, useEffect } from 'react';
+ 
 const TwelfthGrade = ({ onCompletionChange }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
-    collegeName: "",
-    yearOfPassout: "",
-    marksPercentage: "",
+    board: '',
+    group: '',
+    collegeName: '',
+    yearOfPassout: '',
+    marksPercentage: ''
   });
+
+  const boards = [
+    'CBSE',
+    'ICSE',
+    'State Board',
+    'IB (International Baccalaureate)',
+    'NIOS',
+    'Other'
+  ];
+
+  const groups = [
+    'Science (PCM)',
+    'Science (PCB)',
+    'Science (PCMB)',
+    'Commerce',
+    'Arts/Humanities',
+    'Vocational',
+    'Other'
+  ];
+
+  useEffect(() => {
+    const savedData = localStorage.getItem('studentTwelfthGrade');
+    if (savedData) {
+      setFormData(JSON.parse(savedData));
+    }
+    calculateCompletion();
+  }, []);
 
   useEffect(() => {
     calculateCompletion();
@@ -14,44 +43,51 @@ const TwelfthGrade = ({ onCompletionChange }) => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   const calculateCompletion = () => {
     const fields = Object.values(formData);
-    const filled = fields.filter((f) => f !== "").length;
+    const filled = fields.filter(f => f !== '').length;
     const percentage = Math.round((filled / fields.length) * 100);
-    if (onCompletionChange) onCompletionChange(percentage);
+    onCompletionChange(percentage);
   };
 
-  const handleSave = () => setIsEditing(false);
-  const handleCancel = () => setIsEditing(false);
+  const handleSave = () => {
+    setIsEditing(false);
+    localStorage.setItem('studentTwelfthGrade', JSON.stringify(formData));
+  };
+
+  const handleCancel = () => {
+    setIsEditing(false);
+    const savedData = localStorage.getItem('studentTwelfthGrade');
+    if (savedData) {
+      setFormData(JSON.parse(savedData));
+    }
+  };
 
   return (
-    <div className="card shadow-sm mb-4">
+    <div className="card shadow-sm border-0 my-3">
       {/* Header */}
-      <div className="card-header bg-light d-flex flex-wrap justify-content-between align-items-center">
-        <h5 className="mb-0">Section 4: 12th / Intermediate / Diploma</h5>
+      <div className="card-header d-flex justify-content-between align-items-center bg-primary text-white">
+        <h5 className="mb-0">12th / Intermediate / Diploma</h5>
 
         {!isEditing ? (
           <button
-            className="btn btn-primary btn-sm px-3"
+            className="btn btn-light btn-sm"
             onClick={() => setIsEditing(true)}
           >
             Edit
           </button>
         ) : (
-          <div className="d-flex gap-2">
+          <div>
             <button
-              className="btn btn-secondary btn-sm px-3"
+              className="btn btn-secondary btn-sm me-2"
               onClick={handleCancel}
             >
               Cancel
             </button>
-            <button
-              className="btn btn-success btn-sm px-3"
-              onClick={handleSave}
-            >
+            <button className="btn btn-success btn-sm" onClick={handleSave}>
               Save
             </button>
           </div>
@@ -61,6 +97,44 @@ const TwelfthGrade = ({ onCompletionChange }) => {
       {/* Body */}
       <div className="card-body">
         <div className="row g-3">
+          {/* Board */}
+          <div className="col-md-4">
+            <label className="form-label fw-semibold">Board *</label>
+            <select
+              name="board"
+              value={formData.board}
+              onChange={handleChange}
+              disabled={!isEditing}
+              className="form-select"
+            >
+              <option value="">Select Board</option>
+              {boards.map(board => (
+                <option key={board} value={board}>
+                  {board}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Group */}
+          <div className="col-md-4">
+            <label className="form-label fw-semibold">Group *</label>
+            <select
+              name="group"
+              value={formData.group}
+              onChange={handleChange}
+              disabled={!isEditing}
+              className="form-select"
+            >
+              <option value="">Select Group</option>
+              {groups.map(group => (
+                <option key={group} value={group}>
+                  {group}
+                </option>
+              ))}
+            </select>
+          </div>
+
           {/* College Name */}
           <div className="col-md-4">
             <label className="form-label fw-semibold">College Name *</label>
@@ -91,7 +165,7 @@ const TwelfthGrade = ({ onCompletionChange }) => {
             />
           </div>
 
-          {/* Marks Percentage */}
+          {/* Marks */}
           <div className="col-md-4">
             <label className="form-label fw-semibold">Marks in % *</label>
             <input

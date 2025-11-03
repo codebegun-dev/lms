@@ -22,6 +22,7 @@ import Category from './Admin_Dashboard/CreateCategory';
 import CreateTopic from './Admin_Dashboard/CreateTopic';
 import CreateSubTopic from './Admin_Dashboard/CreateSubTopic';
 import UserManagement from './Admin_Dashboard/UserManagement';
+import StudentProfile from './Student_Dashboard/Studentprofile';
  
    
 function App() {
@@ -36,6 +37,8 @@ function App() {
         <Route path='/reset-password' element={<ForgotPasswordForm />} />
         <Route path='/start-interview' element={<StartInterview />} />
         <Route path='/studentnavbar' element={<StudentNavbar />} />
+                  <Route path="/student-profile" element={<StudentProfile />} />
+
 
  
          
@@ -44,6 +47,7 @@ function App() {
         <Route path="/dashboard" element={<Dashboard />}>
           <Route index element={<StudentDashboard />} />
           <Route path="student-dashboard" element={<StudentDashboard />} />
+ 
         </Route>
 
 
