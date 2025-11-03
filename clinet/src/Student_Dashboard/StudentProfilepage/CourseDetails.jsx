@@ -1,40 +1,19 @@
 import React, { useState, useEffect } from "react";
 
 const CourseDetails = () => {
-  const [isEditing, setIsEditing] = useState(false);
-  const [formData, setFormData] = useState({
-    courseName: "",
-    courseStartDate: "",
+  const [formData] = useState({
+    courseName: "Full Stack Java",
+    courseStartDate: "2025-02-15",
+    batchName: "Batch A-2025",
   });
+
   const [completion, setCompletion] = useState(0);
 
-  const instituteCourses = [
-    "Full Stack Java",
-    "Full Stack Python",
-    "Full Stack .NET",
-    "Data Science",
-    "Web Development",
-  ];
-
-  // Auto calculate completion
   useEffect(() => {
-    const fields = Object.values(formData);
-    const filled = fields.filter((f) => f !== "").length;
-    setCompletion(Math.round((filled / fields.length) * 100));
+    const { courseName, courseStartDate } = formData;
+    const filled = [courseName, courseStartDate].filter((f) => f !== "").length;
+    setCompletion(Math.round((filled / 2) * 100));
   }, [formData]);
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleSave = () => {
-    setIsEditing(false);
-  };
-
-  const handleCancel = () => {
-    setIsEditing(false);
-  };
 
   return (
     <div className="card mb-4 shadow-sm">
@@ -45,57 +24,40 @@ const CourseDetails = () => {
             Completion: <strong>{completion}%</strong>
           </small>
         </div>
-
-        {!isEditing ? (
-          <button
-            className="btn btn-primary btn-sm mt-2 mt-md-0"
-            onClick={() => setIsEditing(true)}
-          >
-            Edit
-          </button>
-        ) : (
-          <div className="d-flex gap-2 mt-2 mt-md-0">
-            <button className="btn btn-secondary btn-sm" onClick={handleCancel}>
-              Cancel
-            </button>
-            <button className="btn btn-success btn-sm" onClick={handleSave}>
-              Save
-            </button>
-          </div>
-        )}
       </div>
 
       <div className="card-body">
         <div className="row g-3">
           {/* Course Name */}
-          <div className="col-md-6">
-            <label className="form-label">Course Name *</label>
-            <select
-              name="courseName"
+          <div className="col-md-4">
+            <label className="form-label">Course Name</label>
+            <input
+              type="text"
               value={formData.courseName}
-              onChange={handleChange}
-              disabled={!isEditing}
-              className="form-select"
-            >
-              <option value="">Select Course</option>
-              {instituteCourses.map((course) => (
-                <option key={course} value={course}>
-                  {course}
-                </option>
-              ))}
-            </select>
+              className="form-control"
+              readOnly
+            />
           </div>
 
           {/* Course Start Date */}
-          <div className="col-md-6">
-            <label className="form-label">Course Start Date *</label>
+          <div className="col-md-4">
+            <label className="form-label">Course Start Date</label>
             <input
               type="date"
-              name="courseStartDate"
               value={formData.courseStartDate}
-              onChange={handleChange}
-              disabled={!isEditing}
               className="form-control"
+              readOnly
+            />
+          </div>
+
+          {/* Batch Name */}
+          <div className="col-md-4">
+            <label className="form-label">Batch Name</label>
+            <input
+              type="text"
+              value={formData.batchName}
+              className="form-control"
+              readOnly
             />
           </div>
         </div>

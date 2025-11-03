@@ -14,8 +14,7 @@ const FeeDetails = () => {
       {/* Header */}
       <div className="card-header bg-light d-flex flex-wrap justify-content-between align-items-center">
         <h5 className="mb-0">Section 8: Fee Details</h5>
-        <span className="badge bg-secondary p-2">Read Only</span>
-      </div>
+       </div>
 
       {/* Body */}
       <div className="card-body">

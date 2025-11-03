@@ -1,16 +1,19 @@
 import React, { useState, useEffect } from "react";
+import axios from "axios";
+
 
 const PersonalInformation = ({ onCompletionChange, onProfilePicChange }) => {
   const [isEditing, setIsEditing] = useState(false);
+    const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({
     profilePic: "",
     firstName: "",
     lastName: "",
+    mobileNumber: "",
     surName: "",
     gender: "",
-    dob: "",
-    mobileNumber: "",
-    parentMobile: "",
+    dateOfBirth: "",
+    parentMobileNumber: "",
     bloodGroup: "",
   });
 
