@@ -22,8 +22,7 @@ import Category from './Admin_Dashboard/CreateCategory';
 import CreateTopic from './Admin_Dashboard/CreateTopic';
 import CreateSubTopic from './Admin_Dashboard/CreateSubTopic';
 import UserManagement from './Admin_Dashboard/UserManagement';
-import ViewUserModel from './Admin_Dashboard/UserViewModel';
-import EditUserModel from './Admin_Dashboard/EditUserModel'
+ 
    
 function App() {
   return (
@@ -58,8 +57,7 @@ function App() {
           <Route path="topic" element={<CreateTopic/>} />
           <Route path="sub-topic" element={<CreateSubTopic/>} />  
           <Route path="usermanagement" element={<UserManagement/>} />
-          <Route path="editusermodel" element={<EditUserModel/>} />
-          <Route path="viewusermodel" element={<ViewUserModel/>} />  
+        
 
         </Route>
 
