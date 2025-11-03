@@ -406,13 +406,20 @@ export default function StartInterview() {
               style={{ height: 300, background: "#000" }}
             />
             <div className="d-flex gap-2">
-              <button className={`btn ${cameraOn ? "btn-danger" : "btn-success"}`} onClick={toggleCamera}>
+              <button
+                className={`btn ${cameraOn ? "btn-danger" : "btn-success"}`}
+                onClick={toggleCamera}
+              >
                 {cameraOn ? <FaVideoSlash /> : <FaVideo />} {cameraOn ? "Camera Off" : "Camera On"}
               </button>
 
-              <button className={`btn ${micOn ? "btn-danger" : "btn-success"}`} onClick={toggleMic}>
+              <button
+                className={`btn ${micOn ? "btn-danger" : "btn-success"}`}
+                onClick={toggleMic}
+              >
                 {micOn ? <FaMicrophoneSlash /> : <FaMicrophone />} {micOn ? "Mic Off" : "Mic On"}
               </button>
+
             </div>
             <div className="mt-3 text-muted small">Please allow camera & microphone access when prompted.</div>
           </div>
@@ -445,9 +452,13 @@ export default function StartInterview() {
                   Next Question
                 </button>
 
-                <button className={`btn ${isRecording ? "btn-danger" : "btn-success"}`} onClick={isRecording ? stopRecordingInternal : handleStart}>
+                <button
+                  className={`btn ${isRecording ? "btn-danger" : "btn-success"}`}
+                  onClick={isRecording ? stopRecordingInternal : handleStart}
+                >
                   {isRecording ? "Stop (local)" : "Start Interview"}
                 </button>
+
               </div>
             </div>
 
@@ -455,8 +466,6 @@ export default function StartInterview() {
           </div>
         </div>
       </div>
-    </div>
+    </div >
   );
 }
-
-

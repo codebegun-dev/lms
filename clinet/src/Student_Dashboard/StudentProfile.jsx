@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import StudentNavbar from "../StudentNavbar";
+import StudentNavbar from "./StudentNavbar";
 import PersonalInformation from "./StudentProfilepage/PersonalInformation";
 import GenericDetails from "./StudentProfilepage/GenericDetails";
 import TenthGrade from "./StudentProfilepage/TenthGrade";
