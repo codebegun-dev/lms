@@ -26,12 +26,8 @@ const AdminSidebar = () => {
         <Link to="usermanagement" className="nav-link text-dark mb-2 rounded px-2">
           User Management
         </Link>
-        <Link to="editusermodel" className="nav-link text-dark mb-2 rounded px-2">
-          Edit User Model
-        </Link>
-        <Link to="viewusermodel" className="nav-link text-dark mb-2 rounded px-2">
-          View User Model
-        </Link>
+        
+        
         
         
        </nav>

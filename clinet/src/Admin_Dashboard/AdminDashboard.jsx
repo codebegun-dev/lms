@@ -9,8 +9,7 @@ import CreateTopic from "./CreateTopic";
 import CreateSubTopic from "./CreateSubTopic";
 import AdminNavbar from "./AdminNavbar";
 import UserManagement from "./UserManagement";
-import ViewUserModel from "./UserViewModel";
-import EditUserModel from "./EditUserModel";
+ 
 
 
 const AdminDashboard = () => {
@@ -35,9 +34,7 @@ const AdminDashboard = () => {
               <Route path="category" element={<Category />} />
               <Route path="topic" element={<CreateTopic />} />
               <Route path="sub-topic" element={<CreateSubTopic />} />
-              <Route path="usermanagement" element={<UserManagement />} />
-              <Route path="editusermodel" element={<EditUserModel/>} />
-              <Route path="viewusermodel" element={<ViewUserModel/>} />
+              <Route path="usermanagement" element={<UserManagement />} /> 
               <Route path="" element={<CourseManagement />} />
               
             </Routes>

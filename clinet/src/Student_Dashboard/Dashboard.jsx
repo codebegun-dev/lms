@@ -4,6 +4,7 @@ import StudentSidebar from "./StudentSidebar";
 import StudentDashboard from "./StudentDashboard";
 import StudentNavbar from "./StudentNavbar";
 
+
 const Dashboard = () => {
   return (
     <>
@@ -21,7 +22,7 @@ const Dashboard = () => {
       <div className="col-10 ">
         <Routes>
           <Route path="student-dashboard" element={<StudentDashboard />} />
-           <Route path="" element={<StudentDashboard/>} />
+            <Route path="" element={<StudentDashboard/>} />
         </Routes>
       </div>
     </div>
