@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.mockInterview.entity.PasswordResetToken;
+import com.mockInterview.entity.Role;
 import com.mockInterview.entity.User;
 import com.mockInterview.exception.DuplicateFieldException;
 import com.mockInterview.exception.ResourceNotFoundException;
@@ -17,6 +18,7 @@ import com.mockInterview.repository.StudentPersonalInfoRepository;
 import com.mockInterview.repository.UserRepository;
 import com.mockInterview.requestDtos.LoginRequestDto;
 import com.mockInterview.requestDtos.UserRequestDto;
+import com.mockInterview.requestDtos.UserUpdateRequestDto;
 import com.mockInterview.responseDtos.UserResponseDto;
 import com.mockInterview.service.EmailService;
 import com.mockInterview.service.UserService;
@@ -37,54 +39,60 @@ public class UserServiceImpl implements UserService {
     @Autowired
     private StudentPersonalInfoRepository studentPersonalInfoRepository;
 
-    // --- Create user
+    @Autowired
+    private UserMapper userMapper;
+
     @Override
     public UserResponseDto createUser(UserRequestDto dto) {
-        // Check if email already exists
+
         if (userRepository.findByEmail(dto.getEmail()) != null) {
             throw new DuplicateFieldException("Email already exists!");
         }
 
-        // Check if phone already exists
         if (userRepository.findByPhone(dto.getPhone()) != null) {
             throw new DuplicateFieldException("Phone number already exists!");
         }
 
-        // Check if phone matches any existing parent's number
         if (studentPersonalInfoRepository.findByParentMobileNumber(dto.getPhone()) != null) {
-            throw new DuplicateFieldException("Phone number cannot be the same as any existing parent's mobile number!");
+            throw new DuplicateFieldException("Phone number already exists!");
         }
 
-        // Create and save user
-        User user = UserMapper.toEntity(dto);
-        User savedUser = userRepository.save(user);
+        User user = userMapper.toEntity(dto);
 
-        // Send welcome email asynchronously
+        // ✅ Auto status
+        if (dto.getRole() == Role.STUDENT) {
+            user.setStatus("ACTIVE");
+        } else {
+            user.setStatus("ACTIVE"); // change to PENDING if needed
+        }
+
+        User savedUser = userRepository.save(user);
         emailService.sendWelcomeEmail(savedUser.getEmail(), savedUser.getFirstName());
 
-        return UserMapper.toResponse(savedUser);
+        return userMapper.toResponse(savedUser);
     }
 
 
-    // --- Login (return only userId, email, role)
     @Override
     public UserResponseDto login(LoginRequestDto loginDto) {
+
         User user = userRepository.findByEmailOrPhone(loginDto.getEmailOrPhone(), loginDto.getEmailOrPhone());
         if (user == null) {
             throw new ResourceNotFoundException("Invalid Credentials");
         }
+
+        if("INACTIVE".equalsIgnoreCase(user.getStatus())) {
+            throw new RuntimeException("Account is inactive. Contact admin.");
+        }
+
+        // TODO: Replace with BCrypt
         if (!user.getPassword().equals(loginDto.getPassword())) {
             throw new ResourceNotFoundException("Invalid Credentials");
         }
 
-//        // Create response with only userId, email, role
-//        UserResponseDto response = new UserResponseDto();
-//        response.setUserId(user.getUserId());
-//        response.setEmail(user.getEmail());
-//        response.setRole(user.getRole());
-
-        return UserMapper.toResponse(user);
+        return userMapper.toResponse(user);
     }
+
 
     public String forgotPassword(String emailOrPhone) {
         User user = userRepository.findByEmailOrPhone(emailOrPhone, emailOrPhone);
@@ -153,61 +161,83 @@ public class UserServiceImpl implements UserService {
     
     
  // --- Get all users
-    @Override
-    public List<UserResponseDto> getAllUsers() {
-        List<User> users = userRepository.findAll();
-        List<UserResponseDto> result = new ArrayList<UserResponseDto>();
+    public List<UserResponseDto> getAllActiveUsers() {
+        List<User> users = userRepository.findByStatus("ACTIVE"); 
+        List<UserResponseDto> result = new ArrayList<>();
         for (User user : users) {
-            result.add(UserMapper.toResponse(user));
+            result.add(userMapper.toResponse(user));
+        }
+        return result;
+    }
+    
+ // --- Get all users (active + inactive)
+    public List<UserResponseDto> getAllUsersWithStatus() {
+        List<User> users = userRepository.findAll(); 
+        List<UserResponseDto> result = new ArrayList<>();
+        for (User user : users) {
+            result.add(userMapper.toResponse(user));
         }
         return result;
     }
 
+
+
     // --- Get user by ID
     @Override
     public UserResponseDto getUserById(Long userId) {
-        User user = userRepository.findById(userId).isPresent() ? userRepository.findById(userId).get() : null;
-        if (user == null) {
-            throw new RuntimeException("User not found with ID: " + userId);
-        }
-        return UserMapper.toResponse(user);
+    	User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found with ID: " + userId));
+
+        return userMapper.toResponse(user);
     }
 
-    // --- Update user
+   
     @Override
-    public UserResponseDto updateUser(Long userId, UserRequestDto dto) {
-        User user = null;
-        if (userRepository.findById(userId).isPresent()) {
-            user = userRepository.findById(userId).get();
-        }
+    public UserResponseDto updateUser(Long userId, UserUpdateRequestDto dto) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found with ID: " + userId));
 
-        if (user == null) {
-            throw new RuntimeException("User not found with ID: " + userId);
-        }
-
+        // Update allowed fields only
         user.setFirstName(dto.getFirstName());
         user.setLastName(dto.getLastName());
         user.setEmail(dto.getEmail());
         user.setPhone(dto.getPhone());
-        user.setPassword(dto.getPassword());
         user.setRole(dto.getRole());
+        
 
         User updatedUser = userRepository.save(user);
-        return UserMapper.toResponse(updatedUser);
+        return userMapper.toResponse(updatedUser);
     }
 
-    // --- Delete user
+
+    // --- Deactivate user
     @Override
-    public void deleteUser(Long userId) {
-        User user = null;
-        if (userRepository.findById(userId).isPresent()) {
-            user = userRepository.findById(userId).get();
+    public void deactivateUser(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found with ID: " + userId));
+
+        // ❌ Prevent deleting admins
+        if (user.getRole() == Role.ADMIN) {
+            throw new RuntimeException("Admin user cannot be deleted!");
         }
 
-        if (user == null) {
-            throw new RuntimeException("User not found with ID: " + userId);
-        }
-
-        userRepository.delete(user);
+        // ✅ Soft delete
+        user.setStatus("INACTIVE");
+        userRepository.save(user);
     }
+    
+    @Override
+    public void activateUser(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found with ID: " + userId));
+
+        if (user.getStatus().equalsIgnoreCase("ACTIVE")) {
+            throw new RuntimeException("User is already active");
+        }
+
+        user.setStatus("ACTIVE");
+        userRepository.save(user);
+    }
+
+
 }

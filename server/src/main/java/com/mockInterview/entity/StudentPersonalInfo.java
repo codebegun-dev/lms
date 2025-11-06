@@ -16,8 +16,7 @@ public class StudentPersonalInfo {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank(message = "Sur name is required")
-    @Size(max = 50, message = "Sur name cannot exceed 50 characters")
+    
     private String surName;
 
     @NotBlank(message = "Gender is required")

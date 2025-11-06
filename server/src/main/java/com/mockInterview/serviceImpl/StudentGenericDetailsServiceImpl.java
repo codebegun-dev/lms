@@ -12,6 +12,7 @@ import com.mockInterview.util.FileStorageUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.io.File;
 import java.util.Optional;
@@ -129,39 +130,45 @@ public class StudentGenericDetailsServiceImpl implements StudentGenericDetailsSe
         return mapToDto(details);
     }
 
-    private StudentGenericDetailsDto mapToDto(StudentGenericDetails details) {
-        StudentGenericDetailsDto dto = new StudentGenericDetailsDto();
+    
 
-        dto.setUserId(details.getUser().getUserId());
-        dto.setFirstName(details.getUser().getFirstName());
-        dto.setLastName(details.getUser().getLastName());
-        dto.setMobileNumber(details.getUser().getPhone());
+ // inside mapToDto method
+ private StudentGenericDetailsDto mapToDto(StudentGenericDetails details) {
+     StudentGenericDetailsDto dto = new StudentGenericDetailsDto();
 
-        dto.setWorkExperience(details.getWorkExperience());
-        dto.setCareerGap(details.getCareerGap());
-        dto.setCurrentState(details.getCurrentState());
-        dto.setCurrentDistrict(details.getCurrentDistrict());
-        dto.setCurrentSubDistrict(details.getCurrentSubDistrict());
-        dto.setCurrentVillage(details.getCurrentVillage());
-        dto.setCurrentStreet(details.getCurrentStreet());
-        dto.setCurrentPincode(details.getCurrentPincode());
-        dto.setPermanentState(details.getPermanentState());
-        dto.setPermanentDistrict(details.getPermanentDistrict());
-        dto.setPermanentSubDistrict(details.getPermanentSubDistrict());
-        dto.setPermanentVillage(details.getPermanentVillage());
-        dto.setPermanentStreet(details.getPermanentStreet());
-        dto.setPermanentPincode(details.getPermanentPincode());
-        dto.setGithubProfile(details.getGithubProfile());
-        dto.setLinkedinProfile(details.getLinkedinProfile());
+     dto.setUserId(details.getUser().getUserId());
+     dto.setFirstName(details.getUser().getFirstName());
+     dto.setLastName(details.getUser().getLastName());
+     dto.setMobileNumber(details.getUser().getPhone());
 
-        String baseUrl = "http://localhost:8080";
-        if (details.getAdhaarFilePath() != null) {
-            dto.setAdhaarFilePath(baseUrl + "/docs/" + details.getUser().getUserId() + "/" + new File(details.getAdhaarFilePath()).getName());
-        }
-        if (details.getResumeFilePath() != null) {
-            dto.setResumeFilePath(baseUrl + "/docs/" + details.getUser().getUserId() + "/" + new File(details.getResumeFilePath()).getName());
-        }
+     dto.setWorkExperience(details.getWorkExperience());
+     dto.setCareerGap(details.getCareerGap());
+     dto.setCurrentState(details.getCurrentState());
+     dto.setCurrentDistrict(details.getCurrentDistrict());
+     dto.setCurrentSubDistrict(details.getCurrentSubDistrict());
+     dto.setCurrentVillage(details.getCurrentVillage());
+     dto.setCurrentStreet(details.getCurrentStreet());
+     dto.setCurrentPincode(details.getCurrentPincode());
+     dto.setPermanentState(details.getPermanentState());
+     dto.setPermanentDistrict(details.getPermanentDistrict());
+     dto.setPermanentSubDistrict(details.getPermanentSubDistrict());
+     dto.setPermanentVillage(details.getPermanentVillage());
+     dto.setPermanentStreet(details.getPermanentStreet());
+     dto.setPermanentPincode(details.getPermanentPincode());
+     dto.setGithubProfile(details.getGithubProfile());
+     dto.setLinkedinProfile(details.getLinkedinProfile());
 
-        return dto;
-    }
+     // ✅ Dynamic base URL
+     String baseUrl = ServletUriComponentsBuilder.fromCurrentContextPath().build().toUriString();
+
+     if (details.getAdhaarFilePath() != null) {
+         dto.setAdhaarFilePath(baseUrl + "/docs/" + details.getUser().getUserId() + "/" + new File(details.getAdhaarFilePath()).getName());
+     }
+     if (details.getResumeFilePath() != null) {
+         dto.setResumeFilePath(baseUrl + "/docs/" + details.getUser().getUserId() + "/" + new File(details.getResumeFilePath()).getName());
+     }
+
+     return dto;
+ }
+
 }

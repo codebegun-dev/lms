@@ -2,9 +2,11 @@ package com.mockInterview.serviceImpl;
 
 import com.mockInterview.entity.StudentPersonalInfo;
 import com.mockInterview.entity.User;
+
 import com.mockInterview.exception.ResourceNotFoundException;
 import com.mockInterview.repository.StudentPersonalInfoRepository;
 import com.mockInterview.repository.UserRepository;
+import com.mockInterview.requestDtos.StudentPersonalInfoUpdateRequest;
 import com.mockInterview.responseDtos.StudentPersonalInfoDto;
 import com.mockInterview.service.StudentPersonalInfoService;
 import com.mockInterview.util.FileStorageUtil;
@@ -12,10 +14,11 @@ import com.mockInterview.util.FileStorageUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
-import java.io.File;
+
 import java.io.IOException;
-import java.util.Optional;
+
 
 @Service
 public class StudentPersonalInfoServiceImpl implements StudentPersonalInfoService {
@@ -28,51 +31,44 @@ public class StudentPersonalInfoServiceImpl implements StudentPersonalInfoServic
 
     
     @Override
-    public StudentPersonalInfoDto updateInfo(StudentPersonalInfoDto dto) {
-        // Fetch user
-    	Optional<User> userOpt = userRepository.findById(dto.getUserId());
-    	if (!userOpt.isPresent()) {
-    	    throw new ResourceNotFoundException("User not found with ID: " + dto.getUserId());
-    	}
-    	User user = userOpt.get();
+    public StudentPersonalInfoDto updateInfo(StudentPersonalInfoUpdateRequest request) {
 
-        // Fetch or create personal info
-        StudentPersonalInfo info = infoRepository.findByUser_UserId(dto.getUserId());
+        User user = userRepository.findById(request.getUserId())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        StudentPersonalInfo info = infoRepository.findByUser_UserId(request.getUserId());
         if (info == null) {
             info = new StudentPersonalInfo();
             info.setUser(user);
         }
 
-        // Validate mobile numbers
-        if (dto.getMobileNumber() != null && dto.getParentMobileNumber() != null &&
-                dto.getMobileNumber().trim().equals(dto.getParentMobileNumber().trim())) {
-            throw new IllegalArgumentException("Student mobile number cannot be the same as parent mobile number");
+        // ✅ Validate parent number is not same as student's phone
+        if (request.getParentMobileNumber() != null &&
+                user.getPhone() != null &&
+                request.getParentMobileNumber().trim().equals(user.getPhone().trim())) {
+            throw new IllegalArgumentException("Parent mobile number cannot be same as student mobile number");
+        }
+     // ✅ Prevent parent number from matching any other student's phone
+        User existingUserWithSamePhone = userRepository.findByPhone(request.getParentMobileNumber());
+        if (existingUserWithSamePhone != null && existingUserWithSamePhone.getUserId() != request.getUserId()) {
+            throw new IllegalArgumentException("Parent number cannot match another student's mobile number");
         }
 
-        // Check if parent mobile number is already used by another student
-        StudentPersonalInfo existingParent = infoRepository.findByParentMobileNumber(dto.getParentMobileNumber());
-        if (existingParent != null && existingParent.getUser().getUserId() != dto.getUserId()) {
+
+        // ✅ Check parent number is not used by another student
+        StudentPersonalInfo existingParent = infoRepository.findByParentMobileNumber(request.getParentMobileNumber());
+        if (existingParent != null && existingParent.getUser().getUserId() != request.getUserId()) {
             throw new IllegalArgumentException("Parent mobile number already used by another student");
         }
 
-        // Check if student mobile number is already used by another student
-        User existingStudent = userRepository.findByPhone(dto.getMobileNumber());
-        if (existingStudent != null && existingStudent.getUserId() != dto.getUserId()) {
-            throw new IllegalArgumentException("Student mobile number already exists");
-        }
 
-        // Update User fields
-        user.setFirstName(dto.getFirstName());
-        user.setLastName(dto.getLastName());
-        user.setPhone(dto.getMobileNumber());
-        userRepository.save(user);
+        // ✅ Update only student personal fields
+        info.setSurName(request.getSurName());
+        info.setGender(request.getGender());
+        info.setDateOfBirth(request.getDateOfBirth());
+        info.setParentMobileNumber(request.getParentMobileNumber());
+        info.setBloodGroup(request.getBloodGroup());
 
-        // Update StudentPersonalInfo fields
-        info.setSurName(dto.getSurName());
-        info.setGender(dto.getGender());
-        info.setDateOfBirth(dto.getDateOfBirth());
-        info.setParentMobileNumber(dto.getParentMobileNumber());
-        info.setBloodGroup(dto.getBloodGroup());
         infoRepository.save(info);
 
         return mapToDto(info);
@@ -80,7 +76,8 @@ public class StudentPersonalInfoServiceImpl implements StudentPersonalInfoServic
 
     @Override
     public StudentPersonalInfoDto updateProfileImage(Long userId, MultipartFile file) {
-        if (file == null || file.isEmpty()) throw new IllegalArgumentException("File is empty");
+        if (file == null || file.isEmpty()) 
+            throw new IllegalArgumentException("File is empty");
 
         StudentPersonalInfo info = infoRepository.findByUser_UserId(userId);
         if (info == null) {
@@ -90,14 +87,14 @@ public class StudentPersonalInfoServiceImpl implements StudentPersonalInfoServic
             info.setUser(user);
         }
 
-        // delete old
+     // delete old file
         FileStorageUtil.deleteFile(info.getProfilePicturePath());
 
-        // save new
-        String path;
+        // save new file
+        String relativePath;
         try {
-            path = FileStorageUtil.saveFile(file, userId, "images");
-            info.setProfilePicturePath(path);
+            relativePath = FileStorageUtil.saveFile(file, userId, "images");
+            info.setProfilePicturePath(relativePath);
             infoRepository.save(info);
         } catch (IOException e) {
             throw new RuntimeException("Image upload failed");
@@ -109,22 +106,19 @@ public class StudentPersonalInfoServiceImpl implements StudentPersonalInfoServic
 
     @Override
     public StudentPersonalInfoDto getByUserId(Long userId) {
-    	Optional<User> userOpt = userRepository.findById(userId);
-    	if (!userOpt.isPresent()) {
-    	    throw new ResourceNotFoundException("User not found with ID: " + userId);
-    	}
-    	User user = userOpt.get();
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + userId));
 
         StudentPersonalInfo info = infoRepository.findByUser_UserId(userId);
 
-        // If StudentPersonalInfo does not exist yet, create empty info to avoid null fields
-        if (info == null) {
+        if (info == null) { // create empty info to avoid null DTO fields
             info = new StudentPersonalInfo();
             info.setUser(user);
         }
 
         return mapToDto(info);
     }
+
 
     private StudentPersonalInfoDto mapToDto(StudentPersonalInfo info) {
         StudentPersonalInfoDto dto = new StudentPersonalInfoDto();
@@ -142,23 +136,23 @@ public class StudentPersonalInfoServiceImpl implements StudentPersonalInfoServic
         dto.setParentMobileNumber(info.getParentMobileNumber());
         dto.setBloodGroup(info.getBloodGroup());
 
-        // Profile picture handling
-        String filePath = info.getProfilePicturePath();
-        String baseUrl = "http://localhost:8080";
+        // Build dynamic base URL
+        String baseUrl = ServletUriComponentsBuilder.fromCurrentContextPath().toUriString();
 
-        if (filePath != null) {
-            // If profile picture exists
-            String fileName = new File(filePath).getName();
-            dto.setProfilePicturePath(baseUrl + "/images/" + info.getUser().getUserId() + "/" + fileName);
+        String relativePath = info.getProfilePicturePath();
+        if (relativePath != null) {
+            dto.setProfilePicturePath(baseUrl + "/uploads/" + relativePath);
         } else {
-            // If no profile image, show first letter of user's name as avatar
             String firstLetter = "U";
             if (info.getUser().getFirstName() != null && !info.getUser().getFirstName().isEmpty()) {
                 firstLetter = info.getUser().getFirstName().substring(0, 1).toUpperCase();
             }
-            dto.setProfilePicturePath(baseUrl + "/avatar/" + firstLetter);
+            dto.setProfilePicturePath("https://ui-avatars.com/api/?name=" + firstLetter + "&background=random");
         }
 
         return dto;
     }
+
+
+
 }

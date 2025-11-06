@@ -1,10 +1,25 @@
+# ============================================
+# General
+# ============================================
 HELP.md
 target/
-.mvn/wrapper/maven-wrapper.jar
+build/
+*.log
+*.tmp
+*.bak
+*.swp
+.DS_Store
+
+# Keep target/build only inside src folders
 !**/src/main/**/target/
 !**/src/test/**/target/
+!**/src/main/**/build/
+!**/src/test/**/build/
 
-### STS ###
+# ============================================
+# Java IDE & Maven Specific
+# ============================================
+.mvn/wrapper/maven-wrapper.jar
 .apt_generated
 .classpath
 .factorypath
@@ -13,21 +28,55 @@ target/
 .springBeans
 .sts4-cache
 
-### IntelliJ IDEA ###
-.idea
+# IntelliJ IDEA
+.idea/
 *.iws
 *.iml
 *.ipr
 
-### NetBeans ###
+# NetBeans
 /nbproject/private/
 /nbbuild/
 /dist/
 /nbdist/
 /.nb-gradle/
-build/
-!**/src/main/**/build/
-!**/src/test/**/build/
 
-### VS Code ###
+# VS Code
 .vscode/
+
+# ============================================
+# Python / AI Engine Specific
+# ============================================
+# Virtual environments
+ai-engine/whisper-env/
+venv/
+env/
+.env/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Whisper engine and compiled binaries
+whisper/
+whisper_cpp/
+*.bin
+*.model
+*.ckpt
+
+# ============================================
+# Uploads and Temporary Files
+# ============================================
+uploads/
+tmp/
+temp/
+*.wav
+*.mp3
+*.mp4
+
+# ============================================
+# OS / System Files
+# ============================================
+Thumbs.db
+ehthumbs.db
+desktop.ini

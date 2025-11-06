@@ -20,7 +20,7 @@ public class StudentInterviewMapper {
         dto.setStatus(entity.getStatus());
         dto.setStartTime(entity.getStartTime());
         dto.setEndTime(entity.getEndTime());
-        dto.setDurationSeconds(entity.getDurationSeconds());
+        dto.setDuration(entity.getDuration());
         return dto;
     }
 }

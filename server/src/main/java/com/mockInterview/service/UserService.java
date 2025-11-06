@@ -4,6 +4,7 @@ import java.util.List;
 
 import com.mockInterview.requestDtos.LoginRequestDto;
 import com.mockInterview.requestDtos.UserRequestDto;
+import com.mockInterview.requestDtos.UserUpdateRequestDto;
 import com.mockInterview.responseDtos.UserResponseDto;
 
 public interface UserService {
@@ -16,12 +17,15 @@ public String forgotPassword(String emailOrPhone);
 
 public String resetPassword(String token, String newPassword);
 
-List<UserResponseDto> getAllUsers();
+List<UserResponseDto> getAllActiveUsers();
+public List<UserResponseDto> getAllUsersWithStatus();
 
 UserResponseDto getUserById(Long userId);
 
-UserResponseDto updateUser(Long userId, UserRequestDto dto);
+UserResponseDto updateUser(Long userId, UserUpdateRequestDto dto);
 
-void deleteUser(Long userId);
+void deactivateUser(Long userId);
+void activateUser(Long userId);
+
 
 }

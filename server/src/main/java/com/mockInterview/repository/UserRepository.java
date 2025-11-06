@@ -2,6 +2,8 @@ package com.mockInterview.repository;
 
 
 
+import java.util.List;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -13,5 +15,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
 	User findByPhone(String phone);
 	User findByEmailOrPhone(String email, String phone);
 	 User findFirstByRole(Role role);
+	 List<User> findByStatus(String status);
+
 
 }

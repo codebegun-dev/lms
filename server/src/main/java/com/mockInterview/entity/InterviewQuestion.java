@@ -25,4 +25,9 @@ public class InterviewQuestion {
 
     @Column(name = "asked_order")
     private Integer askedOrder;
+
+    // New field to mark whether this question was already served/asked
+    @Builder.Default
+    @Column(name = "answered", nullable = false)
+    private Boolean answered = false;
 }

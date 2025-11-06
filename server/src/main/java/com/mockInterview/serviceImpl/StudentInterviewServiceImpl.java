@@ -1,5 +1,6 @@
 package com.mockInterview.serviceImpl;
 
+import com.mockInterview.aiEngine.WhisperProcessService;
 import com.mockInterview.entity.*;
 import com.mockInterview.exception.ResourceNotFoundException;
 import com.mockInterview.mapper.StudentInterviewMapper;
@@ -11,6 +12,9 @@ import com.mockInterview.responseDtos.StudentInterviewResponseDto;
 import com.mockInterview.service.QuestionBankService;
 import com.mockInterview.service.StudentInterviewService;
 import com.mockInterview.util.FileStorageUtil;
+
+import java.time.Duration;
+
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -37,10 +41,16 @@ public class StudentInterviewServiceImpl implements StudentInterviewService {
     
     @Autowired
     InterviewMediaRepository interviewMediaRepository;
-
-    // -------------------- START INTERVIEW --------------------
+    
     @Autowired
     private InterviewQuestionRepository interviewQuestionRepository;
+    
+    @Autowired
+    private WhisperProcessService whisperProcessService;
+    
+
+    // -------------------- START INTERVIEW --------------------
+    
 
     @Override
     public StartInterviewResponseDto startInterview(StudentInterviewRequestDto requestDto) {
@@ -94,29 +104,16 @@ public class StudentInterviewServiceImpl implements StudentInterviewService {
     @Override
     public QuestionBankResponseDto getNextQuestion(Long interviewId) {
 
-        // ✅ Validate interview exists
-        if (!interviewRepository.existsById(interviewId)) {
-            throw new ResourceNotFoundException("Interview not found: " + interviewId);
-        }
-
-        // ✅ Get last asked question
-        InterviewQuestion lastAsked = interviewQuestionRepository
-                .findTopByInterviewIdOrderByAskedOrderDesc(interviewId);
-
-        int nextOrder = (lastAsked == null) ? 1 : lastAsked.getAskedOrder() + 1;
-
         InterviewQuestion next = interviewQuestionRepository
-                .findByInterviewIdOrderByAskedOrderAsc(interviewId)
-                .stream()
-                .filter(q -> q.getAskedOrder() == nextOrder)
-                .findFirst()
-                .orElse(null);
+                .findTopByInterviewIdAndAnsweredFalseOrderByAskedOrderAsc(interviewId);
 
         if (next == null) {
             throw new ResourceNotFoundException("No more questions in interview");
         }
 
-        // ✅ Fetch question DTO
+        next.setAnswered(true);
+        interviewQuestionRepository.save(next);
+
         return questionBankService.getQuestionById(next.getQuestionId());
     }
 
@@ -132,48 +129,123 @@ public class StudentInterviewServiceImpl implements StudentInterviewService {
     }
     
     
+//    @Override
+//    public StudentInterviewResponseDto endInterview(Long interviewId, MultipartFile videoFile, MultipartFile audioFile) {
+//
+//        StudentInterview interview = interviewRepository.findById(interviewId)
+//                .orElseThrow(() -> new ResourceNotFoundException("Interview not found: " + interviewId));
+//
+//        // Update interview status
+//        interview.setStatus(InterviewStatus.COMPLETED);
+//        interview.setEndTime(LocalDateTime.now());
+//
+//        if (interview.getStartTime() != null) {
+//            long duration = java.time.Duration.between(interview.getStartTime(), interview.getEndTime()).getSeconds();
+//            interview.setDurationSeconds(duration);
+//        }
+//
+//        interviewRepository.save(interview);
+//
+//        // Save files locally
+//        String videoPath = null;
+//        String audioPath = null;
+//        
+//        try {
+//            Long studentId = interview.getStudent().getUserId();   // ✅ added
+//
+//            videoPath = FileStorageUtil.saveFile(videoFile, studentId, "interviews/" + interviewId + "/video");
+//            audioPath = FileStorageUtil.saveFile(audioFile, studentId, "interviews/" + interviewId + "/audio");
+//
+//        } catch (Exception e) {
+//            throw new RuntimeException("File upload failed");
+//        }
+//
+//        // Save to InterviewMedia table
+//        InterviewMedia media = InterviewMedia.builder()
+//                .interview(interview)
+//                .videoPath(videoPath)
+//                .audioPath(audioPath)
+//                .build();
+//
+//        interviewMediaRepository.save(media);
+//
+//        return StudentInterviewMapper.toDto(interview);
+//    }
+    
     @Override
     public StudentInterviewResponseDto endInterview(Long interviewId, MultipartFile videoFile, MultipartFile audioFile) {
 
         StudentInterview interview = interviewRepository.findById(interviewId)
                 .orElseThrow(() -> new ResourceNotFoundException("Interview not found: " + interviewId));
 
-        // Update interview status
+        // ✅ Update interview status & time
         interview.setStatus(InterviewStatus.COMPLETED);
         interview.setEndTime(LocalDateTime.now());
 
         if (interview.getStartTime() != null) {
-            long duration = java.time.Duration.between(interview.getStartTime(), interview.getEndTime()).getSeconds();
-            interview.setDurationSeconds(duration);
+//            long duration = Duration.between(interview.getStartTime(), interview.getEndTime()).getSeconds();
+//            interview.setDurationSeconds(duration);
+        	
+        	Duration duration = Duration.between(interview.getStartTime(), interview.getEndTime());
+        	long totalSeconds = duration.getSeconds();
+
+        	long minutes = totalSeconds / 60;
+        	long seconds = totalSeconds % 60;
+
+        	String formattedDuration = String.format("%d:%02d", minutes, seconds);
+        	interview.setDuration(formattedDuration);
+
         }
 
         interviewRepository.save(interview);
 
-        // Save files locally
         String videoPath = null;
         String audioPath = null;
-        
+
         try {
-            Long studentId = interview.getStudent().getUserId();   // ✅ added
+            Long studentId = interview.getStudent().getUserId();
 
             videoPath = FileStorageUtil.saveFile(videoFile, studentId, "interviews/" + interviewId + "/video");
             audioPath = FileStorageUtil.saveFile(audioFile, studentId, "interviews/" + interviewId + "/audio");
 
         } catch (Exception e) {
-            throw new RuntimeException("File upload failed");
+            throw new RuntimeException("File upload failed: " + e.getMessage());
         }
 
-        // Save to InterviewMedia table
-        InterviewMedia media = InterviewMedia.builder()
-                .interview(interview)
-                .videoPath(videoPath)
-                .audioPath(audioPath)
-                .build();
+        // ✅ Prevent Duplicate Media Row — UPSERT Logic
+        InterviewMedia existingMedia = interviewMediaRepository.findByInterviewId(interviewId);
 
-        interviewMediaRepository.save(media);
+        if (existingMedia != null) {
+            // Delete old files before replacing
+        	FileStorageUtil.deleteFile(existingMedia.getAudioPath());
+        	FileStorageUtil.deleteFile(existingMedia.getVideoPath());
+
+            existingMedia.setAudioPath(audioPath);
+            existingMedia.setVideoPath(videoPath);
+
+            interviewMediaRepository.save(existingMedia);
+        } else {
+            InterviewMedia media = InterviewMedia.builder()
+                    .interview(interview)
+                    .videoPath(videoPath)
+                    .audioPath(audioPath)
+                    .build();
+
+            interviewMediaRepository.save(media);
+        }
+
+        // ✅ Auto-run Whisper transcription asynchronously
+        try {
+            whisperProcessService.processAudio(interviewId, audioPath);
+            System.out.println("✅ Whisper transcription triggered for interview: " + interviewId);
+        } catch (Exception e) {
+            System.out.println("❌ Failed to trigger Whisper for interview " + interviewId + ": " + e.getMessage());
+        }
 
         return StudentInterviewMapper.toDto(interview);
     }
+
+
 
 
 }

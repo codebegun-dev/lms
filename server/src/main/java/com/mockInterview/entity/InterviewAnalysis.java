@@ -21,14 +21,7 @@ public class InterviewAnalysis {
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "interview_id", nullable = false)
     private StudentInterview interview;
-
-   
-    private String transcriptPath; // file location for the transcript
-
-    
-    private String transcriptText; 
-
-    private Integer communicationScore;
+     private Integer communicationScore;
     private Integer confidenceScore;
 
     @Column(name = "category_round_type_score")
@@ -40,9 +33,7 @@ public class InterviewAnalysis {
     @Column(name = "improved_suggestions", columnDefinition = "LONGTEXT")
     private String improvedSuggestions;
 
-    @Lob
-    @Column(name = "ai_feedback", columnDefinition = "LONGTEXT")
-    private String aiFeedback;
+   
 
     @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();

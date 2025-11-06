@@ -43,8 +43,14 @@ public class User {
 
     private String resetToken;
     
+    @Column(nullable = false)
+    private String status = "ACTIVE";
+
+    
     public String getName() {
         return firstName + " " + lastName;
     }
+    
+    
 
 }

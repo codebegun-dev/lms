@@ -37,8 +37,8 @@ public class StudentInterview {
     @Column(name = "end_time")
     private LocalDateTime endTime;
 
-    @Column(name = "duration_seconds")
-    private Long durationSeconds;
+    @Column(name = "duration")
+    private String duration;
 
     
 }

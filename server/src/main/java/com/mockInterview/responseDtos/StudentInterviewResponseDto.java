@@ -16,7 +16,7 @@ public class StudentInterviewResponseDto {
     private InterviewStatus status;
     private LocalDateTime startTime;
     private LocalDateTime endTime;
-    private Long durationSeconds;
+    private String duration;  
     
 //   private List<QuestionBankResponseDto> questions;
 

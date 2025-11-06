@@ -18,6 +18,7 @@ import com.mockInterview.requestDtos.ForgotPasswordDto;
 import com.mockInterview.requestDtos.LoginRequestDto;
 import com.mockInterview.requestDtos.ResetPasswordDto;
 import com.mockInterview.requestDtos.UserRequestDto;
+import com.mockInterview.requestDtos.UserUpdateRequestDto;
 import com.mockInterview.responseDtos.UserResponseDto;
 import com.mockInterview.service.UserService;
 
@@ -54,9 +55,15 @@ UserService userService;
 
 	
 	@GetMapping("/all")
-    public List<UserResponseDto> getAllUsers() {
-        return userService.getAllUsers();
+    public List<UserResponseDto> getAllActiveUsers() {
+        return userService.getAllActiveUsers();
     }
+	
+	@GetMapping("/admin/users/all")
+	public List<UserResponseDto> getAllUsersWithStatus() {
+	    return userService.getAllUsersWithStatus();
+	}
+
 
     @GetMapping("/{userId}")
     public UserResponseDto getUserById(@PathVariable Long userId) {
@@ -64,14 +71,22 @@ UserService userService;
     }
 
     @PutMapping("/update/{userId}")
-    public UserResponseDto updateUser(@PathVariable Long userId, @Valid @RequestBody UserRequestDto dto) {
-        return userService.updateUser(userId, dto);
+    public UserResponseDto updateUser(@PathVariable Long userId, @Valid @RequestBody UserUpdateRequestDto dto) {
+        return userService.updateUser(userId, dto); // Overload method for update DTO
     }
 
-    @DeleteMapping("/delete/{userId}")
-    public String deleteUser(@PathVariable Long userId) {
-        userService.deleteUser(userId);
+
+    @DeleteMapping("/deactivate/{userId}")
+    public String deactivateUser(@PathVariable Long userId) {
+        userService.deactivateUser(userId);
         return "User deleted successfully";
     }
+    
+    @PutMapping("/activate/{userId}")
+    public String activateUser(@PathVariable Long userId) {
+        userService.activateUser(userId);
+        return "User activated successfully";
+    }
+
 
 }
