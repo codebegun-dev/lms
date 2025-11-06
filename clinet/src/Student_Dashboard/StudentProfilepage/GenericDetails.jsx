@@ -13,15 +13,8 @@ const indianStates = [
 ];
 
 const GenericDetails = ({ onCompletionChange = () => {} }) => {
-  // You can replace this by reading from auth context / localStorage
-  const userId = (() => {
-    try {
-      const stored = localStorage.getItem("userId");
-      return stored ? Number(stored) : 1;
-    } catch {
-      return 1;
-    }
-  })();
+  const user = JSON.parse(localStorage.getItem("user"));
+  const userId = user?.userId;
 
   const initialForm = {
     workExperience: "",
@@ -63,7 +56,7 @@ const GenericDetails = ({ onCompletionChange = () => {} }) => {
     const fetchData = async () => {
       try {
         const resp = await axios.get(
-          `http://localhost:8080/api/student-generic-details/${userId}`
+         `http://localhost:8080/api/student-generic-details/${userId}`
         );
         if (resp.data) {
           // Map backend DTO fields to our form structure
@@ -149,11 +142,11 @@ const GenericDetails = ({ onCompletionChange = () => {} }) => {
         ...editingData,
         userId,
       };
+const resp = await axios.put(
+  "http://localhost:8080/api/student-generic-details/update",
+  payload
+);
 
-      const resp = await axios.put(
-        `http://localhost:8080/api/student-generic-details/update`,
-        payload
-      );
 
       // backend returns updated DTO
       if (resp.data) {
@@ -245,7 +238,7 @@ const GenericDetails = ({ onCompletionChange = () => {} }) => {
         setEditingData(updated);
         setFormData(updated);
         setOriginalData(updated);
-        alert(`${type === "adhaar" ? "Aadhaar" : "Resume"} uploaded successfully.`);
+alert(`${type === "adhaar" ? "Aadhaar" : "Resume"} uploaded successfully.`);
       } else {
         alert("Upload succeeded but backend returned no data.");
       }
@@ -259,14 +252,14 @@ const GenericDetails = ({ onCompletionChange = () => {} }) => {
   const viewDocument = (type) => {
     const path = (type === "adhaar") ? formData.adhaarFilePath : formData.resumeFilePath;
     if (!path) {
-      alert(`${type === "adhaar" ? "Aadhaar" : "Resume"} not uploaded`);
+alert(`${type === "adhaar" ? "Aadhaar" : "Resume"} not uploaded`);
       return;
     }
     // open in new tab; if backend returns raw file bytes via URL, this will work.
     const win = window.open();
     // If path is a direct URL, use it. Wrap in iframe for inline view.
     win.document.write(
-      `<div style="height:100vh;margin:0;padding:0"><iframe src="${path}" style="width:100%;height:100%;border:none"></iframe></div>`
+      <div style="height:100vh;margin:0;padding:0"><iframe src="${path}" style="width:100%;height:100%;border:none"></iframe></div>
     );
   };
 
@@ -407,7 +400,7 @@ const GenericDetails = ({ onCompletionChange = () => {} }) => {
             >
               <option value="">Select State</option>
               {indianStates.map((s) => (
-                <option key={`perm-${s}`} value={s}>
+<option key={`perm-${s}`} value={s}>
                   {s}
                 </option>
               ))}

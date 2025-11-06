@@ -37,7 +37,7 @@ function App() {
         <Route path='/reset-password' element={<ForgotPasswordForm />} />
         <Route path='/start-interview' element={<StartInterview />} />
         <Route path='/studentnavbar' element={<StudentNavbar />} />
-                  <Route path="/student-profile" element={<StudentProfile />} />
+        <Route path="/student-profile" element={<StudentProfile />} />
 
 
  
