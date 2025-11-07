@@ -1,161 +1,4 @@
 
-// import React, { useState } from "react";
-// import axios from "axios";
-// import { useNavigate, Link } from "react-router-dom";
-// import { FaEye, FaEyeSlash } from "react-icons/fa";
-// import registrationImage from "../assets/registrationImage.png";
-
-// function LoginForm() {
-//   const [formData, setFormData] = useState({
-//     emailOrPhone: "",
-//     password: "",
-//   });
-
-//   const [errors, setErrors] = useState({});
-//   const [generalError, setGeneralError] = useState("");
-
-//   const navigate = useNavigate();
-
-//   // Handle input change
-//   const handleChange = (e) => {
-//     const { name, value } = e.target;
-//     setFormData({ ...formData, [name]: value });
-//     setErrors({ ...errors, [name]: "" });
-//     setGeneralError("");
-//   };
-
-//   // Simple form validation
-//   const validateForm = () => {
-//     const tempErrors = {};
-//     if (!formData.emailOrPhone.trim())
-//       tempErrors.emailOrPhone = "Email or Phone is required";
-//     if (!formData.password.trim())
-//       tempErrors.password = "Password is required";
-//     setErrors(tempErrors);
-//     return Object.keys(tempErrors).length === 0;
-//   };
-
-//   // Handle login submit
-//   const handleSubmit = async (e) => {
-//     e.preventDefault();
-//     if (!validateForm()) return;
-
-//     try {
-//       const response = await axios.post(
-//         "http://localhost:8080/api/user/login",
-//         formData
-//       );
-
-//       const user = response.data;
-
-//       // Save important user info in localStorage
-//       const userData = {
-//         userId: user.userId,
-//         firstName: user.firstName,
-//         role: user.role,
-//       };
-//       localStorage.setItem("user", JSON.stringify(userData));
-
-//       // Redirect based on role
-//       if (user.role === "STUDENT") navigate("/dashboard");
-//       else if (user.role === "ADMIN") navigate("/admin-dashboard");
-//       else if (user.role === "INTERVIEWER") navigate("/interviewer-dashboard");
-//       else navigate("/"); // fallback
-
-//     } catch (error) {
-//       setGeneralError(
-//         error.response?.data?.message || "Invalid credentials"
-//       );
-//     }
-//   };
-
-//   return (
-//     <div className="container mt-5">
-//       <div className="row shadow-lg rounded-4 overflow-hidden flex-column flex-md-row">
-//         {/* Left Side */}
-//         <div className="col-md-6 d-flex flex-column align-items-center justify-content-center bg-light p-4">
-//           <img
-//             src={registrationImage}
-//             alt="Login"
-//             className="img-fluid mb-4"
-//             style={{ maxHeight: "280px", objectFit: "cover" }}
-//           />
-//           <h2 className="fw-bold text-primary mb-3">Welcome Back!</h2>
-//           <p className="text-secondary text-center">
-//             Log in to access your learning journey.
-//           </p>
-//         </div>
-
-//         {/* Right Side */}
-//         <div className="col-md-6 p-4 d-flex align-items-center justify-content-center">
-//           <div className="w-100" style={{ maxWidth: "400px" }}>
-//             <h3 className="text-center mb-4 text-primary fw-bold">Login</h3>
-
-//             {generalError && (
-//               <p className="alert alert-danger text-center">{generalError}</p>
-//             )}
-
-//             <form onSubmit={handleSubmit}>
-//               <div className="mb-3">
-//                 <label className="form-label fw-semibold">Email or Phone</label>
-//                 <input
-//                   type="text"
-//                   name="emailOrPhone"
-//                   value={formData.emailOrPhone}
-//                   onChange={handleChange}
-//                   placeholder="Enter email or phone"
-//                   className={`form-control ${
-//                     errors.emailOrPhone ? "is-invalid" : ""
-//                   }`}
-//                 />
-//                 {errors.emailOrPhone && (
-//                   <div className="invalid-feedback">{errors.emailOrPhone}</div>
-//                 )}
-//               </div>
-
-//               <div className="mb-3">
-//                 <label className="form-label fw-semibold">Password</label>
-//                 <input
-//                   type="password"
-//                   name="password"
-//                   value={formData.password}
-//                   onChange={handleChange}
-//                   placeholder="Enter password"
-//                   className={`form-control ${
-//                     errors.password ? "is-invalid" : ""
-//                   }`}
-//                 />
-//                 {errors.password && (
-//                   <div className="invalid-feedback">{errors.password}</div>
-//                 )}
-//               </div>
-
-//               <div className="text-end mb-3">
-//                 <Link to="/forgot-password" className="text-primary">
-//                   Forgot Password?
-//                 </Link>
-//               </div>
-
-//               <button type="submit" className="btn btn-primary w-100">
-//                 Login
-//               </button>
-
-//               <p className="text-center mt-3">
-//                 Don't have an account?{" "}
-//                 <Link to="/" className="text-primary">
-//                   Register
-//                 </Link>
-//               </p>
-//             </form>
-//           </div>
-//         </div>
-//       </div>
-//     </div>
-//   );
-// }
-
-// export default LoginForm;
-
 
 import React, { useState } from "react";
 import axios from "axios";
@@ -196,14 +39,14 @@ function LoginForm() {
       const res = await axios.post("http://localhost:8080/api/user/login", formData);
       const user = res.data;
 
-      // ✅ Save user in localStorage
+      //  Save user in localStorage
       localStorage.setItem("user", JSON.stringify(user));
 
-      // ✅ Notify other components (Navbar) to refresh profile pic
+      // Notify other components (Navbar) to refresh profile pic
       window.dispatchEvent(new Event("user-updated"));
 
       // Redirect based on role
-      if (user.role === "STUDENT") navigate("/dashboard");
+      if (user.role === "STUDENT") navigate("/student-dashboard");
       else if (user.role === "ADMIN") navigate("/admin-dashboard");
       else if (user.role === "INTERVIEWER") navigate("/interviewer-dashboard");
       else navigate("/");

@@ -8,9 +8,11 @@ import ForgotPasswordForm from './Registration_Dashboard/ForgotPasswordForm';
 import SendResetMail from './Registration_Dashboard/SendResetMail';
 
 // Student Dashboard
-import Dashboard from './Student_Dashboard/Dashboard';
 import StudentDashboard from './Student_Dashboard/StudentDashboard';
+import Dashboard from './Student_Dashboard/Dashboard';
 import StartInterview from './Student_Dashboard/StartInterview';
+import MockInterview from './Student_Dashboard/MockInterview';
+
 
 // Admin Dashboard
 import AdminDashboard from './Admin_Dashboard/AdminDashboard';
@@ -24,7 +26,7 @@ import CreateSubTopic from './Admin_Dashboard/CreateSubTopic';
 import UserManagement from './Admin_Dashboard/UserManagement';
 import StudentProfile from './Student_Dashboard/Studentprofile';
  
-   
+
 function App() {
   return (
     <>
@@ -37,17 +39,14 @@ function App() {
         <Route path='/reset-password' element={<ForgotPasswordForm />} />
         <Route path='/start-interview' element={<StartInterview />} />
         <Route path='/studentnavbar' element={<StudentNavbar />} />
-                  <Route path="/student-profile" element={<StudentProfile />} />
+        <Route path="/student-profile" element={<StudentProfile />} />
 
 
- 
-         
-       
         {/* Student Dashboard with nested routes */}
-        <Route path="/dashboard" element={<Dashboard />}>
-          <Route index element={<StudentDashboard />} />
-          <Route path="student-dashboard" element={<StudentDashboard />} />
- 
+        <Route path="/student-dashboard" element={<StudentDashboard/>}>
+          <Route index element={<Dashboard />} />
+          <Route path="dashboard" element={<Dashboard />} />
+          <Route path="mock-interview" element={<MockInterview />} />
         </Route>
 
 
@@ -57,11 +56,11 @@ function App() {
           <Route path="course-management" element={<CourseManagement />} />
           <Route path="batch-management" element={<BatchManagement />} />
           <Route path="question-bank" element={<QuestionBank />} />
-          <Route path="category" element={<Category/>} />     
-          <Route path="topic" element={<CreateTopic/>} />
-          <Route path="sub-topic" element={<CreateSubTopic/>} />  
-          <Route path="usermanagement" element={<UserManagement/>} />
-        
+          <Route path="category" element={<Category />} />
+          <Route path="topic" element={<CreateTopic />} />
+          <Route path="sub-topic" element={<CreateSubTopic />} />
+          <Route path="usermanagement" element={<UserManagement />} />
+
 
         </Route>
 
@@ -70,12 +69,11 @@ function App() {
 
 
 
-       </Routes>
+      </Routes>
     </>
   )
 }
 
 export default App
 
- 
- 
+

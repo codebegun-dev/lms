@@ -14,8 +14,7 @@ function RegistrationForm() {
     phone: "",
     password: "",
     confirmPassword: "",
-    role: "STUDENT",
-  });
+   });
 
   const [showPassword, setShowPassword] = useState({
     password: false,
@@ -81,8 +80,7 @@ function RegistrationForm() {
         phone: "",
         password: "",
         confirmPassword: "",
-        role: "STUDENT",
-      });
+       });
       setTimeout(() => {
         navigate("/login");
       }, 2000);
@@ -135,7 +133,7 @@ function RegistrationForm() {
 
             {/* Last Name */}
             <div className="mb-3">
-              <label className="form-label fw-semibold">Last Name</label>
+              <label className="form-label fw-semibold">Surname</label>
               <input
                 type="text"
                 className={`form-control ${errors.lastName ? "is-invalid" : ""}`}
@@ -224,22 +222,7 @@ function RegistrationForm() {
               )}
             </div>
 
-            {/* Role */}
-            <div className="mb-3">
-              <label className="form-label fw-semibold">Role</label>
-              <select
-                className={`form-select ${errors.role ? "is-invalid" : ""}`}
-                name="role"
-                value={formData.role}
-                onChange={handleChange}
-              >
-                <option value="STUDENT">Student</option>
-                <option value="ADMIN">Admin</option>
-                <option value="INTERVIEWER">Interviewer</option>
-              </select>
-              {errors.role && <div className="invalid-feedback">{errors.role}</div>}
-            </div>
-
+            
             <button type="submit" className="btn btn-primary w-100">
               Register
             </button>
