@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>3.5.6</version>
+		<version>3.5.7</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com.mockInterview</groupId>
@@ -40,6 +40,13 @@
     <artifactId>httpclient5</artifactId>
    
 </dependency>
+    
+
+
+
+
+
+
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
@@ -74,6 +81,12 @@
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
+	<repositories>
+    <repository>
+        <id>central</id>
+        <url>https://repo1.maven.org/maven2/</url>
+    </repository>
+</repositories>
 
 	<build>
 		<plugins>
