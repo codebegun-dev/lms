@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { FaEdit, FaTrash, FaSearch } from "react-icons/fa";
 
@@ -7,12 +6,26 @@ const CourseManagement = () => {
   const [subjects, setSubjects] = useState("");
   const [courses, setCourses] = useState([]);
   const [editingIndex, setEditingIndex] = useState(null);
-  const [editingId, setEditingId] = useState(null); // backend courseId for update
+  const [editingId, setEditingId] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
 
-  const API_BASE = "http://localhost:8080/api/courses"; // change port if needed
+  // ✅ New states for alerts
+  const [message, setMessage] = useState("");
+  const [messageType, setMessageType] = useState("");
 
-  // Fetch all courses on component mount
+  const API_BASE = "http://localhost:8080/api/courses";
+
+  // ✅ Alert Function
+  const showAlert = (text, type) => {
+    setMessage(text);
+    setMessageType(type);
+
+    setTimeout(() => {
+      setMessage("");
+      setMessageType("");
+    }, 3000);
+  };
+
   useEffect(() => {
     fetchCourses();
   }, []);
@@ -24,19 +37,19 @@ const CourseManagement = () => {
       setCourses(data);
     } catch (error) {
       console.error("Error fetching courses:", error);
-      alert("Unable to fetch courses. Check server.");
+      showAlert("Unable to fetch courses. Check server.", "danger");
     }
   };
 
   const handleCreateOrUpdate = async () => {
     if (!selectedCourse.trim() || !subjects.trim())
-      return alert("Please fill all fields.");
+      return showAlert("Please fill all fields.", "warning");
 
     const courseData = { courseName: selectedCourse, subjects };
 
     try {
       if (editingIndex !== null && editingId) {
-        // Update course
+        // ✅ Update Course
         const res = await fetch(`${API_BASE}/update/${editingId}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -45,10 +58,12 @@ const CourseManagement = () => {
 
         if (!res.ok) {
           const err = await res.json();
-          return alert(err.message || "Error updating course");
+          return showAlert(err.message || "Error updating course", "danger");
         }
+
+        showAlert("Course updated successfully!", "primary");
       } else {
-        // Create new course
+        // ✅ Create Course
         const res = await fetch(`${API_BASE}/create`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -57,18 +72,20 @@ const CourseManagement = () => {
 
         if (!res.ok) {
           const err = await res.json();
-          return alert(err.message || "Error creating course");
+          return showAlert(err.message || "Error creating course", "danger");
         }
+
+        showAlert("Course created successfully!", "success");
       }
 
       setSelectedCourse("");
       setSubjects("");
       setEditingIndex(null);
       setEditingId(null);
-      await fetchCourses(); // refresh the course list
+      await fetchCourses();
     } catch (error) {
       console.error(error);
-      alert("Something went wrong. Check console.");
+      showAlert("Something went wrong. Check console.", "danger");
     }
   };
 
@@ -82,20 +99,24 @@ const CourseManagement = () => {
 
   const handleDelete = async (index) => {
     const courseId = courses[index].courseId;
+
     if (!window.confirm("Are you sure you want to delete this course?")) return;
 
     try {
-      const res = await fetch(`${API_BASE}/delete/${courseId}`, { method: "DELETE" });
+      const res = await fetch(`${API_BASE}/delete/${courseId}`, {
+        method: "DELETE",
+      });
 
       if (!res.ok) {
         const err = await res.json();
-        return alert(err.message || "Error deleting course");
+        return showAlert(err.message || "Error deleting course", "danger");
       }
 
       await fetchCourses();
+      showAlert("Course deleted successfully!", "danger");
     } catch (error) {
       console.error(error);
-      alert("Something went wrong. Check console.");
+      showAlert("Something went wrong. Check console.", "danger");
     }
   };
 
@@ -113,6 +134,13 @@ const CourseManagement = () => {
   return (
     <div className="container my-1">
       <h3 className="fw-bold mb-3">Course Management</h3>
+
+      {/* ✅ Alert Message Display */}
+      {message && (
+        <div className={`alert alert-${messageType}`} role="alert">
+          {message}
+        </div>
+      )}
 
       {/* Course Form */}
       <div className="card p-4 shadow-sm mb-4">
@@ -160,7 +188,6 @@ const CourseManagement = () => {
             <input
               type="text"
               className="form-control border-0 p-0"
-              style={{ boxShadow: "none" }}
               placeholder="Search courses..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}

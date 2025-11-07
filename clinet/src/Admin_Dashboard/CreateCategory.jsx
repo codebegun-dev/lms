@@ -1,112 +1,28 @@
-// import React, { useState } from "react";
-
-// const Category = () => {
-//   const [category, setCategory] = useState("");
-//   const [categories, setCategories] = useState([]);
-//   const [editIndex, setEditIndex] = useState(null);
-
-//   // --- CREATE / UPDATE ---
-//   const handleAddOrUpdate = () => {
-//     if (!category.trim()) return alert("Please enter a category name!");
-
-//     if (editIndex !== null) {
-//       // Update existing category
-//       const updated = [...categories];
-//       updated[editIndex] = category;
-//       setCategories(updated);
-//       setEditIndex(null);
-//     } else {
-//       // Add new category
-//       setCategories([...categories, category]);
-//     }
-
-//     setCategory("");
-//   };
-
-//   // --- DELETE ---
-//   const handleDelete = (index) => {
-//     const updated = categories.filter((_, i) => i !== index);
-//     setCategories(updated);
-//   };
-
-//   // --- EDIT ---
-//   const handleEdit = (index) => {
-//     setCategory(categories[index]); // set current category in input box
-//     setEditIndex(index); // mark which index is being edited
-//   };
-
-//   return (
-//     <div className="container mt-4">
-//       <h3 className="text-center mb-4">Category Management (CRUD)</h3>
-
-//       {/* Input Section */}
-//       <div className="d-flex justify-content-center mb-3">
-//         <input
-//           type="text"
-//           className="form-control w-50 me-2"
-//           placeholder="Enter category name"
-//           value={category}
-//           onChange={(e) => setCategory(e.target.value)}
-//         />
-//         <button className="btn btn-primary" onClick={handleAddOrUpdate}>
-//           {editIndex !== null ? "Update" : "Add"}
-//         </button>
-//       </div>
-
-//       {/* Display Table */}
-//       <table className="table table-bordered text-center">
-//         <thead className="table-light">
-//           <tr>
-//              <th>Category Name</th>
-//             <th>Actions</th>
-//           </tr>
-//         </thead>
-//         <tbody>
-//           {categories.length === 0 ? (
-//             <tr>
-//               <td colSpan="3">No categories added yet</td>
-//             </tr>
-//           ) : (
-//             categories.map((cat, index) => (
-//               <tr key={index}>
-
-//                 <td>{cat}</td>
-//                 <td>
-//                   <button
-//                     className="btn btn-sm btn-warning me-2"
-//                     onClick={() => handleEdit(index)}
-//                   >
-//                     Edit
-//                   </button>
-//                   <button
-//                     className="btn btn-sm btn-danger"
-//                     onClick={() => handleDelete(index)}
-//                   >
-//                     Delete
-//                   </button>
-//                 </td>
-//               </tr>
-//             ))
-//           )}
-//         </tbody>
-//       </table>
-//     </div>
-//   );
-// };
-
-// export default Category;
-
-
-
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import { FaEdit, FaTrash } from "react-icons/fa";
 
 const Category = () => {
   const [category, setCategory] = useState("");
   const [categories, setCategories] = useState([]);
   const [editId, setEditId] = useState(null);
 
+  // ✅ For Alerts
+  const [message, setMessage] = useState("");
+  const [messageType, setMessageType] = useState("");  
+
   const BASE_URL = "http://localhost:8080/api/categories";
+
+  // ✅ ALERT FUNCTION
+  const showAlert = (msg, type) => {
+    setMessage(msg);
+    setMessageType(type);
+
+    setTimeout(() => {
+      setMessage("");
+      setMessageType("");
+    }, 3000);
+  };
 
   // --- FETCH ALL CATEGORIES (GET) ---
   const fetchCategories = async () => {
@@ -115,7 +31,7 @@ const Category = () => {
       setCategories(res.data);
     } catch (err) {
       console.error("Error fetching categories:", err);
-      alert("Failed to load categories");
+      showAlert("❌ Failed to load categories", "danger");
     }
   };
 
@@ -123,19 +39,17 @@ const Category = () => {
     fetchCategories();
   }, []);
 
-  // --- ADD or UPDATE CATEGORY ---
+  // --- ADD OR UPDATE CATEGORY ---
   const handleAddOrUpdate = async () => {
-    if (!category.trim()) return alert("Please enter a category name!");
+    if (!category.trim()) return showAlert("⚠ Please enter a category name!", "warning");
 
     try {
       if (editId) {
-        // UPDATE API CALL
         await axios.put(`${BASE_URL}/${editId}`, { name: category });
-        alert("Category updated successfully!");
+        showAlert("Category updated successfully!", "primary");
       } else {
-        // ADD API CALL
         await axios.post(BASE_URL, { name: category });
-        alert("Category added successfully!");
+        showAlert("Category added successfully!", "primary");
       }
 
       setCategory("");
@@ -143,7 +57,7 @@ const Category = () => {
       fetchCategories(); // Refresh list
     } catch (err) {
       console.error("Error adding/updating category:", err);
-      alert("Operation failed!");
+      showAlert("❌ Operation failed!", "danger");
     }
   };
 
@@ -153,11 +67,11 @@ const Category = () => {
 
     try {
       await axios.delete(`${BASE_URL}/${id}`);
-      alert("Category deleted!");
+      showAlert("Category deleted!", "danger");
       fetchCategories();
     } catch (err) {
       console.error("Error deleting category:", err);
-      alert("Delete failed!");
+      showAlert("❌ Delete failed!", "danger");
     }
   };
 
@@ -175,7 +89,14 @@ const Category = () => {
 
   return (
     <div className="container mt-4">
-      <h3 className="text-center mb-4">Category Management (API Integrated)</h3>
+      <h3 className="text-center mb-4">Category Management</h3>
+
+      {/* ✅ Alert Section */}
+      {message && (
+        <div className={`alert alert-${messageType} text-center`} role="alert">
+          {message}
+        </div>
+      )}
 
       {/* Input Section */}
       <div className="d-flex justify-content-center mb-3">
@@ -191,10 +112,7 @@ const Category = () => {
         </button>
 
         {editId && (
-          <button
-            className="btn btn-secondary ms-2"
-            onClick={handleCancelEdit}
-          >
+          <button className="btn btn-secondary ms-2" onClick={handleCancelEdit}>
             Cancel
           </button>
         )}
@@ -221,16 +139,16 @@ const Category = () => {
                 <td>{cat.name}</td>
                 <td>
                   <button
-                    className="btn btn-sm btn-warning me-2"
+                    className="btn btn-warning btn-sm me-2"
                     onClick={() => handleEdit(cat)}
                   >
-                    Edit
+                    <FaEdit />
                   </button>
                   <button
-                    className="btn btn-sm btn-danger"
+                    className="btn btn-danger btn-sm"
                     onClick={() => handleDelete(cat.id)}
                   >
-                    Delete
+                    <FaTrash />
                   </button>
                 </td>
               </tr>
@@ -243,4 +161,3 @@ const Category = () => {
 };
 
 export default Category;
-
