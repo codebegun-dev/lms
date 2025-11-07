@@ -1,0 +1,257 @@
+
+// import React, { useState } from "react";
+// import { useNavigate } from "react-router-dom";
+
+// const StudentNavbar = () => {
+//   const navigate = useNavigate();
+//   const [showProfileMenu, setShowProfileMenu] = useState(false);
+//   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+//   const [profilePic, setProfilePic] = useState("");
+
+//   const handleLogout = () => setShowLogoutConfirm(true);
+
+//   const confirmLogout = () => {
+//     localStorage.removeItem("user");
+//     sessionStorage.removeItem("currentUser");
+//     navigate("/login");
+//   };
+
+//   const getUserInfo = () => {
+//     try {
+//       const user = JSON.parse(localStorage.getItem("user"));
+//       return user || { firstName: "Student" };
+//     } catch {
+//       return { firstName: "Student" };
+//     }
+//   };
+
+//   const userInfo = getUserInfo();
+
+//   return (
+//     <div className="bg-light">
+//       <nav className="navbar navbar-expand-lg navbar-light bg-white shadow-sm sticky-top">
+//         <div className="container-fluid d-flex justify-content-between align-items-center">
+//           {/* Left side - Logo */}
+//           <h3 className="text-primary fw-bold mb-0">CodeBeGun</h3>
+
+//           {/* Right side - Profile icon */}
+//           <div className="dropdown position-relative">
+//             <button
+//               className="btn btn-primary rounded-circle position-relative d-flex justify-content-center align-items-center border-0"
+//               onClick={() => setShowProfileMenu(!showProfileMenu)}
+//             >
+//               {profilePic ? (
+//                 <img
+//                   src={profilePic}
+//                   alt="Profile"
+//                   className="w-100 h-100 rounded-circle"
+//                   style={{ objectFit: "cover" }}
+//                 />
+//               ) : (
+//                 <span className="text-white fs-3 fw-bold">
+//                   {userInfo.firstName?.charAt(0)?.toUpperCase() || "S"}
+//                 </span>
+//               )}
+
+//               {/* Online status dot */}
+//               <span
+//                 className="position-absolute top-0 end-0 translate-middle bg-success border border-white rounded-circle"
+//                 style={{ width: "14px", height: "14px" }}
+//               ></span>
+//             </button>
+
+//             {/* Dropdown */}
+//             {showProfileMenu && (
+//               <ul
+//                 className="dropdown-menu dropdown-menu-end mt-2 shadow-sm show"
+//                 style={{ position: "absolute", right: 0, zIndex: 1050 }}
+//               >
+//                 <li>
+//                   <button
+//                     className="dropdown-item"
+//                     onClick={() => {
+//                       navigate("/student-profile");
+//                       setShowProfileMenu(false);
+//                     }}
+//                   >
+//                     My Profile
+//                   </button>
+//                 </li>
+//                 <li>
+//                   <hr className="dropdown-divider" />
+//                 </li>
+//                 <li>
+//                   <button
+//                     className="dropdown-item text-danger"
+//                     onClick={handleLogout}
+//                   >
+//                     Logout
+//                   </button>
+//                 </li>
+//               </ul>
+//             )}
+//           </div>
+//         </div>
+//       </nav>
+
+//       {/* Logout confirmation modal */}
+//       {showLogoutConfirm && (
+//         <div className="modal fade show d-block" tabIndex="-1">
+//           <div className="modal-dialog">
+//             <div className="modal-content">
+//               <div className="modal-header">
+//                 <h5 className="modal-title">Confirm Logout</h5>
+//               </div>
+//               <div className="modal-body">
+//                 <p>Are you sure you want to logout?</p>
+//               </div>
+//               <div className="modal-footer">
+//                 <button
+//                   className="btn btn-secondary"
+//                   onClick={() => setShowLogoutConfirm(false)}
+//                 >
+//                   Cancel
+//                 </button>
+//                 <button className="btn btn-danger" onClick={confirmLogout}>
+//                   Logout
+//                 </button>
+//               </div>
+//             </div>
+//           </div>
+//         </div>
+//       )}
+//     </div>
+//   );
+// };
+
+// export default StudentNavbar;
+
+
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+
+const StudentNavbar = () => {
+  const navigate = useNavigate();
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [profilePic, setProfilePic] = useState("");
+
+  const handleLogout = () => setShowLogoutConfirm(true);
+  const confirmLogout = () => {
+    localStorage.removeItem("user");
+    navigate("/login");
+  };
+
+  const loadProfilePic = () => {
+    const user = JSON.parse(localStorage.getItem("user")) || {};
+    setProfilePic(user.profilePicturePath || "");
+  };
+
+  useEffect(() => {
+    loadProfilePic();
+    window.addEventListener("user-updated", loadProfilePic); // update when profile image changes
+    return () => window.removeEventListener("user-updated", loadProfilePic);
+  }, []);
+
+  const userInfo = JSON.parse(localStorage.getItem("user")) || { firstName: "Student" };
+
+  return (
+    <div className="bg-light">
+      <nav className="navbar navbar-expand-lg navbar-light bg-white shadow-sm sticky-top">
+        <div className="container-fluid d-flex justify-content-between align-items-center">
+          <h3 className="text-primary fw-bold mb-0">CodeBeGun</h3>
+
+          <div className="dropdown position-relative">
+            <button
+              className="btn rounded-circle position-relative p-0"
+              style={{ border: "none", background: "transparent" }}
+              onClick={() => setShowProfileMenu(!showProfileMenu)}
+            >
+              {profilePic ? (
+                <img
+                  src={`${profilePic}?t=${Date.now()}`} // prevent caching
+                  alt="profile"
+                  className="rounded-circle bg-primary text-white"
+                  style={{ width: "40px", height: "40px",  objectFit: "cover" }}
+                />
+              ) : (
+                <div
+                  className="rounded-circle bg-primary d-flex justify-content-center align-items-center fw-bold"
+                  style={{ width: "40px", height: "40px", color: "white" }}
+                >
+                  {userInfo.firstName?.[0]?.toUpperCase() || "S"}
+                </div>
+
+              )}
+
+
+              <span
+                className="position-absolute top-0 end-0 translate-middle bg-success border border-white rounded-circle"
+                style={{ width: "14px", height: "14px" }}
+              ></span>
+            </button>
+
+            {showProfileMenu && (
+              <ul
+                className="dropdown-menu mt-2 shadow-sm show"
+                style={{
+                  left: "auto",   // disable default left
+                  right: "0",     // align to the left of the button
+
+                }}
+              >
+                <li>
+                  <button
+                    className="dropdown-item"
+                    onClick={() => {
+                      navigate("/student-profile");
+                      setShowProfileMenu(false);
+                    }}
+                  >
+                    My Profile
+                  </button>
+                </li>
+                <li>
+                  <hr className="dropdown-divider" />
+                </li>
+                <li>
+                  <button className="dropdown-item text-danger" onClick={handleLogout}>
+                    Logout
+                  </button>
+                </li>
+              </ul>
+            )}
+          </div>
+        </div>
+      </nav>
+
+      {showLogoutConfirm && (
+        <div className="modal fade show d-block" tabIndex="-1">
+          <div className="modal-dialog">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Confirm Logout</h5>
+              </div>
+              <div className="modal-body">
+                <p>Are you sure you want to logout?</p>
+              </div>
+              <div className="modal-footer">
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => setShowLogoutConfirm(false)}
+                >
+                  Cancel
+                </button>
+                <button className="btn btn-danger" onClick={confirmLogout}>
+                  Logout
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default StudentNavbar;

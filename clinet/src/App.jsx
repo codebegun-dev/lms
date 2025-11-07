@@ -11,19 +11,20 @@ import SendResetMail from './Registration_Dashboard/SendResetMail';
 import Dashboard from './Student_Dashboard/Dashboard';
 import StudentDashboard from './Student_Dashboard/StudentDashboard';
 import StartInterview from './Student_Dashboard/StartInterview';
-import StudentNavbar from './Student_Dashboard/StudentNavbar';
-import StudentProfile from './Student_Dashboard/Studentprofile';
 
 // Admin Dashboard
 import AdminDashboard from './Admin_Dashboard/AdminDashboard';
 import CourseManagement from './Admin_Dashboard/CourseManagement';
 import BatchManagement from './Admin_Dashboard/BatchManagement';
 import QuestionBank from './Admin_Dashboard/QuestionBank';
+import StudentNavbar from './Student_Dashboard/StudentNavbar';
 import Category from './Admin_Dashboard/CreateCategory';
 import CreateTopic from './Admin_Dashboard/CreateTopic';
 import CreateSubTopic from './Admin_Dashboard/CreateSubTopic';
 import UserManagement from './Admin_Dashboard/UserManagement';
-
+import StudentProfile from './Student_Dashboard/Studentprofile';
+ 
+   
 function App() {
   return (
     <>
@@ -36,13 +37,19 @@ function App() {
         <Route path='/reset-password' element={<ForgotPasswordForm />} />
         <Route path='/start-interview' element={<StartInterview />} />
         <Route path='/studentnavbar' element={<StudentNavbar />} />
-        <Route path='/student-profile' element={<StudentProfile />} />
+                  <Route path="/student-profile" element={<StudentProfile />} />
 
+
+ 
+         
+       
         {/* Student Dashboard with nested routes */}
         <Route path="/dashboard" element={<Dashboard />}>
           <Route index element={<StudentDashboard />} />
           <Route path="student-dashboard" element={<StudentDashboard />} />
+ 
         </Route>
+
 
         {/* Admin Dashboard with nested routes */}
         <Route path="/admin-dashboard" element={<AdminDashboard />}>
@@ -50,18 +57,25 @@ function App() {
           <Route path="course-management" element={<CourseManagement />} />
           <Route path="batch-management" element={<BatchManagement />} />
           <Route path="question-bank" element={<QuestionBank />} />
-          <Route path="category" element={<Category />} />
-          <Route path="topic" element={<CreateTopic />} />
-          <Route path="sub-topic" element={<CreateSubTopic />} />
-          <Route path="usermanagement" element={<UserManagement />} />
+          <Route path="category" element={<Category/>} />     
+          <Route path="topic" element={<CreateTopic/>} />
+          <Route path="sub-topic" element={<CreateSubTopic/>} />  
+          <Route path="usermanagement" element={<UserManagement/>} />
+        
+
         </Route>
 
-        {/* Fallback route */}
+        {/* Fallback route (optional) */}
         <Route path="*" element={<h2 className="text-center my-5">Page Not Found</h2>} />
 
-      </Routes>
+
+
+       </Routes>
     </>
   )
 }
 
 export default App
+
+ 
+ 
