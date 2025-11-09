@@ -21,6 +21,11 @@ function RegistrationForm() {
     confirmPassword: isAdminRegistration ? "Admin@123" : "",
     role: defaultRole,
   });
+  //   password: "",
+  //   confirmPassword: "",
+  //   role:"STUDENT",
+  //   status:"ACTIVE"
+  //  });
 
   const [showPassword, setShowPassword] = useState({
     password: false,

@@ -1,25 +1,16 @@
+
+// MockInterview.jsx
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { FaPlay, FaCalendarAlt, FaCode, FaComments, FaStar } from "react-icons/fa";
 
 const MockInterview = () => {
   const navigate = useNavigate();
-  const [openSection, setOpenSection] = useState(null);
   const [categories, setCategories] = useState([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState("");
   const [loading, setLoading] = useState(false);
-
-  const interviewDurations = {
-    "Technical Interview": 20,
-    "Behavioral Interview": 10,
-    "Communication Interview": 30,
-  };
-
-  const timeSlots = [
-    "9:00 AM", "9:30 AM", "10:00 AM", "10:30 AM",
-    "11:00 AM", "11:30 AM", "1:00 PM", "1:30 PM",
-    "2:00 PM", "2:30 PM", "3:00 PM", "3:30 PM",
-  ];
+  const [openSection, setOpenSection] = useState(null);
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -32,6 +23,7 @@ const MockInterview = () => {
         setCategories([]);
       }
     };
+
     fetchCategories();
   }, []);
 
@@ -42,27 +34,32 @@ const MockInterview = () => {
     }
 
     setLoading(true);
+
     const user = JSON.parse(localStorage.getItem("user")) || {};
     const requestDto = {
-      studentId: user?.userId || 1, // fallback
+      studentId: user?.userId || 1,
       categoryId: selectedCategoryId,
     };
 
     try {
-      // Call backend to create interview (you said backend ready)
-      const res = await axios.post("http://localhost:8080/api/interviews/start", requestDto);
+      const res = await axios.post(
+        "http://localhost:8080/api/interviews/start",
+        requestDto
+      );
 
       const interviewId = res.data?.interview?.interviewId;
       if (!interviewId) {
-        alert("Invalid response from backend — interview ID missing.");
+        alert("Invalid response — interview ID missing.");
         return;
       }
 
-      // find category name for nicer UX
-      const cat = categories.find((c) => String(c.id) === String(selectedCategoryId));
-      const categoryName = (cat && (cat.name || cat.categoryName)) || `Category ${selectedCategoryId}`;
+      const cat = categories.find(
+        (c) => String(c.id) === String(selectedCategoryId)
+      );
+      const categoryName =
+        (cat && (cat.name || cat.categoryName)) ||
+        `Category ${selectedCategoryId}`;
 
-      // Navigate to StartInterview with interviewId + category details
       navigate("/start-interview", {
         state: { interviewId, categoryId: selectedCategoryId, categoryName },
       });
@@ -74,155 +71,178 @@ const MockInterview = () => {
     }
   };
 
-  const [scheduledInterviewType, setScheduledInterviewType] = useState("");
-  const [scheduledDate, setScheduledDate] = useState("");
-  const [selectedTime, setSelectedTime] = useState("");
-  const handleScheduleSubmit = () => {
-    if (!scheduledInterviewType || !scheduledDate || !selectedTime) {
-      alert("Please select interview type, date, and time!");
-      return;
-    }
-    alert(`${scheduledInterviewType} scheduled on ${scheduledDate} at ${selectedTime}`);
-    setScheduledInterviewType("");
-    setScheduledDate("");
-    setSelectedTime("");
-    setOpenSection(null);
+  // Progress data
+  const [pastInterviews, setPastInterviews] = useState([]);
+
+  useEffect(() => {
+    const stored = JSON.parse(localStorage.getItem("pastInterviews") || "[]");
+    setPastInterviews(stored);
+  }, []);
+
+  const totalAllowed = 20;
+  const interviewsTaken = pastInterviews.length;
+  const interviewsLeft = Math.max(0, totalAllowed - interviewsTaken);
+
+  const progressByType = (type) => {
+    const total = Math.max(1, pastInterviews.length);
+    const count = pastInterviews.filter((i) => i.type === type).length;
+    return Math.round((count / total) * 100);
   };
 
   return (
-    <div className="container py-4">
-      <h2 className="text-center mb-4 fw-bold text-primary">Student Dashboard</h2>
+    <div className="container-fluid p-4">
+      <div className="row g-4">
 
-      <div className="row g-4 text-center">
-        <div className="col-12 col-md-4">
-          <div className="card shadow-sm border-0 h-100">
+        {/* LEFT PANEL */}
+        <div className="col-lg-3 col-md-12 mb-4">
+          <div className="card h-100 shadow-sm">
             <div className="card-body">
-              <button
-                className="btn btn-primary w-100 fw-semibold"
-                onClick={() => setOpenSection(openSection === "start" ? null : "start")}
+              <h5 className="card-title fw-semibold mb-4">Select Interview Type</h5>
+
+              <select
+                className="form-select form-select-lg mb-4"
+                value={selectedCategoryId}
+                onChange={(e) => setSelectedCategoryId(e.target.value)}
               >
-                🎯 Start Interview
-              </button>
-            </div>
-          </div>
-        </div>
+                <option value="">Choose interview category</option>
+                {categories.map((cat) => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.name || cat.categoryName}
+                  </option>
+                ))}
+              </select>
 
-        <div className="col-12 col-md-4">
-          <div className="card shadow-sm border-0 h-100">
-            <div className="card-body">
               <button
-                className="btn btn-warning w-100 fw-semibold"
+                className="btn btn-primary btn-lg w-100 mb-3 d-flex align-items-center justify-content-center"
+                onClick={handleStartInterview}
+                disabled={loading}
+              >
+                <FaPlay className="me-2" /> Start Interview
+              </button>
+
+              <button
+                className="btn btn-outline-secondary w-100 d-flex align-items-center justify-content-center"
                 onClick={() => setOpenSection(openSection === "schedule" ? null : "schedule")}
               >
-                🗓 Schedule Interview
+                <FaCalendarAlt className="me-2" /> Schedule Interview
               </button>
             </div>
           </div>
         </div>
 
-        <div className="col-12 col-md-4">
-          <div className="card shadow-sm border-0 h-100">
+        {/* MIDDLE PANEL */}
+        <div className="col-lg-6 col-md-12 mb-4">
+
+          {/* Interview Progress Summary */}
+          <div className="card shadow-sm mb-4">
             <div className="card-body">
-              <h5 className="fw-semibold mb-3">📈 Interview Progress</h5>
-              <div className="progress mb-3" style={{ height: "25px" }}>
-                <div
-                  className="progress-bar bg-success"
-                  role="progressbar"
-                  style={{ width: `0%` }}
-                  aria-valuenow={0}
-                  aria-valuemin="0"
-                  aria-valuemax="20"
-                >
-                  0/20
+              <h5 className="card-title fw-semibold mb-4">Interview Progress Summary</h5>
+
+              <div className="row g-4">
+                <div className="col-md-4">
+                  <div className="d-flex flex-column">
+                    <span className="text-muted small">Total Allowed</span>
+                    <h4 className="fw-bold mb-0">{totalAllowed}</h4>
+                  </div>
+                </div>
+                <div className="col-md-4">
+                  <div className="d-flex flex-column">
+                    <span className="text-muted small">Interviews Taken</span>
+                    <h4 className="fw-bold mb-0">{interviewsTaken}</h4>
+                  </div>
+                </div>
+                <div className="col-md-4">
+                  <div className="d-flex flex-column">
+                    <span className="text-muted small">Interviews Left</span>
+                    <h4 className="fw-bold mb-0">{interviewsLeft}</h4>
+                  </div>
                 </div>
               </div>
-              <p className="text-muted mb-0">Keep going! You're making great progress 🚀</p>
+
+              <div className="mt-4">
+                <div className="d-flex justify-content-between mb-2">
+                  <span className="small text-muted">Progress</span>
+                  <span className="small fw-semibold">{Math.round((interviewsTaken / totalAllowed) * 100)}%</span>
+                </div>
+                <div className="progress" style={{ height: "8px", backgroundColor: "#E9ECEF" }}>
+                  <div
+                    className="progress-bar bg-primary"
+                    style={{ width: `${(interviewsTaken / totalAllowed) * 100}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Your Progress Across Interview Types */}
+          <div className="card shadow-sm">
+            <div className="card-body">
+              <h5 className="card-title fw-semibold mb-4">Progress by Interview Type</h5>
+
+              <div className="row g-4">
+                {["HR", "Technical", "Behavioral", "Communication", "Problem Solving"].map((type) => (
+                  <div className="col-md-4" key={type}>
+                    <div className="p-3 bg-light rounded-3">
+                      <div className="d-flex flex-column align-items-center">
+                        <span className="text-muted small mb-2">{type}</span>
+                        <h4 className="fw-bold mb-0 text-primary">{progressByType(type)}%</h4>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        {/* RIGHT PANEL */}
+        <div className="col-lg-3 col-md-12">
+          <div className="card h-100 shadow-sm">
+            <div className="card-body">
+              <h5 className="card-title fw-semibold mb-4">Suggestions & Improvements</h5>
+
+              <div className="improvement-section mb-4">
+                <div className="d-flex align-items-center mb-2">
+                  <div className="bg-primary bg-opacity-10 p-2 rounded-circle me-3">
+                    <FaCode className="text-primary" />
+                  </div>
+                  <h6 className="fw-semibold mb-0">Improve Technical Depth</h6>
+                </div>
+                <p className="text-muted small mb-3">Deepen your understanding in Data Structures and Algorithms.</p>
+                <button className="btn btn-outline-primary btn-sm w-100">View Topics</button>
+              </div>
+
+              <div className="improvement-section mb-4">
+                <div className="d-flex align-items-center mb-2">
+                  <div className="bg-success bg-opacity-10 p-2 rounded-circle me-3">
+                    <FaComments className="text-success" />
+                  </div>
+                  <h6 className="fw-semibold mb-0">Refine Communication</h6>
+                </div>
+                <p className="text-muted small mb-3">Practice explaining complex ideas with clarity and confidence.</p>
+                <button className="btn btn-outline-success btn-sm w-100">Start Practice</button>
+              </div>
+
+              <div className="improvement-section">
+                <div className="d-flex align-items-center mb-2">
+                  <div className="bg-warning bg-opacity-10 p-2 rounded-circle me-3">
+                    <FaStar className="text-warning" />
+                  </div>
+                  <h6 className="fw-semibold mb-0">Master STAR Method</h6>
+                </div>
+                <p className="text-muted small mb-3">Perfect your behavioral responses using the STAR framework.</p>
+                <button className="btn btn-outline-warning btn-sm w-100">Review Guide</button>
+              </div>
             </div>
           </div>
         </div>
+
       </div>
-
-      {openSection && (
-        <div className="card mt-4 shadow-sm border-0">
-          <div className="card-body">
-            {openSection === "start" && (
-              <>
-                <h5 className="fw-semibold mb-3 text-primary">🎯 Start Interview</h5>
-                <p className="text-muted mb-4">
-                  Select your preferred category and click <strong>Continue</strong> to start.
-                </p>
-
-                <select
-                  className="form-select mb-4"
-                  value={selectedCategoryId}
-                  onChange={(e) => setSelectedCategoryId(e.target.value)}
-                >
-                  <option value="">Select Category</option>
-                  {categories.map((cat) => (
-                    <option key={cat.id} value={cat.id}>
-                      {cat.name || cat.categoryName || `Category ${cat.id}`}
-                    </option>
-                  ))}
-                </select>
-
-                <div className="text-end">
-                  <button
-                    className="btn btn-success px-4"
-                    onClick={handleStartInterview}
-                    disabled={loading}
-                  >
-                    {loading ? "Starting..." : "Continue"}
-                  </button>
-                </div>
-              </>
-            )}
-
-            {openSection === "schedule" && (
-              <>
-                <h5 className="fw-semibold mb-3 text-warning">🗓 Schedule Interview</h5>
-
-                <label className="form-label fw-semibold">Select Interview Module</label>
-                <select
-                  className="form-select mb-3"
-                  value={scheduledInterviewType}
-                  onChange={(e) => setScheduledInterviewType(e.target.value)}
-                >
-                  <option value="">Select</option>
-                  <option value="Technical Interview">Technical Interview</option>
-                  <option value="Behavioral Interview">Behavioral Interview</option>
-                  <option value="Communication Interview">Communication Interview</option>
-                </select>
-
-                {scheduledInterviewType && (
-                  <p className="text-muted">Duration: <strong>{interviewDurations[scheduledInterviewType]} mins</strong></p>
-                )}
-
-                <label className="form-label fw-semibold">Select Date</label>
-                <input type="date" className="form-control mb-3" value={scheduledDate} onChange={(e) => setScheduledDate(e.target.value)} />
-
-                <label className="form-label fw-semibold">Select Time Slot</label>
-                <div className="d-flex flex-wrap gap-2 mb-3">
-                  {timeSlots.map((slot) => (
-                    <button
-                      key={slot}
-                      className={`btn btn-outline-primary btn-sm ${selectedTime === slot ? "active" : ""}`}
-                      onClick={() => setSelectedTime(slot)}
-                    >
-                      {slot}
-                    </button>
-                  ))}
-                </div>
-
-                <div className="text-end">
-                  <button className="btn btn-success" onClick={handleScheduleSubmit}>Confirm Schedule</button>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 };
 
 export default MockInterview;
+
+
