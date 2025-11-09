@@ -2,6 +2,7 @@ package com.mockInterview.serviceImpl;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,6 +15,7 @@ import com.mockInterview.exception.DuplicateFieldException;
 import com.mockInterview.exception.ResourceNotFoundException;
 import com.mockInterview.mapper.UserMapper;
 import com.mockInterview.repository.PasswordResetTokenRepository;
+import com.mockInterview.repository.RoleRepository;
 import com.mockInterview.repository.StudentPersonalInfoRepository;
 import com.mockInterview.repository.UserRepository;
 import com.mockInterview.requestDtos.LoginRequestDto;
@@ -23,6 +25,8 @@ import com.mockInterview.responseDtos.UserResponseDto;
 import com.mockInterview.service.EmailService;
 import com.mockInterview.service.UserService;
 import com.mockInterview.util.EmailUtils;
+
+import jakarta.transaction.Transactional;
 
 @Service
 public class UserServiceImpl implements UserService {
@@ -38,6 +42,9 @@ public class UserServiceImpl implements UserService {
     
     @Autowired
     private StudentPersonalInfoRepository studentPersonalInfoRepository;
+    
+    @Autowired
+    private RoleRepository roleRepository;
 
     @Autowired
     private UserMapper userMapper;
@@ -45,32 +52,66 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserResponseDto createUser(UserRequestDto dto) {
 
+        // 1️⃣ Duplicate checks
         if (userRepository.findByEmail(dto.getEmail()) != null) {
             throw new DuplicateFieldException("Email already exists!");
         }
-
         if (userRepository.findByPhone(dto.getPhone()) != null) {
             throw new DuplicateFieldException("Phone number already exists!");
         }
-
         if (studentPersonalInfoRepository.findByParentMobileNumber(dto.getPhone()) != null) {
             throw new DuplicateFieldException("Phone number already exists!");
         }
 
+        // 2️⃣ Map DTO → User entity
         User user = userMapper.toEntity(dto);
 
-        // ✅ Auto status
-        if (dto.getRole() == Role.STUDENT) {
-            user.setStatus("ACTIVE");
+        // 3️⃣ Assign role dynamically
+        Role role;
+        if (dto.getRoleId() != null) {
+            role = roleRepository.findById(dto.getRoleId())
+                    .orElseThrow(() -> new RuntimeException("Role not found with ID: " + dto.getRoleId()));
         } else {
-            user.setStatus("ACTIVE"); // change to PENDING if needed
+            role = roleRepository.findByName("STUDENT");
+            if (role == null) {
+                throw new RuntimeException("Default STUDENT role not found. Please initialize STUDENT role.");
+            }
         }
 
+        user.setRole(role);
+
+        // 4️⃣ Validate allowed roles for admin-created users dynamically
+        if (!"STUDENT".equalsIgnoreCase(role.getName())) {
+            List<Role> allowedRoles = roleRepository.findByNameNotIn(Arrays.asList("STUDENT", "MASTER_ADMIN"));
+            boolean validRole = allowedRoles.stream()
+                                    .anyMatch(r -> r.getName().equalsIgnoreCase(role.getName()));
+            if (!validRole) {
+                throw new RuntimeException("Invalid role. Allowed roles: " + allowedRoles);
+            }
+
+            // Set Master Admin password for admin-created users
+            User masterAdmin = userRepository.findByRole_Name("MASTER_ADMIN");
+            if (masterAdmin == null) {
+                throw new RuntimeException("Master Admin not found!");
+            }
+            user.setPassword(masterAdmin.getPassword());
+            user.setStatus("ACTIVE");
+        } else {
+            // Student registration
+            user.setStatus("ACTIVE");
+        }
+
+        // 5️⃣ Save user
         User savedUser = userRepository.save(user);
+
+        // 6️⃣ Send welcome email
         emailService.sendWelcomeEmail(savedUser.getEmail(), savedUser.getFirstName());
 
+        // 7️⃣ Return response DTO
         return userMapper.toResponse(savedUser);
     }
+
+    
 
 
     @Override
@@ -194,50 +235,109 @@ public class UserServiceImpl implements UserService {
    
     @Override
     public UserResponseDto updateUser(Long userId, UserUpdateRequestDto dto) {
+        // 1️⃣ Fetch existing user
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found with ID: " + userId));
 
-        // Update allowed fields only
+        // 2️⃣ Update basic fields
         user.setFirstName(dto.getFirstName());
         user.setLastName(dto.getLastName());
         user.setEmail(dto.getEmail());
         user.setPhone(dto.getPhone());
-        user.setRole(dto.getRole());
-        
 
+        // 3️⃣ Update role dynamically if roleId is provided
+        if (dto.getRoleId() != null) {
+            Role role = roleRepository.findById(dto.getRoleId())
+                    .orElseThrow(() -> new RuntimeException("Role not found with ID: " + dto.getRoleId()));
+            user.setRole(role);
+        }
+
+        // 4️⃣ Save updated user
         User updatedUser = userRepository.save(user);
+
+        // 5️⃣ Return response DTO
         return userMapper.toResponse(updatedUser);
     }
 
 
-    // --- Deactivate user
+ // --- Deactivate user
     @Override
     public void deactivateUser(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found with ID: " + userId));
 
-        // ❌ Prevent deleting admins
-        if (user.getRole() == Role.ADMIN) {
-            throw new RuntimeException("Admin user cannot be deleted!");
+        // Prevent deactivating MASTER_ADMIN
+        if (user.getRole() != null && "MASTER_ADMIN".equalsIgnoreCase(user.getRole().getName())) {
+            throw new RuntimeException("Master Admin cannot be deactivated!");
         }
 
-        // ✅ Soft delete
+        // Soft delete for all other users
         user.setStatus("INACTIVE");
         userRepository.save(user);
     }
-    
+
+    // --- Activate user
     @Override
     public void activateUser(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found with ID: " + userId));
 
-        if (user.getStatus().equalsIgnoreCase("ACTIVE")) {
+        if ("ACTIVE".equalsIgnoreCase(user.getStatus())) {
             throw new RuntimeException("User is already active");
         }
 
         user.setStatus("ACTIVE");
         userRepository.save(user);
     }
+
+    
+ // --- Delete user permanently (Master Admin only)
+    @Override
+    public void deleteUser(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found with ID: " + userId));
+
+        // Prevent deleting Master Admin itself
+        if (user.getRole() != null && "MASTER_ADMIN".equalsIgnoreCase(user.getRole().getName())) {
+            throw new RuntimeException("Master Admin cannot be deleted!");
+        }
+
+        // Permanently delete user
+        userRepository.delete(user);
+    }
+    
+    
+    @Transactional
+    public void syncPasswordsWithMasterAdmin() {
+        // 1. Get the Master Admin
+        User masterAdmin = userRepository.findByRole_Name("MASTER_ADMIN");
+        if (masterAdmin == null) {
+            throw new RuntimeException("Master Admin not found!");
+        }
+
+        // 2. Get all non-student users (exclude MASTER_ADMIN and STUDENT)
+        List<Role> roles = roleRepository.findAll();
+        List<String> targetRoles = new ArrayList<>();
+        for (Role role : roles) {
+            if (!"MASTER_ADMIN".equalsIgnoreCase(role.getName()) &&
+                !"STUDENT".equalsIgnoreCase(role.getName())) {
+                targetRoles.add(role.getName());
+            }
+        }
+
+        // 3. Find all users with these roles
+        List<User> adminUsers = userRepository.findByRoleNameIn(targetRoles);
+
+        // 4. Update each user’s password to match Master Admin
+        for (User user : adminUsers) {
+            user.setPassword(masterAdmin.getPassword());
+        }
+
+        // 5. Save all
+        userRepository.saveAll(adminUsers);
+    }
+
+
 
 
 }

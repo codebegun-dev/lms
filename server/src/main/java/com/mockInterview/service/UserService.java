@@ -26,6 +26,9 @@ UserResponseDto updateUser(Long userId, UserUpdateRequestDto dto);
 
 void deactivateUser(Long userId);
 void activateUser(Long userId);
+public void deleteUser(Long userId);
+
+void syncPasswordsWithMasterAdmin();
 
 
 }

@@ -1,7 +1,9 @@
 package com.mockInterview.mapper;
 
+import com.mockInterview.entity.Role;
 import com.mockInterview.entity.StudentPersonalInfo;
 import com.mockInterview.entity.User;
+import com.mockInterview.repository.RoleRepository;
 import com.mockInterview.repository.StudentPersonalInfoRepository;
 import com.mockInterview.responseDtos.UserResponseDto;
 import com.mockInterview.requestDtos.UserRequestDto;
@@ -17,6 +19,9 @@ public class UserMapper {
     @Autowired
     private StudentPersonalInfoRepository studentPersonalInfoRepository;
 
+    @Autowired
+    private RoleRepository roleRepository;
+
     public User toEntity(UserRequestDto dto) {
         User user = new User();
         user.setFirstName(dto.getFirstName());
@@ -24,9 +29,16 @@ public class UserMapper {
         user.setEmail(dto.getEmail());
         user.setPhone(dto.getPhone());
         user.setPassword(dto.getPassword());
-        user.setRole(dto.getRole());
+
+        if (dto.getRoleId() != null) {
+            Role role = roleRepository.findById(dto.getRoleId())
+                    .orElseThrow(() -> new RuntimeException("Role not found with id " + dto.getRoleId()));
+            user.setRole(role);
+        }
+
         return user;
     }
+
 
     public UserResponseDto toResponse(User user) {
         UserResponseDto dto = new UserResponseDto();
@@ -35,7 +47,8 @@ public class UserMapper {
         dto.setLastName(user.getLastName());
         dto.setEmail(user.getEmail());
         dto.setPhone(user.getPhone());
-        dto.setRole(user.getRole());
+        dto.setRole(user.getRole() != null ? user.getRole().getName() : null);
+
         dto.setStatus(user.getStatus());
 
         String baseUrl = ServletUriComponentsBuilder.fromCurrentContextPath().toUriString();

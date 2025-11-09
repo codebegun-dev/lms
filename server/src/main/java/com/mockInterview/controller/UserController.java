@@ -79,13 +79,26 @@ UserService userService;
     @DeleteMapping("/deactivate/{userId}")
     public String deactivateUser(@PathVariable Long userId) {
         userService.deactivateUser(userId);
-        return "User deleted successfully";
+        return "User deactivated successfully";
     }
     
     @PutMapping("/activate/{userId}")
     public String activateUser(@PathVariable Long userId) {
         userService.activateUser(userId);
         return "User activated successfully";
+    }
+    
+    @DeleteMapping("/delete/{userId}")
+    public String deleteUser(@PathVariable Long userId) {
+        userService.deleteUser(userId);
+        return "User deleted successfully";
+    }
+    
+    
+    @PutMapping("/sync-passwords")
+    public String syncPasswords() {
+        userService.syncPasswordsWithMasterAdmin();
+        return "✅ All non-student users' passwords synced with Master Admin password successfully.";
     }
 
 
