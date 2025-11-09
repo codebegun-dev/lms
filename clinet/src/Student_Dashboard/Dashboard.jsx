@@ -1,30 +1,6 @@
-// import React, { useEffect, useState } from "react";
-
-// const StudentDashboard = () => {
-//   const [fullName, setFullName] = useState("");
-
-//   useEffect(() => {
-//     // Get user info from localStorage after login
-//     const user = JSON.parse(localStorage.getItem("user")) || {};
-//     const name = `${user.firstName || ""} ${user.lastName || ""}`.trim();
-//     setFullName(name || "Student");
-//   }, []);
-
-//   return (
-//     <div className="p-4">
-//       <h1 className="text-primary">Hi, welcome {fullName}!</h1>
-//       <p className="mt-3 text-muted">
-//         This is your dashboard. Here you can view your scheduled interviews, start mock interviews, 
-//         track your progress, and manage your profile.
-//       </p>
-//     </div>
-//   );
-// };
-
-// export default StudentDashboard;
 import React, { useEffect, useState } from "react";
 
-const StudentDashboard = () => {
+const Dashboard = () => {
   const [fullName, setFullName] = useState("");
 
   useEffect(() => {
@@ -49,4 +25,4 @@ const StudentDashboard = () => {
   );
 };
 
-export default StudentDashboard;
+export default Dashboard;
