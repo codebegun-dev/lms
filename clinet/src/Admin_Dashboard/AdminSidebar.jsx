@@ -1,36 +1,89 @@
-import { Link } from "react-router-dom";
+import { NavLink } from "react-router-dom";
+import { FaBook, FaUsers, FaLayerGroup, FaClipboardList, FaFolderPlus, FaRegListAlt, FaUserCog } from "react-icons/fa";
 
 const AdminSidebar = () => {
   return (
-    <div className="bg-light vh-100 p-3">
-      <h5 className="text-center mb-4 border-bottom pb-2">Admin Dashboard</h5>
-      <nav className="nav flex-column">
-        <Link to="course-management" className="nav-link text-dark mb-2 rounded px-2">
-          Course Management
-        </Link>
-        <Link to="batch-management" className="nav-link text-dark mb-2 rounded px-2">
-          Batch Management
-        </Link>
-        <Link to="question-bank" className="nav-link text-dark mb-2 rounded px-2">
-          Question Bank
-        </Link>
-        <Link to="category" className="nav-link text-dark mb-2 rounded px-2">
-          Create Category
-        </Link>
-        <Link to="topic" className="nav-link text-dark mb-2 rounded px-2">
-          Create Topic
-        </Link>
-        <Link to="sub-topic" className="nav-link text-dark mb-2 rounded px-2">
-          Create Sub-Topic
-        </Link>
-        <Link to="usermanagement" className="nav-link text-dark mb-2 rounded px-2">
-          User Management
-        </Link>
-        
-        
-        
-        
-       </nav>
+    <div className="bg-light p-3" style={{ minHeight: "100vh", borderRight: "1px solid #ddd" }}>
+      <h5 className="text-center fw-bold mb-4">Admin Dashboard</h5>
+      
+      <ul className="list-unstyled">
+        <li className="mb-3">
+          <NavLink
+            to="course-management"
+            className={({ isActive }) =>
+              `d-flex align-items-center text-decoration-none ${isActive ? "fw-bold text-primary" : "text-dark"}`
+            }
+          >
+            <FaBook className="me-2" /> Course Management
+          </NavLink>
+        </li>
+
+        <li className="mb-3">
+          <NavLink
+            to="batch-management"
+            className={({ isActive }) =>
+              `d-flex align-items-center text-decoration-none ${isActive ? "fw-bold text-primary" : "text-dark"}`
+            }
+          >
+            <FaLayerGroup className="me-2" /> Batch Management
+          </NavLink>
+        </li>
+
+        <li className="mb-3">
+          <NavLink
+            to="question-bank"
+            className={({ isActive }) =>
+              `d-flex align-items-center text-decoration-none ${isActive ? "fw-bold text-primary" : "text-dark"}`
+            }
+          >
+            <FaClipboardList className="me-2" /> Question Bank
+          </NavLink>
+        </li>
+
+        <li className="mb-3">
+          <NavLink
+            to="category"
+            className={({ isActive }) =>
+              `d-flex align-items-center text-decoration-none ${isActive ? "fw-bold text-primary" : "text-dark"}`
+            }
+          >
+            <FaFolderPlus className="me-2" /> Create Category
+          </NavLink>
+        </li>
+
+        <li className="mb-3">
+          <NavLink
+            to="topic"
+            className={({ isActive }) =>
+              `d-flex align-items-center text-decoration-none ${isActive ? "fw-bold text-primary" : "text-dark"}`
+            }
+          >
+            <FaRegListAlt className="me-2" /> Create Topic
+          </NavLink>
+        </li>
+
+        <li className="mb-3">
+          <NavLink
+            to="sub-topic"
+            className={({ isActive }) =>
+              `d-flex align-items-center text-decoration-none ${isActive ? "fw-bold text-primary" : "text-dark"}`
+            }
+          >
+            <FaRegListAlt className="me-2" /> Create Sub-Topic
+          </NavLink>
+        </li>
+
+        <li className="mb-3">
+          <NavLink
+            to="usermanagement"
+            className={({ isActive }) =>
+              `d-flex align-items-center text-decoration-none ${isActive ? "fw-bold text-primary" : "text-dark"}`
+            }
+          >
+            <FaUsers className="me-2" /> User Management
+          </NavLink>
+        </li>
+      </ul>
     </div>
   );
 };

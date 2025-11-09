@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect } from "react";
 import { Edit, Trash2 } from "lucide-react";
 import { FiSearch } from "react-icons/fi";
