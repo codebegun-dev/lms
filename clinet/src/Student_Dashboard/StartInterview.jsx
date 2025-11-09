@@ -343,7 +343,7 @@ export default function StartInterview() {
       const { videoBlob, audioBlob } = await stopRecordingInternal();
       await uploadFiles(videoBlob, audioBlob);
       alert("Interview ended and uploaded");
-      navigate("/student-dashboard");
+      navigate("/student-dashboard/mock-interview");
     } catch (err) {
       console.error("handleEnd err", err);
       alert("Error ending interview");

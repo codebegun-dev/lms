@@ -46,7 +46,7 @@ const StudentProfile = () => {
             <h4 className="mb-0 fw-bold">My Profile</h4>
             <button
               className="btn btn-primary px-4"
-              onClick={() => navigate("/dashboard")}
+              onClick={() => navigate("/student-dashboard")}
             >
               Back to Dashboard
             </button>
