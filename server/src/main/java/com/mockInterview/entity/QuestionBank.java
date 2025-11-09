@@ -26,12 +26,12 @@ public class QuestionBank {
     private Topic topic;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "subtopic_id", nullable = true) // ✅ make optional
+    @JoinColumn(name = "subtopic_id", nullable = true) 
     private SubTopic subTopic;
 
 
     @Column(nullable = false)
-    private String difficulty; // Easy, Medium, Hard
+    private String difficulty; 
 
     @Column(nullable = false, length = 500)
     private String title;

@@ -1,6 +1,6 @@
 package com.mockInterview.responseDtos;
 
-import com.mockInterview.entity.Role;
+
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -14,7 +14,7 @@ public class UserResponseDto {
    private String lastName;
    private String email;
    private String phone;
-   private Role role;
+   private String role;
    private String status;
    private String profilePicturePath;
   

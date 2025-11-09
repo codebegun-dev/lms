@@ -1,6 +1,6 @@
 package com.mockInterview.requestDtos;
 
-import com.mockInterview.entity.Role;
+
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -38,12 +38,6 @@ public class UserRequestDto {
 	private String password;
 
 	
-	@NotNull(message = "Role is required")
-	private Role role;
-
-	
-	
-
-
+	private Long roleId;
 
 }
