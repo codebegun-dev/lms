@@ -1,235 +1,3 @@
-// import React, { useState, useEffect } from "react";
-// import axios from "axios";
-
-
-// const PersonalInformation = ({ onCompletionChange, onProfilePicChange }) => {
-//   const [isEditing, setIsEditing] = useState(false);
-//     const [loading, setLoading] = useState(true);
-//   const [formData, setFormData] = useState({
-//     profilePic: "",
-//     firstName: "",
-//     lastName: "",
-//     mobileNumber: "",
-//     surName: "",
-//     gender: "",
-//     dateOfBirth: "",
-//     parentMobileNumber: "",
-//     bloodGroup: "",
-//   });
-
-//   useEffect(() => {
-//     calculateCompletion();
-//   }, [formData]);
-
-//   const handleChange = (e) => {
-//     const { name, value } = e.target;
-//     setFormData((prev) => ({ ...prev, [name]: value }));
-//   };
-
-//   const handleFileChange = (e) => {
-//     const file = e.target.files[0];
-//     if (file) {
-//       const reader = new FileReader();
-//       reader.onloadend = () => {
-//         setFormData((prev) => ({ ...prev, profilePic: reader.result }));
-//         onProfilePicChange(reader.result);
-//       };
-//       reader.readAsDataURL(file);
-//     }
-//   };
-
-//   const calculateCompletion = () => {
-//     const fields = Object.values(formData);
-//     const filled = fields.filter((f) => f !== "").length;
-//     const percentage = Math.round((filled / fields.length) * 100);
-//     onCompletionChange(percentage);
-//   };
-
-//   const handleSave = () => setIsEditing(false);
-//   const handleCancel = () => setIsEditing(false);
-
-//   return (
-//     <div className="card mb-4 shadow-sm border-0">
-//       <div className="card-header bg-light d-flex justify-content-between align-items-center">
-//         <h5 className="mb-0 fw-semibold text-secondary">
-//           Section 1: Personal Information
-//         </h5>
-//         {!isEditing ? (
-//           <button
-//             className="btn btn-primary btn-sm px-3"
-//             onClick={() => setIsEditing(true)}
-//           >
-//             Edit
-//           </button>
-//         ) : (
-//           <div className="d-flex gap-2">
-//             <button className="btn btn-secondary btn-sm" onClick={handleCancel}>
-//               Cancel
-//             </button>
-//             <button className="btn btn-success btn-sm" onClick={handleSave}>
-//               Save
-//             </button>
-//           </div>
-//         )}
-//       </div>
-
-//       <div className="card-body">
-//         {/* Profile Picture Section */}
-//         <div className="text-center mb-4">
-//           <label className="form-label fw-semibold d-block">Profile Picture</label>
-//           <div
-//             className="d-flex justify-content-center align-items-center border border-primary rounded-circle overflow-hidden bg-light mx-auto ratio ratio-1x1"
-//             style={{ maxWidth: "150px" }}
-//           >
-//             {formData.profilePic ? (
-//               <img
-//                 src={formData.profilePic}
-//                 alt="Profile"
-//                 className="img-fluid rounded-circle object-fit-cover w-100 h-100"
-//               />
-//             ) : (
-//               <div className="d-flex justify-content-center align-items-center text-muted small w-100 h-100">
-//                 No Image
-//               </div>
-//             )}
-//           </div>
-
-
-//           {isEditing && (
-//             <div className="mt-3 d-flex justify-content-center">
-//               <input
-//                 type="file"
-//                 accept="image/*"
-//                 onChange={handleFileChange}
-//                 className="form-control w-50"
-//               />
-//             </div>
-//           )}
-//         </div>
-
-//         {/* Form Grid */}
-//         <div className="row g-3">
-//           <div className="col-md-4">
-//             <label className="form-label">First Name *</label>
-//             <input
-//               type="text"
-//               name="firstName"
-//               value={formData.firstName}
-//               onChange={handleChange}
-//               disabled={!isEditing}
-//               className="form-control"
-//             />
-//           </div>
-
-//           <div className="col-md-4">
-//             <label className="form-label">Last Name *</label>
-//             <input
-//               type="text"
-//               name="lastName"
-//               value={formData.lastName}
-//               onChange={handleChange}
-//               disabled={!isEditing}
-//               className="form-control"
-//             />
-//           </div>
-
-//           <div className="col-md-4">
-//             <label className="form-label">Sur Name</label>
-//             <input
-//               type="text"
-//               name="surName"
-//               value={formData.surName}
-//               onChange={handleChange}
-//               disabled={!isEditing}
-//               className="form-control"
-//             />
-//           </div>
-
-//           <div className="col-md-4">
-//             <label className="form-label">Gender *</label>
-//             <select
-//               name="gender"
-//               value={formData.gender}
-//               onChange={handleChange}
-//               disabled={!isEditing}
-//               className="form-select"
-//             >
-//               <option value="">Select Gender</option>
-//               <option>Male</option>
-//               <option>Female</option>
-//               <option>Other</option>
-//             </select>
-//           </div>
-
-//           <div className="col-md-4">
-//             <label className="form-label">Date of Birth *</label>
-//             <input
-//               type="date"
-//               name="dob"
-//               value={formData.dob}
-//               onChange={handleChange}
-//               disabled={!isEditing}
-//               className="form-control"
-//             />
-//           </div>
-
-//           <div className="col-md-4">
-//             <label className="form-label">Mobile Number *</label>
-//             <input
-//               type="tel"
-//               name="mobileNumber"
-//               value={formData.mobileNumber}
-//               onChange={handleChange}
-//               disabled={!isEditing}
-//               className="form-control"
-//               maxLength="10"
-//               pattern="[0-9]{10}"
-//             />
-//           </div>
-
-//           <div className="col-md-4">
-//             <label className="form-label">Parent Mobile Number *</label>
-//             <input
-//               type="tel"
-//               name="parentMobile"
-//               value={formData.parentMobile}
-//               onChange={handleChange}
-//               disabled={!isEditing}
-//               className="form-control"
-//               maxLength="10"
-//               pattern="[0-9]{10}"
-//             />
-//           </div>
-
-//           <div className="col-md-4">
-//             <label className="form-label">Blood Group *</label>
-//             <select
-//               name="bloodGroup"
-//               value={formData.bloodGroup}
-//               onChange={handleChange}
-//               disabled={!isEditing}
-//               className="form-select"
-//             >
-//               <option value="">Select Blood Group</option>
-//               <option>A+</option>
-//               <option>A-</option>
-//               <option>B+</option>
-//               <option>B-</option>
-//               <option>O+</option>
-//               <option>O-</option>
-//               <option>AB+</option>
-//               <option>AB-</option>
-//             </select>
-//           </div>
-//         </div>
-//       </div>
-//     </div>
-//   );
-// };
-
-// export default PersonalInformation;
-
-
 import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 
@@ -241,13 +9,14 @@ const PersonalInformation = () => {
   const [loading, setLoading] = useState(true);
   const [errors, setErrors] = useState({});
   const [imagePreview, setImagePreview] = useState(null);
+  const [uploading, setUploading] = useState(false);
 
   const [formData, setFormData] = useState({
     profilePicturePath: "",
     firstName: "",
     lastName: "",
+    email: "",
     mobileNumber: "",
-    surName: "",
     gender: "",
     dateOfBirth: "",
     parentMobileNumber: "",
@@ -281,10 +50,36 @@ const PersonalInformation = () => {
     setErrors(prev => ({ ...prev, [name]: "" }));
   };
 
+  const validateImage = (file) => {
+    const validImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    const maxSize = 5 * 1024 * 1024; // 5MB
+
+    if (!validImageTypes.includes(file.type)) {
+      return "Please select a valid image file (JPEG, JPG, PNG, GIF, WEBP)";
+    }
+
+    if (file.size > maxSize) {
+      return "Image size should be less than 5MB";
+    }
+
+    return null;
+  };
+
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
+    // Validate image
+    const validationError = validateImage(file);
+    if (validationError) {
+      alert(validationError);
+      e.target.value = ""; // Clear the file input
+      return;
+    }
+
+    setUploading(true);
+    
+    // Create preview
     setImagePreview(URL.createObjectURL(file));
 
     const formDataImg = new FormData();
@@ -294,7 +89,15 @@ const PersonalInformation = () => {
       const res = await axios.post(
         `http://localhost:8080/api/student/personal-info/upload-image/${userId}`,
         formDataImg,
-        { headers: { "Content-Type": "multipart/form-data" } }
+        { 
+          headers: { 
+            "Content-Type": "multipart/form-data" 
+          },
+          onUploadProgress: (progressEvent) => {
+            const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+            console.log(`Upload progress: ${progress}%`);
+          }
+        }
       );
 
       setFormData(prev => ({ ...prev, profilePicturePath: res.data.profilePicturePath }));
@@ -303,9 +106,15 @@ const PersonalInformation = () => {
       localStorage.setItem("user", JSON.stringify(updatedUser));
       window.dispatchEvent(new Event("user-updated"));
 
-      alert("Profile picture updated!");
+      alert("Profile picture updated successfully!");
     } catch (err) {
-      alert(err.response?.data?.message || "Image upload failed");
+      console.error("Upload error:", err);
+      alert(err.response?.data?.message || "Image upload failed. Please try again.");
+      // Revert to original image on error
+      setImagePreview(originalForm.current?.profilePicturePath);
+    } finally {
+      setUploading(false);
+      e.target.value = ""; // Clear the file input after upload
     }
   };
 
@@ -324,7 +133,6 @@ const PersonalInformation = () => {
     try {
       const payload = {
         userId,
-        surName: formData.surName,
         gender: formData.gender,
         dateOfBirth: formData.dateOfBirth,
         parentMobileNumber: formData.parentMobileNumber,
@@ -343,8 +151,30 @@ const PersonalInformation = () => {
 
   const handleCancel = () => {
     setFormData(originalForm.current);
+    setImagePreview(originalForm.current?.profilePicturePath);
     setErrors({});
     setIsEditing(false);
+  };
+
+  const removeProfilePicture = async () => {
+    if (!window.confirm("Are you sure you want to remove your profile picture?")) {
+      return;
+    }
+
+    try {
+      await axios.delete(`http://localhost:8080/api/student/personal-info/remove-image/${userId}`);
+      
+      setFormData(prev => ({ ...prev, profilePicturePath: "" }));
+      setImagePreview(null);
+
+      const updatedUser = { ...user, profilePicturePath: "" };
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+      window.dispatchEvent(new Event("user-updated"));
+
+      alert("Profile picture removed successfully!");
+    } catch (err) {
+      alert(err.response?.data?.message || "Failed to remove profile picture");
+    }
   };
 
   if (loading) return <div>Loading Personal Info...</div>;
@@ -375,20 +205,39 @@ const PersonalInformation = () => {
             >
               {formData.firstName?.[0]?.toUpperCase() || "U"}
             </div>
-
-
           ) : (
-            <img
-              src={`${imagePreview}?t=${Date.now()}`}
-              className="rounded-circle object-fit-cover"
-              style={{ width: "110px", height: "110px" }}
-              alt="Profile"
-            />
+            <div className="position-relative">
+              <img
+                src={`${imagePreview}?t=${Date.now()}`}
+                className="rounded-circle object-fit-cover"
+                style={{ width: "110px", height: "110px" }}
+                alt="Profile"
+              />
+              {isEditing && imagePreview && (
+                <button
+                  className="btn btn-danger btn-sm position-absolute top-0 end-0 rounded-circle"
+                  style={{ width: "30px", height: "30px" }}
+                  onClick={removeProfilePicture}
+                  title="Remove profile picture"
+                >
+                  ×
+                </button>
+              )}
+            </div>
           )}
 
           {isEditing && (
             <div className="mt-2">
-              <input type="file" className="form-control form-control-sm" accept="image/*" onChange={handleImageUpload} />
+              <input 
+                type="file" 
+                className="form-control form-control-sm" 
+                accept=".jpg,.jpeg,.png,.gif,.webp" 
+                onChange={handleImageUpload}
+                disabled={uploading}
+              />
+              <small className="text-muted">
+                {uploading ? "Uploading..." : "Supported formats: JPG, JPEG, PNG, GIF, WEBP (Max 5MB)"}
+              </small>
             </div>
           )}
         </div>
@@ -406,16 +255,8 @@ const PersonalInformation = () => {
           </div>
 
           <div className="col-md-4">
-            <label className="form-label">Sur Name</label>
-            <input
-              type="text"
-              name="surName"
-              value={formData.surName}
-              disabled={!isEditing}
-              onChange={handleChange}
-              className={`form-control ${errors.surName && "is-invalid"}`}
-            />
-            {errors.surName && <div className="invalid-feedback">{errors.surName}</div>}
+            <label className="form-label">Email *</label>
+            <input type="email" value={formData.email} disabled className="form-control" />
           </div>
 
           <div className="col-md-4">
