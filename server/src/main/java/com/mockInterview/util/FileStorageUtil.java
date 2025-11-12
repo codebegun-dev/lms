@@ -62,6 +62,26 @@ public class FileStorageUtil {
         return filePath.toString();
     }
 
+ // Save student document under uploads/<studentId>/documents/ with original filename
+    public static String saveStudentDocument(MultipartFile file, Long studentId) throws IOException {
+        if (file == null || file.isEmpty()) return null;
+
+        Path uploadPath = Paths.get(BASE_UPLOAD_DIR, String.valueOf(studentId), "documents");
+        if (Files.notExists(uploadPath)) Files.createDirectories(uploadPath);
+
+        String originalName = file.getOriginalFilename();
+        if (originalName == null || originalName.trim().isEmpty()) {
+            originalName = "document_" + System.currentTimeMillis();
+        }
+
+        Path filePath = uploadPath.resolve(originalName);
+
+        // Replace existing file if it exists
+        Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+
+        // Return relative path
+        return studentId + "/documents/" + originalName;
+    }
 
 
     

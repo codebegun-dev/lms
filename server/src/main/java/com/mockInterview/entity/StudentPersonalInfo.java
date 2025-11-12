@@ -16,9 +16,6 @@ public class StudentPersonalInfo {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    
-    private String surName;
-
     @NotBlank(message = "Gender is required")
     @Pattern(regexp = "Male|Female|Other", message = "Gender must be Male, Female, or Other")
     private String gender;
@@ -35,7 +32,7 @@ public class StudentPersonalInfo {
     @Pattern(regexp = "A\\+|A\\-|B\\+|B\\-|O\\+|O\\-|AB\\+|AB\\-", message = "Invalid blood group")
     private String bloodGroup;
 
-    private String profilePicturePath; // store relative path for frontend
+    private String profilePicturePath; // relative path for frontend
 
     @OneToOne
     @JoinColumn(name = "user_id", referencedColumnName = "userId")
