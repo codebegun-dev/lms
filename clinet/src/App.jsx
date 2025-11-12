@@ -9,6 +9,7 @@ import LoginForm from './Registration_Dashboard/LoginForm';
 import ForgotPasswordForm from './Registration_Dashboard/ForgotPasswordForm';
 import SendResetMail from './Registration_Dashboard/SendResetMail';
 import ViewProgress from './Student_Dashboard/ViewProgress';
+import Syllabus from './Admin_Dashboard/Syllabus';
 
 
 // Student Dashboard
@@ -48,6 +49,7 @@ function App() {
       <Route path="/student-profile" element={<StudentProfile />} />
 
       <Route path="/view-progress" element={<ViewProgress />} />    
+      <Route path='/syllabus' element={<Syllabus/>} />
       
   
         {/* Student Dashboard with nested routes */}
@@ -69,7 +71,7 @@ function App() {
           <Route path="sub-topic" element={<CreateSubTopic />} />
           <Route path="usermanagement" element={<UserManagement />} />
           <Route path="manage-roles" element={<ManageRoles/>} />
-          <Route path="" element={<CourseManagement />} />
+           <Route path="" element={<CourseManagement />} />
 
         </Route>
 
