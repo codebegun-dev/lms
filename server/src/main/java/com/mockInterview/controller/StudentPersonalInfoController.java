@@ -15,17 +15,14 @@ public class StudentPersonalInfoController {
     @Autowired
     private StudentPersonalInfoService infoService;
 
+    // ✅ Combined update for both details and profile image
     @PutMapping("/update")
-    public StudentPersonalInfoDto updateInfo(@RequestBody StudentPersonalInfoUpdateRequest request) {
-        return infoService.updateInfo(request);
+    public StudentPersonalInfoDto updateAll(
+            @RequestPart("info") StudentPersonalInfoUpdateRequest request,
+            @RequestPart(value = "file", required = false) MultipartFile file) {
+        return infoService.updateAll(request, file);
     }
 
-
-    @PostMapping("/upload-image/{userId}")
-    public StudentPersonalInfoDto uploadProfileImage(@PathVariable Long userId,
-                                                     @RequestPart("file") MultipartFile file) {
-        return infoService.updateProfileImage(userId, file);
-    }
 
     @GetMapping("/{userId}")
     public StudentPersonalInfoDto getInfo(@PathVariable Long userId) {

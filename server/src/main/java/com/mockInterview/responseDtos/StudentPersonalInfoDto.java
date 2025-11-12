@@ -10,13 +10,12 @@ import java.time.LocalDate;
 @NoArgsConstructor
 public class StudentPersonalInfoDto {
     private Long userId;
-    private String firstName;      // From User table
-    private String lastName;       // From User table
-    private String mobileNumber;   // From User table
-    private String surName;
+    private String firstName;      // From User
+    private String lastName;       // From User
+    private String mobileNumber;   // From User
     private String gender;
     private LocalDate dateOfBirth;
     private String parentMobileNumber;
     private String bloodGroup;
-    private String profilePicturePath; // Path to image
+    private String profilePicturePath;
 }

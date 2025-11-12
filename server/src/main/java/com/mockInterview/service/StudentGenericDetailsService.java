@@ -1,6 +1,8 @@
 package com.mockInterview.service;
 
 import com.mockInterview.responseDtos.StudentGenericDetailsDto;
+
+import org.springframework.core.io.Resource;
 import org.springframework.web.multipart.MultipartFile;
 
 public interface StudentGenericDetailsService {
@@ -10,4 +12,5 @@ public interface StudentGenericDetailsService {
     StudentGenericDetailsDto uploadDocument(Long userId, String documentType, MultipartFile file);
 
     StudentGenericDetailsDto getGenericDetails(Long userId);
+    public Resource viewDocument(Long userId, String documentType);
 }

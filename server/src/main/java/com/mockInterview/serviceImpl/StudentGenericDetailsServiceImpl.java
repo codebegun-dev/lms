@@ -10,13 +10,18 @@ import com.mockInterview.service.StudentGenericDetailsService;
 import com.mockInterview.util.FileStorageUtil;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
-import java.io.File;
+
+import java.net.MalformedURLException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Optional;
- 
+
 @Service
 public class StudentGenericDetailsServiceImpl implements StudentGenericDetailsService {
 
@@ -26,15 +31,13 @@ public class StudentGenericDetailsServiceImpl implements StudentGenericDetailsSe
     @Autowired
     private UserRepository userRepo;
 
-   
-
     @Override
     public StudentGenericDetailsDto updateGenericDetails(StudentGenericDetailsDto dto) {
-    	Optional<User> userOpt = userRepo.findById(dto.getUserId());
-    	if (!userOpt.isPresent()) {
-    	    throw new ResourceNotFoundException("User not found with ID: " + dto.getUserId());
-    	}
-    	User user = userOpt.get();
+        Optional<User> userOpt = userRepo.findById(dto.getUserId());
+        if (!userOpt.isPresent()) {
+            throw new ResourceNotFoundException("User not found with ID: " + dto.getUserId());
+        }
+        User user = userOpt.get();
 
         StudentGenericDetails details = genericRepo.findByUser_UserId(dto.getUserId());
         if (details == null) {
@@ -77,31 +80,22 @@ public class StudentGenericDetailsServiceImpl implements StudentGenericDetailsSe
         }
 
         try {
-            String folderName = "documents";
+            // Save file under uploads/<studentId>/documents/ with original name
+            String savedPath = FileStorageUtil.saveStudentDocument(file, userId);
 
-            // Clean folder per document type
-            String finalSubFolder = documentType.equalsIgnoreCase("adhaar") ? "adhaar" :
-                    documentType.equalsIgnoreCase("resume") ? "resume" : null;
-
-            if (finalSubFolder == null)
-                throw new IllegalArgumentException("Invalid document type (allowed: adhaar, resume)");
-
-            // ✅ Save file using shared utility
-            String savedPath = FileStorageUtil.saveFile(file, userId, folderName + File.separator + finalSubFolder);
-
-            // ✅ Delete old file if new file uploaded
+            // Delete old file if exists
             if ("adhaar".equalsIgnoreCase(documentType)) {
                 if (details.getAdhaarFilePath() != null)
                     FileStorageUtil.deleteFile(details.getAdhaarFilePath());
 
                 details.setAdhaarFilePath(savedPath);
-            }
-
-            if ("resume".equalsIgnoreCase(documentType)) {
+            } else if ("resume".equalsIgnoreCase(documentType)) {
                 if (details.getResumeFilePath() != null)
                     FileStorageUtil.deleteFile(details.getResumeFilePath());
 
                 details.setResumeFilePath(savedPath);
+            } else {
+                throw new IllegalArgumentException("Invalid document type (allowed: adhaar, resume)");
             }
 
             genericRepo.save(details);
@@ -115,11 +109,11 @@ public class StudentGenericDetailsServiceImpl implements StudentGenericDetailsSe
 
     @Override
     public StudentGenericDetailsDto getGenericDetails(Long userId) {
-    	Optional<User> userOpt = userRepo.findById(userId);
-    	if (!userOpt.isPresent()) {
-    	    throw new ResourceNotFoundException("User not found with ID: " + userId);
-    	}
-    	User user = userOpt.get();
+        Optional<User> userOpt = userRepo.findById(userId);
+        if (!userOpt.isPresent()) {
+            throw new ResourceNotFoundException("User not found with ID: " + userId);
+        }
+        User user = userOpt.get();
 
         StudentGenericDetails details = genericRepo.findByUser_UserId(userId);
         if (details == null) {
@@ -130,45 +124,74 @@ public class StudentGenericDetailsServiceImpl implements StudentGenericDetailsSe
         return mapToDto(details);
     }
 
-    
+    @Override
+    public Resource viewDocument(Long userId, String documentType) {
+        StudentGenericDetails details = genericRepo.findByUser_UserId(userId);
+        if (details == null) {
+            throw new ResourceNotFoundException("Student details not found for user ID: " + userId);
+        }
 
- // inside mapToDto method
- private StudentGenericDetailsDto mapToDto(StudentGenericDetails details) {
-     StudentGenericDetailsDto dto = new StudentGenericDetailsDto();
+        String relativePath;
+        if ("adhaar".equalsIgnoreCase(documentType)) {
+            relativePath = details.getAdhaarFilePath();
+        } else if ("resume".equalsIgnoreCase(documentType)) {
+            relativePath = details.getResumeFilePath();
+        } else {
+            throw new IllegalArgumentException("Invalid document type (allowed: adhaar, resume)");
+        }
 
-     dto.setUserId(details.getUser().getUserId());
-     dto.setFirstName(details.getUser().getFirstName());
-     dto.setLastName(details.getUser().getLastName());
-     dto.setMobileNumber(details.getUser().getPhone());
+        if (relativePath == null) {
+            throw new ResourceNotFoundException(documentType + " document not found for user ID: " + userId);
+        }
 
-     dto.setWorkExperience(details.getWorkExperience());
-     dto.setCareerGap(details.getCareerGap());
-     dto.setCurrentState(details.getCurrentState());
-     dto.setCurrentDistrict(details.getCurrentDistrict());
-     dto.setCurrentSubDistrict(details.getCurrentSubDistrict());
-     dto.setCurrentVillage(details.getCurrentVillage());
-     dto.setCurrentStreet(details.getCurrentStreet());
-     dto.setCurrentPincode(details.getCurrentPincode());
-     dto.setPermanentState(details.getPermanentState());
-     dto.setPermanentDistrict(details.getPermanentDistrict());
-     dto.setPermanentSubDistrict(details.getPermanentSubDistrict());
-     dto.setPermanentVillage(details.getPermanentVillage());
-     dto.setPermanentStreet(details.getPermanentStreet());
-     dto.setPermanentPincode(details.getPermanentPincode());
-     dto.setGithubProfile(details.getGithubProfile());
-     dto.setLinkedinProfile(details.getLinkedinProfile());
+        try {
+            Path filePath = Paths.get(System.getProperty("user.dir") + "/uploads").resolve(relativePath).normalize();
+            Resource resource = new UrlResource(filePath.toUri());
+            if (!resource.exists()) {
+                throw new ResourceNotFoundException("File not found: " + relativePath);
+            }
+            return resource;
+        } catch (MalformedURLException e) {
+            throw new RuntimeException("Error reading file: " + e.getMessage(), e);
+        }
+    }
 
-     // ✅ Dynamic base URL
-     String baseUrl = ServletUriComponentsBuilder.fromCurrentContextPath().build().toUriString();
+    // --- mapToDto method ---
+    private StudentGenericDetailsDto mapToDto(StudentGenericDetails details) {
+        StudentGenericDetailsDto dto = new StudentGenericDetailsDto();
 
-     if (details.getAdhaarFilePath() != null) {
-         dto.setAdhaarFilePath(baseUrl + "/docs/" + details.getUser().getUserId() + "/" + new File(details.getAdhaarFilePath()).getName());
-     }
-     if (details.getResumeFilePath() != null) {
-         dto.setResumeFilePath(baseUrl + "/docs/" + details.getUser().getUserId() + "/" + new File(details.getResumeFilePath()).getName());
-     }
+        dto.setUserId(details.getUser().getUserId());
+        dto.setFirstName(details.getUser().getFirstName());
+        dto.setLastName(details.getUser().getLastName());
+        dto.setMobileNumber(details.getUser().getPhone());
 
-     return dto;
- }
+        dto.setWorkExperience(details.getWorkExperience());
+        dto.setCareerGap(details.getCareerGap());
+        dto.setCurrentState(details.getCurrentState());
+        dto.setCurrentDistrict(details.getCurrentDistrict());
+        dto.setCurrentSubDistrict(details.getCurrentSubDistrict());
+        dto.setCurrentVillage(details.getCurrentVillage());
+        dto.setCurrentStreet(details.getCurrentStreet());
+        dto.setCurrentPincode(details.getCurrentPincode());
+        dto.setPermanentState(details.getPermanentState());
+        dto.setPermanentDistrict(details.getPermanentDistrict());
+        dto.setPermanentSubDistrict(details.getPermanentSubDistrict());
+        dto.setPermanentVillage(details.getPermanentVillage());
+        dto.setPermanentStreet(details.getPermanentStreet());
+        dto.setPermanentPincode(details.getPermanentPincode());
+        dto.setGithubProfile(details.getGithubProfile());
+        dto.setLinkedinProfile(details.getLinkedinProfile());
 
+        // Dynamic URLs for frontend
+        String baseUrl = ServletUriComponentsBuilder.fromCurrentContextPath().build().toUriString();
+
+        if (details.getAdhaarFilePath() != null) {
+            dto.setAdhaarFilePath(baseUrl + "/api/student/" + details.getUser().getUserId() + "/document/adhaar");
+        }
+        if (details.getResumeFilePath() != null) {
+            dto.setResumeFilePath(baseUrl + "/api/student/" + details.getUser().getUserId() + "/document/resume");
+        }
+
+        return dto;
+    }
 }
