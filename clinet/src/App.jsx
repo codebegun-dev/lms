@@ -8,6 +8,8 @@ import RegistrationForm from './Registration_Dashboard/RegistrationForm';
 import LoginForm from './Registration_Dashboard/LoginForm';
 import ForgotPasswordForm from './Registration_Dashboard/ForgotPasswordForm';
 import SendResetMail from './Registration_Dashboard/SendResetMail';
+import ViewProgress from './Student_Dashboard/ViewProgress';
+
 
 // Student Dashboard
 import StudentDashboard from './Student_Dashboard/StudentDashboard';
@@ -30,7 +32,7 @@ import Category from './Admin_Dashboard/CreateCategory';
 import CreateTopic from './Admin_Dashboard/CreateTopic';
 import CreateSubTopic from './Admin_Dashboard/CreateSubTopic';
 import UserManagement from './Admin_Dashboard/UserManagement';
-import ManageRolls from './Admin_Dashboard/ManageRolls'; 
+import ManageRoles from './Admin_Dashboard/ManageRoles'; 
 
 function App() {
   return (
@@ -45,7 +47,7 @@ function App() {
       <Route path="/studentnavbar" element={<StudentNavbar />} />
       <Route path="/student-profile" element={<StudentProfile />} />
 
-    
+      <Route path="/view-progress" element={<ViewProgress />} />    
       
   
         {/* Student Dashboard with nested routes */}
@@ -66,7 +68,7 @@ function App() {
           <Route path="topic" element={<CreateTopic />} />
           <Route path="sub-topic" element={<CreateSubTopic />} />
           <Route path="usermanagement" element={<UserManagement />} />
-          <Route path="manage-rolls" element={<ManageRolls/>} />
+          <Route path="manage-roles" element={<ManageRoles/>} />
           <Route path="" element={<CourseManagement />} />
 
         </Route>
