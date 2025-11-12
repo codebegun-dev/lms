@@ -11,7 +11,7 @@ const Dashboard = () => {
 
   return (
     <div className="container mt-5">
-      <div className="card shadow-lg border-0 rounded-4">
+      <div className="card shadow-sm border-0 rounded-4">
         <div className="card-body p-5">
           <h2 className="card-title text-primary mb-3">Hi, welcome {fullName}!</h2>
           <p className="card-text text-muted fs-5 mb-4">

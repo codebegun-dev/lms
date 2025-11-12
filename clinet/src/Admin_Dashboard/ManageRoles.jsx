@@ -1,9 +1,11 @@
-// ✅ ManageRoles.jsx
+
 import React, { useState, useEffect, useRef } from "react";
+import axios from "axios";
 import { FaEdit, FaTrash } from "react-icons/fa";
 
-const STORAGE_KEY = "roles";
+const BASE_URL = "http://localhost:8080/api/roles"; // change if needed
 
+// 👇 convert "Permission1, Permission2" → ["Permission1", "Permission2"]
 const parsePermissions = (txt) => {
   if (!txt) return [];
   return txt
@@ -12,6 +14,7 @@ const parsePermissions = (txt) => {
     .filter(Boolean);
 };
 
+// 👇 convert ["P1","P2"] → "P1, P2"
 const stringifyPermissions = (arr) => (arr && arr.length ? arr.join(", ") : "");
 
 const ManageRoles = () => {
@@ -19,29 +22,22 @@ const ManageRoles = () => {
   const [name, setName] = useState("");
   const [permsText, setPermsText] = useState("");
   const [editingId, setEditingId] = useState(null);
-  const [message, setMessage] = useState(null); // { text, variant }
+  const [message, setMessage] = useState(null);
   const dismissRef = useRef(null);
 
+  // ✅ Load roles from backend
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) setRoles(JSON.parse(raw));
-      else {
-        const seed = [
-          { id: 1, name: "Admin", permissions: ["CourseManagement", "BatchManagement", "UserManagement", "QuestionBank"] },
-          { id: 2, name: "Instructor", permissions: ["CourseManagement", "QuestionBank"] }
-        ];
-        setRoles(seed);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(seed));
-      }
-    } catch (e) {
-      console.error("Failed to load roles", e);
-    }
+    fetchRoles();
   }, []);
 
-  const persist = (next) => {
-    setRoles(next);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+  const fetchRoles = async () => {
+    try {
+      const res = await axios.get(BASE_URL);
+      setRoles(res.data);
+    } catch (e) {
+      showMessage("Failed to load roles", "danger");
+      console.error(e);
+    }
   };
 
   const resetForm = () => {
@@ -52,11 +48,13 @@ const ManageRoles = () => {
 
   const showMessage = (text, variant = "success", timeout = 3000) => {
     setMessage({ text, variant });
+
     if (dismissRef.current) clearTimeout(dismissRef.current);
     dismissRef.current = setTimeout(() => setMessage(null), timeout);
   };
 
-  const handleSave = () => {
+  // ✅ Create OR Update role
+  const handleSave = async () => {
     const trimmed = name.trim();
     if (!trimmed) {
       showMessage("Please enter a role name", "danger");
@@ -65,40 +63,56 @@ const ManageRoles = () => {
 
     let permissions = parsePermissions(permsText);
 
-    if (trimmed.toLowerCase() === "instructor") {
-      permissions = permissions.filter((p) => p !== "BatchManagement");
-    }
+    const payload = {
+      name: trimmed,
+      permissions: permissions
+    };
 
-    if (editingId) {
-      persist(roles.map((r) => (r.id === editingId ? { ...r, name: trimmed, permissions } : r)));
+    try {
+      if (editingId) {
+        await axios.put(`${BASE_URL}/${editingId}`, payload);
+        showMessage("Role updated successfully", "success");
+      } else {
+        await axios.post(BASE_URL, payload);
+        showMessage("Role created successfully", "success");
+      }
+
       resetForm();
-      showMessage("Role updated", "success");
-      return;
-    }
+      fetchRoles();
 
-    const nextId = roles.length ? Math.max(...roles.map((r) => r.id)) + 1 : 1;
-    persist([...roles, { id: nextId, name: trimmed, permissions }]);
-    resetForm();
-    showMessage("Role created", "success");
+    } catch (e) {
+      showMessage("Failed to save role", "danger");
+      console.error(e);
+    }
   };
 
+  // ✅ Edit role
   const handleEdit = (role) => {
     setEditingId(role.id);
     setName(role.name);
     setPermsText(stringifyPermissions(role.permissions));
   };
 
-  const handleDelete = (id) => {
-    if (!window.confirm("Delete this role?")) return;
-    persist(roles.filter((r) => r.id !== id));
-    if (editingId === id) resetForm();
-    showMessage("Role deleted", "warning");
+  // ✅ Delete role
+  const handleDelete = async (id) => {
+    if (!window.confirm("Are you sure?")) return;
+
+    try {
+      await axios.delete(`${BASE_URL}/${id}`);
+      fetchRoles();
+      showMessage("Role deleted successfully", "warning");
+      if (editingId === id) resetForm();
+    } catch (e) {
+      showMessage("Failed to delete role", "danger");
+      console.error(e);
+    }
   };
 
   return (
     <div className="container py-4">
       <h2 className="mb-3">Manage Roles</h2>
 
+      {/* Create / Edit Form */}
       <div className="card mb-3">
         <div className="card-body">
           <div className="row g-2 align-items-center">
@@ -135,8 +149,9 @@ const ManageRoles = () => {
         </div>
       </div>
 
+      {/* Display roles */}
       <div>
-        {roles.length === 0 && <div className="text-muted">No roles yet.</div>}
+        {roles.length === 0 && <div className="text-muted">No roles found.</div>}
 
         <div className="list-group">
           {roles.map((r) => (
@@ -151,7 +166,7 @@ const ManageRoles = () => {
                       </span>
                     ))
                   ) : (
-                    <span className="text-muted small">No permissions</span>
+                    <span className="text-muted small">No Permissions</span>
                   )}
                 </div>
               </div>
@@ -169,6 +184,7 @@ const ManageRoles = () => {
         </div>
       </div>
 
+      {/* Bootstrap Toast */}
       {message && (
         <div className="position-fixed bottom-0 end-0 p-3" style={{ zIndex: 1060 }}>
           <div className={`alert alert-${message.variant} shadow`} role="alert">
