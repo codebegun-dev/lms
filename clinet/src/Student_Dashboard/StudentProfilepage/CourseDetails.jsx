@@ -19,7 +19,7 @@ const CourseDetails = () => {
     <div className="card mb-4 shadow-sm">
       <div className="card-header bg-light d-flex justify-content-between align-items-center flex-wrap">
         <div>
-          <h5 className="mb-1">Section 7: Institute Course Details</h5>
+          <h5 className="mb-1">Institute Course Details</h5>
           <small className="text-muted">
             Completion: <strong>{completion}%</strong>
           </small>

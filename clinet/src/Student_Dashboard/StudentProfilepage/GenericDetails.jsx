@@ -19,37 +19,33 @@ const GenericDetails = ({ onCompletionChange = () => {} }) => {
   const initialForm = {
     workExperience: "",
     careerGap: "",
-
-    // Current address
     currentState: "",
     currentDistrict: "",
     currentSubDistrict: "",
     currentVillage: "",
     currentStreet: "",
     currentPincode: "",
-
-    // Permanent address
     permanentState: "",
     permanentDistrict: "",
     permanentSubDistrict: "",
     permanentVillage: "",
     permanentStreet: "",
     permanentPincode: "",
-
-    // Social & files (we keep both local preview and server paths)
     githubProfile: "",
     linkedinProfile: "",
-    adhaarFilePath: "", // server path or stored value
-    resumeFilePath: "", // server path or stored value
-    // NOTE: we won't send base64 previews to backend; uploads go through POST
+    adhaarFilePath: "",
+    resumeFilePath: "",
   };
 
   const [formData, setFormData] = useState(initialForm);
-  const [editingData, setEditingData] = useState(initialForm); // used while editing
+  const [editingData, setEditingData] = useState(initialForm);
   const [isEditing, setIsEditing] = useState(false);
   const [adhaarFileName, setAdhaarFileName] = useState("");
   const [resumeFileName, setResumeFileName] = useState("");
   const [originalData, setOriginalData] = useState(initialForm);
+
+  // Validation state
+  const [errors, setErrors] = useState({});
 
   // Fetch existing details
   useEffect(() => {
@@ -59,31 +55,26 @@ const GenericDetails = ({ onCompletionChange = () => {} }) => {
           `http://localhost:8080/api/student-generic-details/${userId}`
         );
         if (resp.data) {
-          // Map backend DTO fields to our form structure
           const mapped = {
             workExperience: resp.data.workExperience || "",
             careerGap: resp.data.careerGap || "",
-
             currentState: resp.data.currentState || "",
             currentDistrict: resp.data.currentDistrict || "",
             currentSubDistrict: resp.data.currentSubDistrict || "",
             currentVillage: resp.data.currentVillage || "",
             currentStreet: resp.data.currentStreet || "",
             currentPincode: resp.data.currentPincode || "",
-
             permanentState: resp.data.permanentState || "",
             permanentDistrict: resp.data.permanentDistrict || "",
             permanentSubDistrict: resp.data.permanentSubDistrict || "",
             permanentVillage: resp.data.permanentVillage || "",
             permanentStreet: resp.data.permanentStreet || "",
             permanentPincode: resp.data.permanentPincode || "",
-
             githubProfile: resp.data.githubProfile || "",
             linkedinProfile: resp.data.linkedinProfile || "",
             adhaarFilePath: resp.data.adhaarFilePath || "",
             resumeFilePath: resp.data.resumeFilePath || "",
           };
-
           setFormData(mapped);
           setEditingData(mapped);
           setOriginalData(mapped);
@@ -93,81 +84,94 @@ const GenericDetails = ({ onCompletionChange = () => {} }) => {
         console.error("Error fetching generic details:", err);
       }
     };
-
     fetchData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
 
-  // When not editing, formData == editingData; when editing, user modifies editingData
-  // keep completion updated when formData changes
+  // Update completion percentage whenever formData changes
   useEffect(() => {
     calculateCompletion(formData);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData]);
 
   const calculateCompletion = (data = formData) => {
     const fields = Object.values(data);
-    const filled = fields.filter((f) => f !== null && f !== undefined && String(f).trim() !== "").length;
+    const filled = fields.filter(
+      (f) => f !== null && f !== undefined && String(f).trim() !== ""
+    ).length;
     const pct = Math.round((filled / fields.length) * 100);
     onCompletionChange(pct);
   };
 
-  // Generic change handler (for editingData)
   const handleChange = (e) => {
     const { name, value } = e.target;
-    // restrict pincode length
     if ((name === "currentPincode" || name === "permanentPincode") && value.length > 6) return;
     setEditingData((prev) => ({ ...prev, [name]: value }));
+    setErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
-  // Start editing
   const startEdit = () => {
     setIsEditing(true);
     setEditingData(formData);
     setAdhaarFileName("");
     setResumeFileName("");
+    setErrors({});
   };
 
-  // Cancel editing -> revert to original fetched data
   const handleCancel = () => {
     setIsEditing(false);
     setEditingData(formData);
+    setErrors({});
   };
 
-  // Save -> call PUT API with fields (map to backend expected names)
-  const handleSave = async () => {
-    try {
-      // Map editingData to backend DTO names. If backend expects adhaarFilePath/resumeFilePath, keep names.
-      const payload = {
-        ...editingData,
-        userId,
-      };
+  // Validation function
+  const validateForm = () => {
+    const githubRegex = /^(https?:\/\/)?(www\.)?github\.com\/[A-Za-z0-9_-]+\/?$/;
+    const linkedinRegex = /^(https?:\/\/)?(www\.)?linkedin\.com\/(in|pub)\/[A-Za-z0-9_-]+\/?$/;
+    const pincodeRegex = /^[1-9][0-9]{5}$/;
 
+    const newErrors = {};
+
+    if (!editingData.adhaarFilePath) newErrors.adhaarFilePath = "Please upload Aadhaar card.";
+    if (!editingData.resumeFilePath) newErrors.resumeFilePath = "Please upload Resume.";
+    if (editingData.githubProfile && !githubRegex.test(editingData.githubProfile.trim()))
+      newErrors.githubProfile = "Invalid GitHub URL.";
+    if (editingData.linkedinProfile && !linkedinRegex.test(editingData.linkedinProfile.trim()))
+      newErrors.linkedinProfile = "Invalid LinkedIn URL.";
+    if (editingData.currentPincode && !pincodeRegex.test(editingData.currentPincode))
+      newErrors.currentPincode = "Enter a valid 6-digit pincode.";
+    if (editingData.permanentPincode && !pincodeRegex.test(editingData.permanentPincode))
+      newErrors.permanentPincode = "Enter a valid 6-digit pincode.";
+
+    setErrors(newErrors);
+
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSave = async () => {
+    if (!validateForm()) return;
+
+    try {
+      const payload = { ...editingData, userId };
       const resp = await axios.put(
         `http://localhost:8080/api/student-generic-details/update`,
         payload
       );
 
-      // backend returns updated DTO
       if (resp.data) {
         const mapped = {
           workExperience: resp.data.workExperience || "",
           careerGap: resp.data.careerGap || "",
-
           currentState: resp.data.currentState || "",
           currentDistrict: resp.data.currentDistrict || "",
           currentSubDistrict: resp.data.currentSubDistrict || "",
           currentVillage: resp.data.currentVillage || "",
           currentStreet: resp.data.currentStreet || "",
           currentPincode: resp.data.currentPincode || "",
-
           permanentState: resp.data.permanentState || "",
           permanentDistrict: resp.data.permanentDistrict || "",
           permanentSubDistrict: resp.data.permanentSubDistrict || "",
           permanentVillage: resp.data.permanentVillage || "",
           permanentStreet: resp.data.permanentStreet || "",
           permanentPincode: resp.data.permanentPincode || "",
-
           githubProfile: resp.data.githubProfile || "",
           linkedinProfile: resp.data.linkedinProfile || "",
           adhaarFilePath: resp.data.adhaarFilePath || "",
@@ -188,13 +192,9 @@ const GenericDetails = ({ onCompletionChange = () => {} }) => {
     }
   };
 
-  // Upload file (Aadhaar or Resume) to server via POST endpoint
-  // type: "adhaar" or "resume"
   const handleFileUpload = async (e, type) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    // update local filename for UI
     if (type === "adhaar") setAdhaarFileName(file.name);
     else setResumeFileName(file.name);
 
@@ -208,39 +208,17 @@ const GenericDetails = ({ onCompletionChange = () => {} }) => {
         { headers: { "Content-Type": "multipart/form-data" } }
       );
 
-      // Backend should return updated StudentGenericDetailsDto
       if (resp.data) {
         const updated = {
-          workExperience: resp.data.workExperience || editingData.workExperience || "",
-          careerGap: resp.data.careerGap || editingData.careerGap || "",
-
-          currentState: resp.data.currentState || editingData.currentState || "",
-          currentDistrict: resp.data.currentDistrict || editingData.currentDistrict || "",
-          currentSubDistrict: resp.data.currentSubDistrict || editingData.currentSubDistrict || "",
-          currentVillage: resp.data.currentVillage || editingData.currentVillage || "",
-          currentStreet: resp.data.currentStreet || editingData.currentStreet || "",
-          currentPincode: resp.data.currentPincode || editingData.currentPincode || "",
-
-          permanentState: resp.data.permanentState || editingData.permanentState || "",
-          permanentDistrict: resp.data.permanentDistrict || editingData.permanentDistrict || "",
-          permanentSubDistrict: resp.data.permanentSubDistrict || editingData.permanentSubDistrict || "",
-          permanentVillage: resp.data.permanentVillage || editingData.permanentVillage || "",
-          permanentStreet: resp.data.permanentStreet || editingData.permanentStreet || "",
-          permanentPincode: resp.data.permanentPincode || editingData.permanentPincode || "",
-
-          githubProfile: resp.data.githubProfile || editingData.githubProfile || "",
-          linkedinProfile: resp.data.linkedinProfile || editingData.linkedinProfile || "",
-          adhaarFilePath: resp.data.adhaarFilePath || (type === "adhaar" ? (resp.data.adhaarFilePath || "") : editingData.adhaarFilePath || ""),
-          resumeFilePath: resp.data.resumeFilePath || (type === "resume" ? (resp.data.resumeFilePath || "") : editingData.resumeFilePath || ""),
+          ...editingData,
+          adhaarFilePath: type === "adhaar" ? resp.data.adhaarFilePath : editingData.adhaarFilePath,
+          resumeFilePath: type === "resume" ? resp.data.resumeFilePath : editingData.resumeFilePath,
         };
-
-        // Update both editing and visible form data (the uploaded file path is now known)
         setEditingData(updated);
         setFormData(updated);
         setOriginalData(updated);
+        setErrors((prev) => ({ ...prev, [`${type}FilePath`]: "" }));
         alert(`${type === "adhaar" ? "Aadhaar" : "Resume"} uploaded successfully.`);
-      } else {
-        alert("Upload succeeded but backend returned no data.");
       }
     } catch (err) {
       console.error("File upload failed:", err);
@@ -248,27 +226,23 @@ const GenericDetails = ({ onCompletionChange = () => {} }) => {
     }
   };
 
-  // View document: if backend provides an accessible URL use that; otherwise, open filePath as src
   const viewDocument = (type) => {
-    const path = (type === "adhaar") ? formData.adhaarFilePath : formData.resumeFilePath;
+    const path = type === "adhaar" ? formData.adhaarFilePath : formData.resumeFilePath;
     if (!path) {
       alert(`${type === "adhaar" ? "Aadhaar" : "Resume"} not uploaded`);
       return;
     }
-    // open in new tab; if backend returns raw file bytes via URL, this will work.
     const win = window.open();
-    // If path is a direct URL, use it. Wrap in iframe for inline view.
     win.document.write(
       `<div style="height:100vh;margin:0;padding:0"><iframe src="${path}" style="width:100%;height:100%;border:none"></iframe></div>`
     );
   };
 
-  // Helper to render input with label and props
   const renderInput = (label, name, placeholder = "", props = {}) => (
     <div className="col-md-4 mb-2">
       <label className="form-label fw-semibold">{label}</label>
       <input
-        className="form-control"
+        className={`form-control ${errors[name] ? "is-invalid" : ""}`}
         name={name}
         value={editingData[name] ?? ""}
         onChange={handleChange}
@@ -276,6 +250,7 @@ const GenericDetails = ({ onCompletionChange = () => {} }) => {
         placeholder={placeholder}
         {...props}
       />
+      {errors[name] && <div className="invalid-feedback">{errors[name]}</div>}
     </div>
   );
 
@@ -291,12 +266,7 @@ const GenericDetails = ({ onCompletionChange = () => {} }) => {
           </div>
         ) : (
           <div>
-            <button
-              className="btn btn-secondary btn-sm me-2"
-              onClick={() => {
-                handleCancel();
-              }}
-            >
+            <button className="btn btn-secondary btn-sm me-2" onClick={handleCancel}>
               Cancel
             </button>
             <button className="btn btn-success btn-sm" onClick={handleSave}>
@@ -346,9 +316,8 @@ const GenericDetails = ({ onCompletionChange = () => {} }) => {
             </select>
           </div>
 
-          {/* Current Address header */}
+          {/* Current Address */}
           <div className="col-12 mt-3 border-bottom pb-2 fw-bold">Current Address</div>
-
           <div className="col-md-4">
             <label className="form-label">State *</label>
             <select
@@ -360,35 +329,18 @@ const GenericDetails = ({ onCompletionChange = () => {} }) => {
             >
               <option value="">Select State</option>
               {indianStates.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
+                <option key={s} value={s}>{s}</option>
               ))}
             </select>
           </div>
-
           {renderInput("District *", "currentDistrict", "Enter district")}
           {renderInput("Sub District", "currentSubDistrict", "Enter sub district")}
           {renderInput("Village/Town *", "currentVillage", "Enter village/town")}
           {renderInput("Street/Building No/Floor", "currentStreet", "Enter street/building no/floor")}
-          <div className="col-md-4 mb-2">
-            <label className="form-label fw-semibold">Pincode *</label>
-            <input
-              type="text"
-              name="currentPincode"
-              className="form-control"
-              value={editingData.currentPincode}
-              onChange={handleChange}
-              disabled={!isEditing}
-              placeholder="Enter 6-digit pincode"
-              maxLength={6}
-              pattern="[0-9]{6}"
-            />
-          </div>
+          {renderInput("Pincode *", "currentPincode", "Enter 6-digit pincode")}
 
-          {/* Permanent Address header */}
+          {/* Permanent Address */}
           <div className="col-12 mt-3 border-bottom pb-2 fw-bold">Permanent Address</div>
-
           <div className="col-md-4">
             <label className="form-label">State *</label>
             <select
@@ -400,58 +352,19 @@ const GenericDetails = ({ onCompletionChange = () => {} }) => {
             >
               <option value="">Select State</option>
               {indianStates.map((s) => (
-                <option key={`perm-${s}`} value={s}>
-                  {s}
-                </option>
+                <option key={`perm-${s}`} value={s}>{s}</option>
               ))}
             </select>
           </div>
-
           {renderInput("District *", "permanentDistrict", "Enter district")}
           {renderInput("Sub District", "permanentSubDistrict", "Enter sub district")}
           {renderInput("Village/Town *", "permanentVillage", "Enter village/town")}
           {renderInput("Street/Building No/Floor", "permanentStreet", "Enter street/building no/floor")}
-          <div className="col-md-4 mb-2">
-            <label className="form-label fw-semibold">Pincode *</label>
-            <input
-              type="text"
-              name="permanentPincode"
-              className="form-control"
-              value={editingData.permanentPincode}
-              onChange={handleChange}
-              disabled={!isEditing}
-              placeholder="Enter 6-digit pincode"
-              maxLength={6}
-              pattern="[0-9]{6}"
-            />
-          </div>
+          {renderInput("Pincode *", "permanentPincode", "Enter 6-digit pincode")}
 
           {/* Social Links */}
-          <div className="col-md-6">
-            <label className="form-label">GitHub Profile</label>
-            <input
-              type="url"
-              name="githubProfile"
-              className="form-control"
-              value={editingData.githubProfile}
-              onChange={handleChange}
-              disabled={!isEditing}
-              placeholder="https://github.com/username"
-            />
-          </div>
-
-          <div className="col-md-6">
-            <label className="form-label">LinkedIn Profile</label>
-            <input
-              type="url"
-              name="linkedinProfile"
-              className="form-control"
-              value={editingData.linkedinProfile}
-              onChange={handleChange}
-              disabled={!isEditing}
-              placeholder="https://linkedin.com/in/username"
-            />
-          </div>
+          {renderInput("GitHub Profile", "githubProfile", "https://github.com/username")}
+          {renderInput("LinkedIn Profile", "linkedinProfile", "https://linkedin.com/in/username")}
 
           {/* Aadhaar */}
           <div className="col-md-6">
@@ -464,31 +377,17 @@ const GenericDetails = ({ onCompletionChange = () => {} }) => {
                   </button>
                   <small className="text-muted">{formData.adhaarFilePath}</small>
                 </div>
-              ) : (
-                <p className="text-muted fst-italic">No document uploaded</p>
-              )
+              ) : <p className="text-muted fst-italic">No document uploaded</p>
             ) : (
               <div>
                 <input
                   type="file"
-                  className="form-control"
+                  className={`form-control ${errors.adhaarFilePath ? "is-invalid" : ""}`}
                   accept=".pdf,.jpg,.jpeg,.png"
                   onChange={(e) => handleFileUpload(e, "adhaar")}
                 />
-                {adhaarFileName && (
-                  <div className="mt-1">
-                    <span className="text-success small">{adhaarFileName}</span>
-                    {formData.adhaarFilePath && (
-                      <button
-                        className="btn btn-outline-info btn-sm ms-2"
-                        onClick={() => viewDocument("adhaar")}
-                        type="button"
-                      >
-                        View
-                      </button>
-                    )}
-                  </div>
-                )}
+                {errors.adhaarFilePath && <div className="invalid-feedback">{errors.adhaarFilePath}</div>}
+                {adhaarFileName && <div className="mt-1 text-success">{adhaarFileName}</div>}
               </div>
             )}
           </div>
@@ -504,31 +403,17 @@ const GenericDetails = ({ onCompletionChange = () => {} }) => {
                   </button>
                   <small className="text-muted">{formData.resumeFilePath}</small>
                 </div>
-              ) : (
-                <p className="text-muted fst-italic">No document uploaded</p>
-              )
+              ) : <p className="text-muted fst-italic">No document uploaded</p>
             ) : (
               <div>
                 <input
                   type="file"
-                  className="form-control"
+                  className={`form-control ${errors.resumeFilePath ? "is-invalid" : ""}`}
                   accept=".pdf,.doc,.docx"
                   onChange={(e) => handleFileUpload(e, "resume")}
                 />
-                {resumeFileName && (
-                  <div className="mt-1">
-                    <span className="text-success small">{resumeFileName}</span>
-                    {formData.resumeFilePath && (
-                      <button
-                        className="btn btn-outline-info btn-sm ms-2"
-                        onClick={() => viewDocument("resume")}
-                        type="button"
-                      >
-                        View
-                      </button>
-                    )}
-                  </div>
-                )}
+                {errors.resumeFilePath && <div className="invalid-feedback">{errors.resumeFilePath}</div>}
+                {resumeFileName && <div className="mt-1 text-success">{resumeFileName}</div>}
               </div>
             )}
           </div>

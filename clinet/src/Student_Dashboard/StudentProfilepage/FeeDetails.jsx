@@ -13,7 +13,7 @@ const FeeDetails = () => {
     <div className="card shadow-sm mb-4">
       {/* Header */}
       <div className="card-header bg-light d-flex flex-wrap justify-content-between align-items-center">
-        <h5 className="mb-0">Section 8: Fee Details</h5>
+        <h5 className="mb-0">Fee Details</h5>
        </div>
 
       {/* Body */}
