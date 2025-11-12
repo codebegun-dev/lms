@@ -10,8 +10,8 @@ import com.mockInterview.service.RoleService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
-
 @Service
 public class RoleServiceImpl implements RoleService {
 
@@ -23,9 +23,10 @@ public class RoleServiceImpl implements RoleService {
         if (roleRepository.findByName(dto.getName()) != null) {
             throw new RuntimeException("Role with this name already exists!");
         }
+
         Role role = new Role();
         role.setName(dto.getName());
-        role.setPermissions(dto.getPermissions());
+        role.setPermissions(String.join(",", dto.getPermissions()));
         Role saved = roleRepository.save(role);
         return toResponse(saved);
     }
@@ -34,13 +35,14 @@ public class RoleServiceImpl implements RoleService {
     public RoleResponseDto updateRole(Long id, RoleRequestDto dto) {
         Role role = roleRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Role not found"));
-        
+
         Role existingRole = roleRepository.findByName(dto.getName());
         if (existingRole != null && !existingRole.getId().equals(id)) {
             throw new RuntimeException("Role with this name already exists!");
         }
+
         role.setName(dto.getName());
-        role.setPermissions(dto.getPermissions());
+        role.setPermissions(String.join(",", dto.getPermissions()));
         Role updated = roleRepository.save(role);
         return toResponse(updated);
     }
@@ -72,7 +74,9 @@ public class RoleServiceImpl implements RoleService {
         RoleResponseDto dto = new RoleResponseDto();
         dto.setId(role.getId());
         dto.setName(role.getName());
-        dto.setPermissions(role.getPermissions());
+        if (role.getPermissions() != null && !role.getPermissions().isEmpty()) {
+            dto.setPermissions(Arrays.asList(role.getPermissions().split(",")));
+        }
         return dto;
     }
 }

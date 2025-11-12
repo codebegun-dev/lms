@@ -2,10 +2,10 @@ package com.mockInterview.serviceImpl;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import com.mockInterview.entity.PasswordResetToken;
@@ -49,6 +49,10 @@ public class UserServiceImpl implements UserService {
     @Autowired
     private UserMapper userMapper;
 
+ // ✅ Inject Master Admin email from application.properties
+    @Value("${master.admin.email}")
+    private String masterEmail;
+
     @Override
     public UserResponseDto createUser(UserRequestDto dto) {
 
@@ -63,7 +67,7 @@ public class UserServiceImpl implements UserService {
             throw new DuplicateFieldException("Phone number already exists!");
         }
 
-        // 2️⃣ Map DTO → User entity
+        // 2️⃣ Map DTO → Entity
         User user = userMapper.toEntity(dto);
 
         // 3️⃣ Assign role dynamically
@@ -74,31 +78,19 @@ public class UserServiceImpl implements UserService {
         } else {
             role = roleRepository.findByName("STUDENT");
             if (role == null) {
-                throw new RuntimeException("Default STUDENT role not found. Please initialize STUDENT role.");
+                throw new ResourceNotFoundException("Default STUDENT role not found. Please initialize STUDENT role.");
             }
         }
-
         user.setRole(role);
+        user.setStatus("ACTIVE");
 
-        // 4️⃣ Validate allowed roles for admin-created users dynamically
+        // 4️⃣ For non-student roles → use Master Admin’s password
         if (!"STUDENT".equalsIgnoreCase(role.getName())) {
-            List<Role> allowedRoles = roleRepository.findByNameNotIn(Arrays.asList("STUDENT", "MASTER_ADMIN"));
-            boolean validRole = allowedRoles.stream()
-                                    .anyMatch(r -> r.getName().equalsIgnoreCase(role.getName()));
-            if (!validRole) {
-                throw new RuntimeException("Invalid role. Allowed roles: " + allowedRoles);
-            }
-
-            // Set Master Admin password for admin-created users
-            User masterAdmin = userRepository.findByRole_Name("MASTER_ADMIN");
+            User masterAdmin = userRepository.findByEmail(masterEmail); // ✅ FIXED: fetch by email instead of role
             if (masterAdmin == null) {
-                throw new RuntimeException("Master Admin not found!");
+                throw new RuntimeException("Master Admin not found! Please check DataInitializer.");
             }
             user.setPassword(masterAdmin.getPassword());
-            user.setStatus("ACTIVE");
-        } else {
-            // Student registration
-            user.setStatus("ACTIVE");
         }
 
         // 5️⃣ Save user
@@ -110,7 +102,6 @@ public class UserServiceImpl implements UserService {
         // 7️⃣ Return response DTO
         return userMapper.toResponse(savedUser);
     }
-
     
 
 
@@ -220,7 +211,7 @@ public class UserServiceImpl implements UserService {
         }
         return result;
     }
-
+ 
 
 
     // --- Get user by ID
@@ -276,7 +267,7 @@ public class UserServiceImpl implements UserService {
         userRepository.save(user);
     }
 
-    // --- Activate user
+    // --- Activate user 
     @Override
     public void activateUser(Long userId) {
         User user = userRepository.findById(userId)
@@ -309,34 +300,31 @@ public class UserServiceImpl implements UserService {
     
     @Transactional
     public void syncPasswordsWithMasterAdmin() {
-        // 1. Get the Master Admin
-        User masterAdmin = userRepository.findByRole_Name("MASTER_ADMIN");
+        // ✅ Fetch master admin using email instead of role
+        User masterAdmin = userRepository.findByEmail(masterEmail);
         if (masterAdmin == null) {
             throw new RuntimeException("Master Admin not found!");
         }
 
-        // 2. Get all non-student users (exclude MASTER_ADMIN and STUDENT)
+        // Get all roles except STUDENT
         List<Role> roles = roleRepository.findAll();
         List<String> targetRoles = new ArrayList<>();
         for (Role role : roles) {
-            if (!"MASTER_ADMIN".equalsIgnoreCase(role.getName()) &&
-                !"STUDENT".equalsIgnoreCase(role.getName())) {
+            if (!"STUDENT".equalsIgnoreCase(role.getName())) {
                 targetRoles.add(role.getName());
             }
         }
 
-        // 3. Find all users with these roles
+        // Find all users with these roles
         List<User> adminUsers = userRepository.findByRoleNameIn(targetRoles);
 
-        // 4. Update each user’s password to match Master Admin
+        // Update each user’s password to match Master Admin
         for (User user : adminUsers) {
             user.setPassword(masterAdmin.getPassword());
         }
 
-        // 5. Save all
         userRepository.saveAll(adminUsers);
     }
-
 
 
 

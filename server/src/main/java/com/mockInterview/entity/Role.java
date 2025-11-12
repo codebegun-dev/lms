@@ -2,7 +2,6 @@ package com.mockInterview.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -16,10 +15,8 @@ public class Role {
     private Long id;
 
     @Column(unique = true, nullable = false)
-    private String name;  // e.g., "Admin", "Instructor", "Student"
+    private String name; 
 
-    @ElementCollection(fetch = FetchType.EAGER)
-    @CollectionTable(name = "role_permissions", joinColumns = @JoinColumn(name = "role_id"))
-    @Column(name = "permission")
-    private List<String> permissions;  // e.g., ["UserManagement", "BatchManagement"]
+    @Column(length = 1000)
+    private String permissions; 
 }
