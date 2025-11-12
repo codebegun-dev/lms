@@ -71,8 +71,8 @@ function App() {
           <Route path="sub-topic" element={<CreateSubTopic />} />
           <Route path="usermanagement" element={<UserManagement />} />
           <Route path="manage-roles" element={<ManageRoles/>} />
-           <Route path="" element={<CourseManagement />} />
-
+          <Route path="" element={<CourseManagement />} />
+          <Route path="admin-profile" element={<AdminProfile />} />
         </Route>
 
         {/* Fallback route (optional) */}
