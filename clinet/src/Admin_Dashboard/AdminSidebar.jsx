@@ -92,7 +92,7 @@ const AdminSidebar = () => {
               `d-flex align-items-center text-decoration-none ${isActive ? "fw-bold text-primary" : "text-dark"}`
             }
           >
-            <FaUsers className="me-2" /> manage Roles
+            <FaUsers className="me-2" /> Manage Roles
           </NavLink>
         </li>
       </ul>
