@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-
 import org.springframework.web.bind.annotation.RestController;
 
 import com.mockInterview.requestDtos.ForgotPasswordDto;
@@ -28,78 +27,86 @@ import jakarta.validation.Valid;
 @RequestMapping("/api/user")
 @CrossOrigin(origins = "*")
 public class UserController {
-	
-@Autowired
-UserService userService;
 
-	@PostMapping 
-	public UserResponseDto createUser(@Valid @RequestBody UserRequestDto dto) {
-		return userService.createUser(dto);
-	}
-	
-	@PostMapping("/login")
-	public UserResponseDto login(@Valid @RequestBody LoginRequestDto loginDto) {
-	    return userService.login(loginDto);
-	}
+    @Autowired
+    private UserService userService;
 
-	@PostMapping("/forgot-password")
-	public String forgotPassword(@RequestBody ForgotPasswordDto dto) {
-	    return userService.forgotPassword(dto.getEmailOrPhone());
-	}
+    // ---------------- Single User Creation ----------------
+    @PostMapping
+    public UserResponseDto createUser(@Valid @RequestBody UserRequestDto dto) {
+        return userService.createUser(dto);
+    }
 
-	
-	@PostMapping("/reset-password")
-	public String resetPassword(@RequestBody ResetPasswordDto dto) {
-	    return userService.resetPassword(dto.getToken(), dto.getNewPassword());
-	}
+    // ---------------- Batch User Creation ----------------
+    @PostMapping("/batch")
+    public List<UserResponseDto> createUsersBatch(@Valid @RequestBody List<UserRequestDto> dtos) {
+        return userService.createUsers(dtos);
+    }
 
-	
-	@GetMapping("/all")
+    // ---------------- Login ----------------
+    @PostMapping("/login")
+    public UserResponseDto login(@Valid @RequestBody LoginRequestDto loginDto) {
+        return userService.login(loginDto);
+    }
+
+    // ---------------- Forgot Password ----------------
+    @PostMapping("/forgot-password")
+    public String forgotPassword(@RequestBody ForgotPasswordDto dto) {
+        return userService.forgotPassword(dto.getEmailOrPhone());
+    }
+
+    // ---------------- Reset Password ----------------
+    @PostMapping("/reset-password")
+    public String resetPassword(@RequestBody ResetPasswordDto dto) {
+        return userService.resetPassword(dto.getToken(), dto.getNewPassword());
+    }
+
+    // ---------------- Get Users ----------------
+    @GetMapping("/all")
     public List<UserResponseDto> getAllActiveUsers() {
         return userService.getAllActiveUsers();
     }
-	
-	@GetMapping("/admin/users/all")
-	public List<UserResponseDto> getAllUsersWithStatus() {
-	    return userService.getAllUsersWithStatus();
-	}
 
+    @GetMapping("/admin/users/all")
+    public List<UserResponseDto> getAllUsersWithStatus() {
+        return userService.getAllUsersWithStatus();
+    }
 
     @GetMapping("/{userId}")
     public UserResponseDto getUserById(@PathVariable Long userId) {
         return userService.getUserById(userId);
     }
 
+    // ---------------- Update User ----------------
     @PutMapping("/update/{userId}")
     public UserResponseDto updateUser(@PathVariable Long userId, @Valid @RequestBody UserUpdateRequestDto dto) {
-        return userService.updateUser(userId, dto); // Overload method for update DTO
+        return userService.updateUser(userId, dto);
     }
 
-
+    // ---------------- Deactivate / Activate User ----------------
     @DeleteMapping("/deactivate/{userId}")
     public String deactivateUser(@PathVariable Long userId) {
         userService.deactivateUser(userId);
         return "User deactivated successfully";
     }
-    
+
     @PutMapping("/activate/{userId}")
     public String activateUser(@PathVariable Long userId) {
         userService.activateUser(userId);
         return "User activated successfully";
     }
-    
+
+    // ---------------- Delete User ----------------
     @DeleteMapping("/delete/{userId}")
     public String deleteUser(@PathVariable Long userId) {
         userService.deleteUser(userId);
         return "User deleted successfully";
     }
-    
-    
+
+    // ---------------- Sync Master Admin Password ----------------
     @PutMapping("/sync-passwords")
     public String syncPasswords() {
         userService.syncPasswordsWithMasterAdmin();
         return "✅ All non-student users' passwords synced with Master Admin password successfully.";
     }
-
-
 }

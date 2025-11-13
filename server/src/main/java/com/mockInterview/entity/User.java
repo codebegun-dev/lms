@@ -34,16 +34,20 @@ public class User {
     @Pattern(regexp = "^[0-9]{10}$")
     private String phone;
 
-    @NotNull
     @Size(min = 8, message = "Password must be at least 8 characters")
-	@Pattern(regexp = "^(?=.*[A-Z])(?=.*[a-z])(?=.*\\d)(?=.*[@$!%*?&#])[A-Za-z\\d@$!%*?&#]{8,}$", 
-	message = "Password must contain at least 1 uppercase, 1 lowercase, 1 number, 1 special character and be at least 8 characters long")
-	private String password;
+    @Pattern(
+        regexp = "^(?=.*[A-Z])(?=.*[a-z])(?=.*\\d)(?=.*[@$!%*?&#])[A-Za-z\\d@$!%*?&#]{8,}$", 
+        message = "Password must contain at least 1 uppercase, 1 lowercase, 1 number, 1 special character and be at least 8 characters long"
+    )
+    private String password;
 
-    @ManyToOne
+
+    @ManyToOne(optional = true)
     @JoinColumn(name = "role_id", referencedColumnName = "id", foreignKey = @ForeignKey(name = "FK_user_role"))
     @OnDelete(action = OnDeleteAction.SET_NULL)
     private Role role;
+
+
 
 
     private String resetToken;

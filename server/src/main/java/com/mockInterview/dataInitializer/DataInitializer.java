@@ -1,79 +1,115 @@
+//package com.mockInterview.dataInitializer;
+//
+//import org.springframework.beans.factory.annotation.Autowired;
+//import org.springframework.beans.factory.annotation.Value;
+//import org.springframework.boot.CommandLineRunner;
+//import org.springframework.stereotype.Component;
+//
+//import com.mockInterview.entity.Role;
+//import com.mockInterview.entity.User;
+//import com.mockInterview.repository.RoleRepository;
+//import com.mockInterview.repository.UserRepository;
+//
+//@Component
+//public class DataInitializer implements CommandLineRunner {
+//
+//    @Autowired
+//    private RoleRepository roleRepository;
+//
+//    @Autowired
+//    private UserRepository userRepository;
+//
+//    @Value("${master.admin.email}")
+//    private String MASTER_ADMIN_EMAIL;
+//
+//    @Value("${master.admin.password}")
+//    private String MASTER_ADMIN_PASSWORD;
+//
+//    @Override
+//    public void run(String... args) throws Exception {
+//        // Preload STUDENT role
+//        Role studentRole = roleRepository.findByName("STUDENT");
+//        if (studentRole == null) {
+//            studentRole = new Role();
+//            studentRole.setName("STUDENT");
+//            roleRepository.save(studentRole);
+//        }
+//
+//        // Preload MASTER_ADMIN role
+//        Role masterRole = roleRepository.findByName("MASTER_ADMIN");
+//        if (masterRole == null) {
+//            masterRole = new Role();
+//            masterRole.setName("MASTER_ADMIN");
+//            roleRepository.save(masterRole);
+//        }
+//
+//        // Preload Master Admin user
+//        User masterAdmin = userRepository.findByEmail(MASTER_ADMIN_EMAIL);
+//        if (masterAdmin == null) {
+//            masterAdmin = new User();
+//            masterAdmin.setFirstName("Master");
+//            masterAdmin.setLastName("Admin");
+//            masterAdmin.setEmail(MASTER_ADMIN_EMAIL);
+//            masterAdmin.setPassword(MASTER_ADMIN_PASSWORD);
+//            masterAdmin.setPhone("9999999999");
+//            masterAdmin.setRole(masterRole); // assign role here
+//            masterAdmin.setStatus("ACTIVE");
+//            userRepository.save(masterAdmin);
+//        }
+//    }
+//
+//}
+
 package com.mockInterview.dataInitializer;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.transaction.annotation.Transactional;
 
+import com.mockInterview.entity.Role;
 import com.mockInterview.entity.User;
+import com.mockInterview.repository.RoleRepository;
 import com.mockInterview.repository.UserRepository;
-import com.mockInterview.service.UserService;
 
 @Component
 public class DataInitializer implements CommandLineRunner {
 
     @Autowired
-    private UserRepository userRepository;
+    private RoleRepository roleRepository;
 
     @Autowired
-    private UserService userService;
+    private UserRepository userRepository;
 
     @Value("${master.admin.email}")
-    private String masterEmail;
+    private String MASTER_ADMIN_EMAIL;
 
     @Value("${master.admin.password}")
-    private String masterPassword;
+    private String MASTER_ADMIN_PASSWORD;
 
     @Override
-    @Transactional
     public void run(String... args) throws Exception {
+        // 1️⃣ Preload STUDENT role only
+        Role studentRole = roleRepository.findByName("STUDENT");
+        if (studentRole == null) {
+            studentRole = new Role();
+            studentRole.setName("STUDENT");
+            roleRepository.save(studentRole);
+        }
 
-        // 1️⃣ Check if Master Admin exists
-        User masterAdmin = userRepository.findByEmail(masterEmail);
-        boolean passwordChanged = false;
-        boolean emailChanged = false;
-
-        // 2️⃣ If not exist, create new Master Admin
+        // 2️⃣ Preload Master Admin user (without auto-creating MASTER_ADMIN role)
+        User masterAdmin = userRepository.findByEmail(MASTER_ADMIN_EMAIL);
         if (masterAdmin == null) {
             masterAdmin = new User();
             masterAdmin.setFirstName("Master");
             masterAdmin.setLastName("Admin");
-            masterAdmin.setEmail(masterEmail);
+            masterAdmin.setEmail(MASTER_ADMIN_EMAIL);
+            masterAdmin.setPassword(MASTER_ADMIN_PASSWORD);
             masterAdmin.setPhone("9999999999");
-            masterAdmin.setPassword(masterPassword);
             masterAdmin.setStatus("ACTIVE");
-            masterAdmin.setRole(null); // 🚫 No role assigned
-            userRepository.save(masterAdmin);
-            System.out.println("✅ Master Admin created with email: " + masterEmail);
-        } 
-        else {
-            // 3️⃣ Handle Email change (if updated in properties)
-            if (!masterAdmin.getEmail().equals(masterEmail)) {
-                System.out.println("🔁 Master Admin email changed from " 
-                    + masterAdmin.getEmail() + " → " + masterEmail);
-                masterAdmin.setEmail(masterEmail);
-                emailChanged = true;
-            }
-
-            // 4️⃣ Handle Password change (if updated in properties)
-            if (!masterAdmin.getPassword().equals(masterPassword)) {
-                System.out.println("🔒 Master Admin password changed via properties.");
-                masterAdmin.setPassword(masterPassword);
-                passwordChanged = true;
-            }
-
-            if (emailChanged || passwordChanged) {
-                userRepository.save(masterAdmin);
-            }
-        }
-
-        // 5️⃣ Sync sub-admin/instructor passwords only if master’s password changed
-        if (passwordChanged) {
-            userService.syncPasswordsWithMasterAdmin();
-            System.out.println("🔁 Synced all Admin/SubAdmin/Instructor passwords with Master Admin.");
-        } else {
-            System.out.println("ℹ️ No Master Admin password change detected. Skipping sync.");
+            // Master Admin role will be assigned manually later
+            userRepository.save(masterAdmin); 
         }
     }
 }
+
