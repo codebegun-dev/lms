@@ -37,11 +37,7 @@ public class UserController {
         return userService.createUser(dto);
     }
 
-    // ---------------- Batch User Creation ----------------
-    @PostMapping("/batch")
-    public List<UserResponseDto> createUsersBatch(@Valid @RequestBody List<UserRequestDto> dtos) {
-        return userService.createUsers(dtos);
-    }
+    
 
     // ---------------- Login ----------------
     @PostMapping("/login")
@@ -62,12 +58,12 @@ public class UserController {
     }
 
     // ---------------- Get Users ----------------
-    @GetMapping("/all")
+    @GetMapping("/active/all")
     public List<UserResponseDto> getAllActiveUsers() {
         return userService.getAllActiveUsers();
     }
 
-    @GetMapping("/admin/users/all")
+    @GetMapping("/all")
     public List<UserResponseDto> getAllUsersWithStatus() {
         return userService.getAllUsersWithStatus();
     }

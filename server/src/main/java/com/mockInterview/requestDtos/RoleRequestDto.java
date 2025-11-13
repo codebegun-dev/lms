@@ -7,6 +7,6 @@ import java.util.List;
 public class RoleRequestDto {
     private String name;
     private List<String> permissions;
-    private AdminAuthDto adminAuth; // for master admin authentication
+    private Long adminAuthId; 
     
 }

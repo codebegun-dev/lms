@@ -27,5 +27,7 @@ public class UserUpdateRequestDto {
 
     private Long roleId;
 
-    private AdminAuthDto adminAuth; // ✅ Add this
+    private Long adminAuthId; // ✅ Add this
+
+	
 }
