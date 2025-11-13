@@ -19,4 +19,6 @@ public class Role {
 
     @Column(length = 1000)
     private String permissions; // CSV format
+    
+    private String dashboardPath;
 }
