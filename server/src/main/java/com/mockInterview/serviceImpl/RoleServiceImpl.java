@@ -44,15 +44,15 @@ public class RoleServiceImpl implements RoleService {
         return toResponse(saved);
     }
 
-    // -------------------- UPDATE ROLE --------------------
+ // -------------------- UPDATE ROLE --------------------
     @Override
     public RoleResponseDto updateRole(Long id, RoleRequestDto dto) {
         Role role = roleRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Role not found"));
 
-        // ❌ Prevent editing STUDENT role
-        if ("STUDENT".equalsIgnoreCase(role.getName())) {
-            throw new RuntimeException("The STUDENT role cannot be edited!");
+        // ❌ Prevent editing STUDENT or MASTER_ADMIN role
+        if ("STUDENT".equalsIgnoreCase(role.getName()) || "MASTER_ADMIN".equalsIgnoreCase(role.getName())) {
+            throw new RuntimeException("The " + role.getName() + " role cannot be edited!");
         }
 
         Role existingRole = roleRepository.findByName(dto.getName());
@@ -66,18 +66,20 @@ public class RoleServiceImpl implements RoleService {
         return toResponse(updated);
     }
 
+    // -------------------- DELETE ROLE --------------------
     @Override
     public void deleteRole(Long id) {
         Role role = roleRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Role not found"));
 
-        // ❌ Prevent deleting STUDENT role
-        if ("STUDENT".equalsIgnoreCase(role.getName())) {
-            throw new RuntimeException("The STUDENT role cannot be deleted!");
+        // ❌ Prevent deleting STUDENT or MASTER_ADMIN role
+        if ("STUDENT".equalsIgnoreCase(role.getName()) || "MASTER_ADMIN".equalsIgnoreCase(role.getName())) {
+            throw new RuntimeException("The " + role.getName() + " role cannot be deleted!");
         }
 
         roleRepository.delete(role);
     }
+
 
     // -------------------- GET ROLE BY ID --------------------
     @Override
@@ -88,9 +90,16 @@ public class RoleServiceImpl implements RoleService {
     }
 
     // -------------------- GET ALL ROLES --------------------
+//    @Override
+//    public List<RoleResponseDto> getAllRoles() {
+//        List<Role> roles = roleRepository.findAll();
+//        List<RoleResponseDto> list = new ArrayList<>();
+//        for (Role r : roles) list.add(toResponse(r));
+//        return list;
+//    }
     @Override
     public List<RoleResponseDto> getAllRoles() {
-        List<Role> roles = roleRepository.findAll();
+        List<Role> roles = roleRepository.findAllExcludingSystemRoles();
         List<RoleResponseDto> list = new ArrayList<>();
         for (Role r : roles) list.add(toResponse(r));
         return list;
