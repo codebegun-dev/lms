@@ -11,8 +11,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
-
-
 @Component
 public class UserMapper {
 
@@ -30,15 +28,21 @@ public class UserMapper {
         user.setPhone(dto.getPhone());
         user.setPassword(dto.getPassword());
 
+        Role role = null;
         if (dto.getRoleId() != null) {
-            Role role = roleRepository.findById(dto.getRoleId())
+            role = roleRepository.findById(dto.getRoleId())
                     .orElseThrow(() -> new RuntimeException("Role not found with id " + dto.getRoleId()));
-            user.setRole(role);
+        } else {
+            // Assign default STUDENT role
+            role = roleRepository.findByName("STUDENT");
+            if (role == null) {
+                throw new RuntimeException("Default STUDENT role not initialized");
+            }
         }
 
+        user.setRole(role);
         return user;
     }
-
 
     public UserResponseDto toResponse(User user) {
         UserResponseDto dto = new UserResponseDto();
@@ -48,7 +52,6 @@ public class UserMapper {
         dto.setEmail(user.getEmail());
         dto.setPhone(user.getPhone());
         dto.setRole(user.getRole() != null ? user.getRole().getName() : null);
-
         dto.setStatus(user.getStatus());
 
         String baseUrl = ServletUriComponentsBuilder.fromCurrentContextPath().toUriString();
@@ -63,5 +66,4 @@ public class UserMapper {
 
         return dto;
     }
-
 }

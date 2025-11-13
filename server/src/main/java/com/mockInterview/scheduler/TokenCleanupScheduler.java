@@ -16,12 +16,12 @@ public class TokenCleanupScheduler {
     @Autowired
     private PasswordResetTokenRepository tokenRepository;
 
-    // 🕛 Runs every day at midnight
-    @Scheduled(cron = "0 0 0 * * ?")
+    @Scheduled(cron = "0 0 0 * * ?") // Runs daily at midnight
     public void cleanupExpiredTokens() {
         LocalDateTime now = LocalDateTime.now();
-        tokenRepository.deleteExpiredTokens(now);
-        System.out.println("🧹 Cleaned up expired/used password reset tokens at: " + now);
+        int deletedCount = tokenRepository.deleteExpiredTokens(now);
+        System.out.println("🧹 Cleaned up " + deletedCount + " expired/used tokens at: " + now);
     }
+
 }
 

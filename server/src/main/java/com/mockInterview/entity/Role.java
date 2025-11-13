@@ -18,5 +18,5 @@ public class Role {
     private String name; 
 
     @Column(length = 1000)
-    private String permissions; 
+    private String permissions; // CSV format
 }
