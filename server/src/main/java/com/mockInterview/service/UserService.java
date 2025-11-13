@@ -12,7 +12,6 @@ public interface UserService {
 	UserResponseDto createUser(UserRequestDto dto);
 
 	
-public List<UserResponseDto> createUsers(List<UserRequestDto> dtos);
 
 public UserResponseDto login(LoginRequestDto loginDto);
 
@@ -31,7 +30,7 @@ void deactivateUser(Long userId);
 void activateUser(Long userId);
 public void deleteUser(Long userId);
 
-void syncPasswordsWithMasterAdmin();
+public void syncPasswordsWithMasterAdmin();
 
 
 }

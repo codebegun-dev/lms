@@ -10,7 +10,7 @@ import com.mockInterview.entity.Role;
 public interface RoleRepository extends JpaRepository<Role, Long> {
     Role findByName(String name);
     List<Role> findByNameNotIn(List<String> excludedRoleNames);
-    @Query("SELECT r FROM Role r WHERE r.name NOT IN ('STUDENT', 'MASTER_ADMIN')")
+    @Query("SELECT r FROM Role r WHERE r.name NOT IN ('MASTER_ADMIN')")
     List<Role> findAllExcludingSystemRoles();
 
 }

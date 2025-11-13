@@ -13,21 +13,21 @@ import com.mockInterview.entity.User;
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
 
-    // --- Basic lookups ---
-    User findByEmail(String email);
-    User findByPhone(String phone);
-    User findByEmailOrPhone(String email, String phone);
-    User findByRole_Name(String roleName);
-    List<User> findByStatus(String status);
-    List<User> findByRole_NameIn(List<String> roleNames);
-    List<User> findAllByRole_Name(String roleName);
-    List<User> findByRole(Role role);
+	User findByEmail(String email);
 
-    // --- Bulk checks for createUsers ---
-    List<User> findByEmailIn(List<String> emails);
-    List<User> findByPhoneIn(List<String> phones);
+	User findByPhone(String phone);
 
-    // --- Batch-safe fetch for syncPasswordsWithMasterAdmin ---
-    @Query("SELECT u FROM User u WHERE u.role.name NOT IN :roleNames")
-    List<User> findByRole_NameNotInWithPaging(List<String> roleNames, Pageable pageable);
+	User findByEmailOrPhone(String email, String phone);
+
+	User findByRole_Name(String roleName);
+	List<User> findByRole(Role role);
+
+	List<User> findByStatus(String status);
+
+	@Query("SELECT u FROM User u WHERE u.role.name NOT IN :roleNames")
+	List<User> findByRole_NameNotInWithPaging(List<String> roleNames, Pageable pageable);
+
+	List<User> findByRole_NameNot(String roleName);
+
+	List<User> findByStatusAndRole_NameNot(String status, String roleName);
 }

@@ -1,15 +1,17 @@
 package com.mockInterview.serviceImpl;
 
 import com.mockInterview.entity.Role;
+import com.mockInterview.entity.User;
 import com.mockInterview.exception.ResourceNotFoundException;
 import com.mockInterview.repository.RoleRepository;
+import com.mockInterview.repository.UserRepository;
 import com.mockInterview.requestDtos.RoleRequestDto;
-import com.mockInterview.requestDtos.AdminAuthDto;
 import com.mockInterview.responseDtos.RoleResponseDto;
 import com.mockInterview.service.RoleService;
 
+import jakarta.transaction.Transactional;
+
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -22,16 +24,13 @@ public class RoleServiceImpl implements RoleService {
     @Autowired
     private RoleRepository roleRepository;
 
-    @Value("${master.admin.email}")
-    private String MASTER_ADMIN_EMAIL;
-
-    @Value("${master.admin.password}")
-    private String MASTER_ADMIN_PASSWORD;
+    @Autowired
+    private UserRepository userRepository;
 
     // -------------------- CREATE ROLE --------------------
     @Override
     public RoleResponseDto createRole(RoleRequestDto dto) {
-        validateAdmin(dto.getAdminAuth());
+        validateAdmin(dto.getAdminAuthId());
 
         if (roleRepository.findByName(dto.getName()) != null) {
             throw new RuntimeException("Role with this name already exists!");
@@ -44,13 +43,15 @@ public class RoleServiceImpl implements RoleService {
         return toResponse(saved);
     }
 
- // -------------------- UPDATE ROLE --------------------
+    // -------------------- UPDATE ROLE --------------------
     @Override
     public RoleResponseDto updateRole(Long id, RoleRequestDto dto) {
+        validateAdmin(dto.getAdminAuthId());
+
         Role role = roleRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Role not found"));
 
-        // ❌ Prevent editing STUDENT or MASTER_ADMIN role
+        // Prevent editing STUDENT or MASTER_ADMIN role
         if ("STUDENT".equalsIgnoreCase(role.getName()) || "MASTER_ADMIN".equalsIgnoreCase(role.getName())) {
             throw new RuntimeException("The " + role.getName() + " role cannot be edited!");
         }
@@ -66,8 +67,10 @@ public class RoleServiceImpl implements RoleService {
         return toResponse(updated);
     }
 
-    // -------------------- DELETE ROLE --------------------
+    
+ // -------------------- DELETE ROLE --------------------
     @Override
+    @Transactional
     public void deleteRole(Long id) {
         Role role = roleRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Role not found"));
@@ -77,6 +80,16 @@ public class RoleServiceImpl implements RoleService {
             throw new RuntimeException("The " + role.getName() + " role cannot be deleted!");
         }
 
+        // ✅ Fetch all users assigned to this role
+        List<User> usersWithRole = userRepository.findByRole(role);
+        if (usersWithRole != null && !usersWithRole.isEmpty()) {
+            for (User user : usersWithRole) {
+                user.setRole(null); // Remove the role
+            }
+            userRepository.saveAll(usersWithRole); // Save updated users
+        }
+
+        // ✅ Delete the role
         roleRepository.delete(role);
     }
 
@@ -90,13 +103,6 @@ public class RoleServiceImpl implements RoleService {
     }
 
     // -------------------- GET ALL ROLES --------------------
-//    @Override
-//    public List<RoleResponseDto> getAllRoles() {
-//        List<Role> roles = roleRepository.findAll();
-//        List<RoleResponseDto> list = new ArrayList<>();
-//        for (Role r : roles) list.add(toResponse(r));
-//        return list;
-//    }
     @Override
     public List<RoleResponseDto> getAllRoles() {
         List<Role> roles = roleRepository.findAllExcludingSystemRoles();
@@ -118,11 +124,16 @@ public class RoleServiceImpl implements RoleService {
         return dto;
     }
 
-    private void validateAdmin(AdminAuthDto adminAuth) {
-        if (adminAuth == null ||
-            !MASTER_ADMIN_EMAIL.equals(adminAuth.getEmail()) ||
-            !MASTER_ADMIN_PASSWORD.equals(adminAuth.getPassword())) {
-            throw new RuntimeException("Unauthorized: Invalid master admin credentials");
+    private void validateAdmin(Long adminId) {
+        if (adminId == null) {
+            throw new RuntimeException("Unauthorized: Admin ID is required");
+        }
+
+        User admin = userRepository.findById(adminId)
+                .orElseThrow(() -> new RuntimeException("Admin user not found"));
+
+        if (!"MASTER_ADMIN".equalsIgnoreCase(admin.getRole().getName())) {
+            throw new RuntimeException("Unauthorized: User is not Master Admin");
         }
     }
 }

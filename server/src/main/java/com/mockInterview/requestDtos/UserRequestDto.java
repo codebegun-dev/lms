@@ -35,5 +35,5 @@ public class UserRequestDto {
     private String password;
 
     private Long roleId;          // optional; required for admin-created users
-    private AdminAuthDto adminAuth;
+    private Long adminAuthId;
 }
