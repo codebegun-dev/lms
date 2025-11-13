@@ -74,7 +74,7 @@ function App() {
           <Route path="manage-roles" element={<ManageRoles/>} />
           <Route path='syllabus' element={<Syllabus/>} />       
           <Route path="" element={<CourseManagement />} />
-
+          <Route path="admin-profile" element={<AdminProfile />} />
         </Route>
 
         {/* Fallback route (optional) */}
