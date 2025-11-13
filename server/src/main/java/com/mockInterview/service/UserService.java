@@ -9,7 +9,10 @@ import com.mockInterview.responseDtos.UserResponseDto;
 
 public interface UserService {
 	
-public UserResponseDto createUser(UserRequestDto dto);
+	UserResponseDto createUser(UserRequestDto dto);
+
+	
+public List<UserResponseDto> createUsers(List<UserRequestDto> dtos);
 
 public UserResponseDto login(LoginRequestDto loginDto);
 

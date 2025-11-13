@@ -106,4 +106,49 @@ public class EmailServiceImpl implements EmailService {
             logger.error("❌ Unexpected error sending reset password email to {}", toEmail, e);
         }
     }
+    
+    
+    @Async
+    @Override
+    public void sendNonStudentWelcomeEmail(String toEmail, String firstName, String loginPassword, String resetLink) {
+        try {
+            validateEmail(toEmail);
+
+            MimeMessage mimeMessage = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
+
+            helper.setFrom(fromEmail);
+            helper.setTo(toEmail);
+            helper.setSubject("👋 Welcome to Mock Interview Hub - Account Created");
+
+            String htmlContent = "<html><body style='font-family:Arial, sans-serif; line-height:1.6;'>"
+                    + "<h2>Hello " + firstName + ",</h2>"
+                    + "<p>Welcome to <b>Mock Interview Hub</b>!</p>"
+                    + "<p>Your account has been created successfully by our Master Admin.</p>"
+                    + "<p>Here are your temporary login details:</p>"
+                    + "<ul>"
+                    + "<li><b>Email:</b> " + toEmail + "</li>"
+                    + "<li><b>Password:</b> " + loginPassword + "</li>"
+                    + "</ul>"
+                    + "<p><b>For security reasons</b>, please change your password immediately by clicking the button below:</p>"
+                    + "<a href='" + resetLink + "' "
+                    + "style='background-color:#4CAF50; color:white; padding:10px 20px; text-decoration:none; border-radius:5px;'>"
+                    + "Change Password</a>"
+                    + "<br><br><p>Happy interviewing! 🎯<br>Mock Interview Hub Team</p>"
+                    + "</body></html>";
+
+            helper.setText(htmlContent, true);
+            mailSender.send(mimeMessage);
+
+            logger.info("✅ Non-student welcome email sent successfully to {}", toEmail);
+
+        } catch (AddressException e) {
+            logger.error("❌ Invalid email address: {}", toEmail, e);
+        } catch (MessagingException e) {
+            logger.error("❌ Failed to send non-student welcome email to {}", toEmail, e);
+        } catch (Exception e) {
+            logger.error("❌ Unexpected error sending non-student welcome email to {}", toEmail, e);
+        }
+    }
+
 }
