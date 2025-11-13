@@ -1169,11 +1169,510 @@
 
 
 import React, { useState, useEffect } from "react";
-import { FaEye, FaEdit, FaTrash, FaBan, FaTimes, FaArrowLeft, FaSave, FaUserPlus } from "react-icons/fa";
+import { FaEye, FaEdit, FaTrash, FaBan, FaTimes, FaArrowLeft, FaSave, FaUserPlus, FaShield, FaKey } from "react-icons/fa";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 // ============================================
-// EditUserModal Component (Admin Profile Details)
+// Role Management Component
+// ============================================
+const RoleManagement = ({ onClose }) => {
+  const [roles, setRoles] = useState([]);
+  const [showRoleForm, setShowRoleForm] = useState(false);
+  const [editingRole, setEditingRole] = useState(null);
+  const [formData, setFormData] = useState({
+    name: "",
+    permissions: []
+  });
+  const [adminAuth, setAdminAuth] = useState({
+    email: "",
+    password: ""
+  });
+  const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
+
+  const availablePermissions = [
+    "USER_READ", "USER_WRITE", "USER_DELETE",
+    "ROLE_READ", "ROLE_WRITE", "ROLE_DELETE",
+    "INTERVIEW_READ", "INTERVIEW_WRITE", "INTERVIEW_DELETE",
+    "DASHBOARD_ACCESS", "SETTINGS_ACCESS"
+  ];
+
+  useEffect(() => {
+    loadRoles();
+  }, []);
+
+  const loadRoles = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get("http://localhost:8080/api/roles");
+      setRoles(response.data);
+    } catch (error) {
+      console.error("Error loading roles:", error);
+      alert("Failed to load roles");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRoleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+    setErrors(prev => ({ ...prev, [name]: "" }));
+  };
+
+  const handlePermissionChange = (permission) => {
+    setFormData(prev => ({
+      ...prev,
+      permissions: prev.permissions.includes(permission)
+        ? prev.permissions.filter(p => p !== permission)
+        : [...prev.permissions, permission]
+    }));
+  };
+
+  const handleAdminAuthChange = (e) => {
+    const { name, value } = e.target;
+    setAdminAuth(prev => ({ ...prev, [name]: value }));
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+    if (!formData.name.trim()) newErrors.name = "Role name is required";
+    if (!adminAuth.email) newErrors.email = "Admin email is required";
+    if (!adminAuth.password) newErrors.password = "Admin password is required";
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!validateForm()) return;
+
+    try {
+      const payload = {
+        ...formData,
+        adminAuth
+      };
+
+      if (editingRole) {
+        await axios.put(`http://localhost:8080/api/roles/${editingRole.id}`, payload);
+        alert("Role updated successfully!");
+      } else {
+        await axios.post("http://localhost:8080/api/roles", payload);
+        alert("Role created successfully!");
+      }
+
+      setShowRoleForm(false);
+      setEditingRole(null);
+      setFormData({ name: "", permissions: [] });
+      setAdminAuth({ email: "", password: "" });
+      loadRoles();
+    } catch (error) {
+      console.error("Error saving role:", error);
+      alert(error.response?.data?.message || "Failed to save role");
+    }
+  };
+
+  const handleEditRole = (role) => {
+    if (role.name === "STUDENT") {
+      alert("The STUDENT role cannot be edited!");
+      return;
+    }
+    setEditingRole(role);
+    setFormData({
+      name: role.name,
+      permissions: role.permissions || []
+    });
+    setShowRoleForm(true);
+  };
+
+  const handleDeleteRole = async (role) => {
+    if (role.name === "STUDENT") {
+      alert("The STUDENT role cannot be deleted!");
+      return;
+    }
+
+    if (!window.confirm(`Are you sure you want to delete role "${role.name}"?`)) {
+      return;
+    }
+
+    try {
+      await axios.delete(`http://localhost:8080/api/roles/${role.id}`);
+      alert("Role deleted successfully!");
+      loadRoles();
+    } catch (error) {
+      console.error("Error deleting role:", error);
+      alert(error.response?.data?.message || "Failed to delete role");
+    }
+  };
+
+  const handleCancel = () => {
+    setShowRoleForm(false);
+    setEditingRole(null);
+    setFormData({ name: "", permissions: [] });
+    setAdminAuth({ email: "", password: "" });
+    setErrors({});
+  };
+
+  return (
+    <div className="card mb-4 border-warning">
+      <div className="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
+        <h5 className="mb-0">
+          <FaShield className="me-2" />
+          Role Management
+        </h5>
+        <div>
+          {!showRoleForm && (
+            <button 
+              className="btn btn-success btn-sm me-2"
+              onClick={() => setShowRoleForm(true)}
+            >
+              <FaUserPlus className="me-1" />
+              Add Role
+            </button>
+          )}
+          <button className="btn btn-secondary btn-sm" onClick={onClose}>
+            <FaTimes />
+          </button>
+        </div>
+      </div>
+
+      <div className="card-body">
+        {showRoleForm ? (
+          <form onSubmit={handleSubmit}>
+            <div className="row g-3">
+              <div className="col-md-6">
+                <label className="form-label fw-semibold">Role Name *</label>
+                <input
+                  type="text"
+                  name="name"
+                  className={`form-control ${errors.name ? "is-invalid" : ""}`}
+                  value={formData.name}
+                  onChange={handleRoleChange}
+                  placeholder="Enter role name"
+                />
+                {errors.name && <div className="invalid-feedback">{errors.name}</div>}
+              </div>
+
+              <div className="col-md-6">
+                <label className="form-label fw-semibold">Admin Email *</label>
+                <input
+                  type="email"
+                  name="email"
+                  className={`form-control ${errors.email ? "is-invalid" : ""}`}
+                  value={adminAuth.email}
+                  onChange={handleAdminAuthChange}
+                  placeholder="Enter admin email"
+                />
+                {errors.email && <div className="invalid-feedback">{errors.email}</div>}
+              </div>
+
+              <div className="col-md-6">
+                <label className="form-label fw-semibold">Admin Password *</label>
+                <input
+                  type="password"
+                  name="password"
+                  className={`form-control ${errors.password ? "is-invalid" : ""}`}
+                  value={adminAuth.password}
+                  onChange={handleAdminAuthChange}
+                  placeholder="Enter admin password"
+                />
+                {errors.password && <div className="invalid-feedback">{errors.password}</div>}
+              </div>
+
+              <div className="col-12">
+                <label className="form-label fw-semibold">Permissions</label>
+                <div className="row">
+                  {availablePermissions.map(permission => (
+                    <div key={permission} className="col-md-4 mb-2">
+                      <div className="form-check">
+                        <input
+                          className="form-check-input"
+                          type="checkbox"
+                          checked={formData.permissions.includes(permission)}
+                          onChange={() => handlePermissionChange(permission)}
+                          id={`perm-${permission}`}
+                        />
+                        <label className="form-check-label" htmlFor={`perm-${permission}`}>
+                          {permission.replace(/_/g, ' ').toLowerCase()}
+                        </label>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="alert alert-info mt-3">
+              <FaKey className="me-2" />
+              <strong>Master Admin Required:</strong> You need master admin credentials to manage roles.
+            </div>
+
+            <div className="mt-3 d-flex gap-2">
+              <button type="submit" className="btn btn-success" disabled={loading}>
+                {loading ? "Saving..." : editingRole ? "Update Role" : "Create Role"}
+              </button>
+              <button type="button" className="btn btn-secondary" onClick={handleCancel}>
+                Cancel
+              </button>
+            </div>
+          </form>
+        ) : (
+          <>
+            {loading ? (
+              <div className="text-center py-3">
+                <div className="spinner-border text-warning" role="status">
+                  <span className="visually-hidden">Loading...</span>
+                </div>
+                <p className="mt-2 text-muted">Loading roles...</p>
+              </div>
+            ) : (
+              <div className="table-responsive">
+                <table className="table table-hover">
+                  <thead className="table-warning">
+                    <tr>
+                      <th>Role Name</th>
+                      <th>Permissions</th>
+                      <th className="text-center">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {roles.map(role => (
+                      <tr key={role.id}>
+                        <td>
+                          <span className={`badge ${
+                            role.name === "ADMIN" ? "bg-danger" :
+                            role.name === "INTERVIEWER" ? "bg-success" :
+                            role.name === "STUDENT" ? "bg-info" : "bg-secondary"
+                          }`}>
+                            {role.name}
+                          </span>
+                        </td>
+                        <td>
+                          {role.permissions && role.permissions.length > 0 ? (
+                            <small>
+                              {role.permissions.slice(0, 3).join(", ")}
+                              {role.permissions.length > 3 && "..."}
+                            </small>
+                          ) : (
+                            <span className="text-muted">No permissions</span>
+                          )}
+                        </td>
+                        <td className="text-center">
+                          <div className="btn-group btn-group-sm">
+                            <button
+                              className="btn btn-outline-warning"
+                              onClick={() => handleEditRole(role)}
+                              title="Edit Role"
+                            >
+                              <FaEdit />
+                            </button>
+                            <button
+                              className="btn btn-outline-danger"
+                              onClick={() => handleDeleteRole(role)}
+                              title="Delete Role"
+                              disabled={role.name === "STUDENT"}
+                            >
+                              <FaTrash />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// ============================================
+// Registration Form Component
+// ============================================
+const RegistrationForm = ({ isAdminRegistration = true, onClose, onSuccess }) => {
+  const navigate = useNavigate();
+
+  const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    password: "Admin@123",
+    confirmPassword: "Admin@123",
+    role: "ADMIN",
+    status: "ACTIVE",
+  });
+
+  const [showPassword, setShowPassword] = useState({
+    password: false,
+    confirmPassword: false,
+  });
+
+  const [errors, setErrors] = useState({});
+  const [success, setSuccess] = useState("");
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+    setErrors({ ...errors, [name]: "" });
+  };
+
+  const validateForm = () => {
+    const tempErrors = {};
+
+    if (!formData.firstName.trim()) tempErrors.firstName = "First name is required";
+    if (!formData.lastName.trim()) tempErrors.lastName = "Last name is required";
+
+    if (!formData.email.trim()) tempErrors.email = "Email is required";
+    else if (!/\S+@\S+\.\S+/.test(formData.email)) tempErrors.email = "Invalid email format";
+
+    if (!formData.phone.trim()) tempErrors.phone = "Phone is required";
+    else if (!/^\d{10}$/.test(formData.phone)) tempErrors.phone = "Phone must be 10 digits";
+
+    setErrors(tempErrors);
+    return Object.keys(tempErrors).length === 0;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSuccess("");
+    setErrors({});
+
+    if (!validateForm()) return;
+
+    try {
+      const payload = {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        phone: formData.phone,
+        password: formData.password,
+        role: formData.role,
+        status: "ACTIVE"
+      };
+
+      const res = await axios.post("http://localhost:8080/api/user", payload);
+
+      setSuccess(res.data.message || "User created successfully!");
+
+      setTimeout(() => {
+        onSuccess();
+        onClose();
+      }, 1500);
+
+    } catch (error) {
+      setErrors({
+        general: error.response?.data?.message || "Server error occurred"
+      });
+    }
+  };
+
+  return (
+    <div className="card mb-4 border-primary">
+      <div className="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+        <h5 className="mb-0">Add New User</h5>
+        <button className="btn btn-light btn-sm" onClick={onClose}>
+          <FaTimes />
+        </button>
+      </div>
+      <div className="card-body">
+        {success && <div className="alert alert-success text-center">{success}</div>}
+        {errors.general && <div className="alert alert-danger text-center">{errors.general}</div>}
+
+        <form onSubmit={handleSubmit}>
+          <div className="row g-3">
+            <div className="col-md-6">
+              <label className="form-label fw-semibold">First Name *</label>
+              <input
+                type="text"
+                name="firstName"
+                className={`form-control ${errors.firstName ? "is-invalid" : ""}`}
+                value={formData.firstName}
+                onChange={handleChange}
+                placeholder="Enter first name"
+              />
+              <div className="invalid-feedback">{errors.firstName}</div>
+            </div>
+
+            <div className="col-md-6">
+              <label className="form-label fw-semibold">Last Name *</label>
+              <input
+                type="text"
+                name="lastName"
+                className={`form-control ${errors.lastName ? "is-invalid" : ""}`}
+                value={formData.lastName}
+                onChange={handleChange}
+                placeholder="Enter last name"
+              />
+              <div className="invalid-feedback">{errors.lastName}</div>
+            </div>
+
+            <div className="col-md-6">
+              <label className="form-label fw-semibold">Email *</label>
+              <input
+                type="email"
+                name="email"
+                className={`form-control ${errors.email ? "is-invalid" : ""}`}
+                value={formData.email}
+                onChange={handleChange}
+                placeholder="Enter email"
+              />
+              <div className="invalid-feedback">{errors.email}</div>
+            </div>
+
+            <div className="col-md-6">
+              <label className="form-label fw-semibold">Phone *</label>
+              <input
+                type="text"
+                name="phone"
+                className={`form-control ${errors.phone ? "is-invalid" : ""}`}
+                value={formData.phone}
+                onChange={handleChange}
+                placeholder="Enter phone number"
+                maxLength="10"
+              />
+              <div className="invalid-feedback">{errors.phone}</div>
+            </div>
+
+            <div className="col-md-12">
+              <label className="form-label fw-semibold">Role *</label>
+              <select 
+                className="form-select" 
+                name="role" 
+                value={formData.role} 
+                onChange={handleChange}
+              >
+                <option value="ADMIN">Admin</option>
+                <option value="INTERVIEWER">Interviewer</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="alert alert-info mt-3 mb-0">
+            <strong>Default Password:</strong> Admin@123<br />
+            The new user will use this password to login and can change it later.
+          </div>
+
+          <div className="mt-3 d-flex gap-2">
+            <button type="submit" className="btn btn-success">
+              Create User
+            </button>
+            <button type="button" className="btn btn-secondary" onClick={onClose}>
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// ============================================
+// EditUserModal Component
 // ============================================
 const EditUserModal = ({ user, onClose, onUpdate }) => {
   const [formData, setFormData] = useState({
@@ -1200,7 +1699,6 @@ const EditUserModal = ({ user, onClose, onUpdate }) => {
   const loadUserDetails = async () => {
     try {
       setLoading(true);
-      // Fetch user details from API
       const response = await axios.get(`http://localhost:8080/api/user/${user.id}`);
       const userData = response.data;
       
@@ -1219,7 +1717,6 @@ const EditUserModal = ({ user, onClose, onUpdate }) => {
       setImagePreview(userData.profilePicturePath);
     } catch (error) {
       console.error("Error loading user details:", error);
-      // Fallback to basic user data
       setFormData({
         firstName: user.firstName || "",
         lastName: user.lastName || "",
@@ -1239,30 +1736,6 @@ const EditUserModal = ({ user, onClose, onUpdate }) => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleImageUpload = async (e) => {
-    if (!isEditing) return;
-    
-    const file = e.target.files[0];
-    if (!file) return;
-
-    setImagePreview(URL.createObjectURL(file));
-
-    try {
-      const formDataImg = new FormData();
-      formDataImg.append("file", file);
-
-      const res = await axios.post(
-        `http://localhost:8080/api/user/upload-image/${user.id}`,
-        formDataImg,
-        { headers: { "Content-Type": "multipart/form-data" } }
-      );
-
-      alert("Profile picture updated!");
-    } catch (err) {
-      alert(err.response?.data?.message || "Image upload failed");
-    }
   };
 
   const handleSave = async () => {
@@ -1296,32 +1769,18 @@ const EditUserModal = ({ user, onClose, onUpdate }) => {
 
   if (!user) return null;
 
-  const showLetterAvatar = !imagePreview;
-
   return (
-    <div
-      className="modal fade show"
-      style={{
-        display: "block",
-        backgroundColor: "rgba(0,0,0,0.5)",
-        zIndex: 1060
-      }}
-      tabIndex="-1"
-      role="dialog"
-    >
-      <div className="modal-dialog modal-xl modal-dialog-centered" role="document">
+    <div className="modal fade show" style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)", zIndex: 1060 }}>
+      <div className="modal-dialog modal-xl modal-dialog-centered">
         <div className="modal-content border-0 shadow-lg rounded-3">
-          <div className="modal-header bg-primary text-white border-bottom d-flex justify-content-between align-items-center">
+          <div className="modal-header bg-primary text-white">
             <h5 className="modal-title fw-semibold">
               <FaEdit className="me-2" />
               {user.firstName} {user.lastName}'s Profile
             </h5>
-            <button
-              className="btn btn-light d-flex align-items-center"
-              onClick={onClose}
-            >
+            <button className="btn btn-light" onClick={onClose}>
               <FaArrowLeft className="me-2" />
-              Back to UserManagement
+              Back
             </button>
           </div>
 
@@ -1349,26 +1808,17 @@ const EditUserModal = ({ user, onClose, onUpdate }) => {
                   </span>
                 </div>
                 {!isEditing ? (
-                  <button 
-                    className="btn btn-primary d-flex align-items-center"
-                    onClick={() => setIsEditing(true)}
-                  >
+                  <button className="btn btn-primary" onClick={() => setIsEditing(true)}>
                     <FaEdit className="me-2" />
                     Edit Profile
                   </button>
                 ) : (
                   <div className="d-flex gap-2">
-                    <button 
-                      className="btn btn-secondary d-flex align-items-center"
-                      onClick={handleCancel}
-                    >
+                    <button className="btn btn-secondary" onClick={handleCancel}>
                       <FaTimes className="me-2" />
                       Cancel
                     </button>
-                    <button 
-                      className="btn btn-success d-flex align-items-center"
-                      onClick={handleSave}
-                    >
+                    <button className="btn btn-success" onClick={handleSave}>
                       <FaSave className="me-2" />
                       Save Changes
                     </button>
@@ -1376,40 +1826,6 @@ const EditUserModal = ({ user, onClose, onUpdate }) => {
                 )}
               </div>
 
-              {/* Profile Picture */}
-              <div className="text-center mb-4">
-                <div className="d-flex flex-column align-items-center">
-                  {showLetterAvatar ? (
-                    <div
-                      className="rounded-circle bg-primary d-flex justify-content-center align-items-center fw-bold mb-3"
-                      style={{ width: "120px", height: "120px", fontSize: "48px", color: "white" }}
-                    >
-                      {formData.firstName?.[0]?.toUpperCase() || "U"}
-                    </div>
-                  ) : (
-                    <img
-                      src={imagePreview}
-                      className="rounded-circle object-fit-cover mb-3"
-                      style={{ width: "120px", height: "120px" }}
-                      alt="Profile"
-                    />
-                  )}
-
-                  {isEditing && (
-                    <div className="mt-2">
-                      <input 
-                        type="file" 
-                        className="form-control form-control-sm" 
-                        accept="image/*" 
-                        onChange={handleImageUpload} 
-                      />
-                      <small className="text-muted">Upload new profile picture</small>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Personal Information Form */}
               <div className="row g-3">
                 <div className="col-md-4">
                   <label className="form-label fw-semibold">First Name *</label>
@@ -1475,58 +1891,8 @@ const EditUserModal = ({ user, onClose, onUpdate }) => {
                     required
                   >
                     <option value="">Select Role</option>
-                    <option value="STUDENT">Student</option>
                     <option value="ADMIN">Admin</option>
                     <option value="INTERVIEWER">Interviewer</option>
-                  </select>
-                </div>
-
-                <div className="col-md-4">
-                  <label className="form-label fw-semibold">Gender</label>
-                  <select
-                    name="gender"
-                    className="form-select"
-                    value={formData.gender}
-                    onChange={handleChange}
-                    disabled={!isEditing}
-                  >
-                    <option value="">Select Gender</option>
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
-                    <option value="Other">Other</option>
-                  </select>
-                </div>
-
-                <div className="col-md-4">
-                  <label className="form-label fw-semibold">Date of Birth</label>
-                  <input
-                    type="date"
-                    name="dateOfBirth"
-                    className="form-control"
-                    value={formData.dateOfBirth}
-                    onChange={handleChange}
-                    disabled={!isEditing}
-                  />
-                </div>
-
-                <div className="col-md-4">
-                  <label className="form-label fw-semibold">Blood Group</label>
-                  <select
-                    name="bloodGroup"
-                    className="form-select"
-                    value={formData.bloodGroup}
-                    onChange={handleChange}
-                    disabled={!isEditing}
-                  >
-                    <option value="">Select Blood Group</option>
-                    <option value="A+">A+</option>
-                    <option value="A-">A-</option>
-                    <option value="B+">B+</option>
-                    <option value="B-">B-</option>
-                    <option value="AB+">AB+</option>
-                    <option value="AB-">AB-</option>
-                    <option value="O+">O+</option>
-                    <option value="O-">O-</option>
                   </select>
                 </div>
 
@@ -1545,187 +1911,9 @@ const EditUserModal = ({ user, onClose, onUpdate }) => {
                   </select>
                 </div>
               </div>
-
-              <div className="alert alert-info mt-4">
-                <strong>Note:</strong> You are editing {user.firstName}'s profile information. 
-                Changes will be saved to the database.
-              </div>
             </div>
           )}
         </div>
-      </div>
-    </div>
-  );
-};
-
-// ============================================
-// AddUserForm Component (For Admin/Interviewer)
-// ============================================
-const AddUserForm = ({ onClose, onSuccess }) => {
-  const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    phone: "",
-    role: "ADMIN",
-  });
-
-  const [errors, setErrors] = useState({});
-  const [loading, setLoading] = useState(false);
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-    setErrors(prev => ({ ...prev, [name]: "" }));
-  };
-
-  const validateForm = () => {
-    const newErrors = {};
-    
-    if (!formData.firstName.trim()) newErrors.firstName = "First name is required";
-    else if (formData.firstName.length < 3 || formData.firstName.length > 30)
-      newErrors.firstName = "First name should be 3-30 characters";
-
-    if (!formData.lastName.trim()) newErrors.lastName = "Last name is required";
-    else if (formData.lastName.length < 3 || formData.lastName.length > 30)
-      newErrors.lastName = "Last name should be 3-30 characters";
-
-    if (!formData.email.trim()) newErrors.email = "Email is required";
-    else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = "Invalid email format";
-
-    if (!formData.phone.trim()) newErrors.phone = "Phone number is required";
-    else if (!/^\d{10}$/.test(formData.phone)) newErrors.phone = "Phone must be 10 digits";
-
-    if (!formData.role) newErrors.role = "Role is required";
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!validateForm()) return;
-
-    setLoading(true);
-    try {
-      const payload = {
-        ...formData,
-        password: "Admin@123",
-        confirmPassword: "Admin@123",
-        role: formData.role,
-        status: "ACTIVE"
-      };
-
-      await axios.post("http://localhost:8080/api/user", payload);
-      alert("User added successfully!");
-      onSuccess();
-      onClose();
-    } catch (error) {
-      if (error.response && error.response.data) {
-        setErrors(error.response.data);
-      } else {
-        setErrors({ general: "Unable to connect to server" });
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="card mb-4 border-primary">
-      <div className="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-        <h5 className="mb-0">Add New User</h5>
-        <button className="btn btn-light btn-sm" onClick={onClose}>
-          <FaTimes />
-        </button>
-      </div>
-      <div className="card-body">
-        {errors.general && <div className="alert alert-danger">{errors.general}</div>}
-        
-        <form onSubmit={handleSubmit}>
-          <div className="row g-3">
-            <div className="col-md-6">
-              <label className="form-label">First Name *</label>
-              <input
-                type="text"
-                name="firstName"
-                className={`form-control ${errors.firstName ? "is-invalid" : ""}`}
-                value={formData.firstName}
-                onChange={handleChange}
-                placeholder="Enter first name"
-              />
-              {errors.firstName && <div className="invalid-feedback">{errors.firstName}</div>}
-            </div>
-
-            <div className="col-md-6">
-              <label className="form-label">Last Name *</label>
-              <input
-                type="text"
-                name="lastName"
-                className={`form-control ${errors.lastName ? "is-invalid" : ""}`}
-                value={formData.lastName}
-                onChange={handleChange}
-                placeholder="Enter last name"
-              />
-              {errors.lastName && <div className="invalid-feedback">{errors.lastName}</div>}
-            </div>
-
-            <div className="col-md-6">
-              <label className="form-label">Email *</label>
-              <input
-                type="email"
-                name="email"
-                className={`form-control ${errors.email ? "is-invalid" : ""}`}
-                value={formData.email}
-                onChange={handleChange}
-                placeholder="Enter email"
-              />
-              {errors.email && <div className="invalid-feedback">{errors.email}</div>}
-            </div>
-
-            <div className="col-md-6">
-              <label className="form-label">Phone *</label>
-              <input
-                type="text"
-                name="phone"
-                className={`form-control ${errors.phone ? "is-invalid" : ""}`}
-                value={formData.phone}
-                onChange={handleChange}
-                placeholder="Enter phone number"
-                maxLength="10"
-              />
-              {errors.phone && <div className="invalid-feedback">{errors.phone}</div>}
-            </div>
-
-            <div className="col-md-12">
-              <label className="form-label">Role *</label>
-              <select
-                name="role"
-                className={`form-select ${errors.role ? "is-invalid" : ""}`}
-                value={formData.role}
-                onChange={handleChange}
-              >
-                <option value="ADMIN">Admin</option>
-                <option value="INTERVIEWER">Interviewer</option>
-              </select>
-              {errors.role && <div className="invalid-feedback">{errors.role}</div>}
-            </div>
-          </div>
-
-          <div className="alert alert-info mt-3 mb-0">
-            <strong>Default Password:</strong> Admin@123<br />
-            The new user will use this password to login and can change it later.
-          </div>
-
-          <div className="mt-3 d-flex gap-2">
-            <button type="submit" className="btn btn-success" disabled={loading}>
-              {loading ? "Adding..." : "Add User"}
-            </button>
-            <button type="button" className="btn btn-secondary" onClick={onClose}>
-              Cancel
-            </button>
-          </div>
-        </form>
       </div>
     </div>
   );
@@ -1738,11 +1926,11 @@ const UserManagement = () => {
   const [users, setUsers] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
   const [selectedUser, setSelectedUser] = useState(null);
-  const [showFullProfileModal, setShowFullProfileModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showDeactivateConfirm, setShowDeactivateConfirm] = useState(false);
   const [showAddUserForm, setShowAddUserForm] = useState(false);
+  const [showRoleManagement, setShowRoleManagement] = useState(false);
   const [userToDelete, setUserToDelete] = useState(null);
   const [userToDeactivate, setUserToDeactivate] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -1801,14 +1989,16 @@ const UserManagement = () => {
     setShowAddUserForm(false);
   };
 
-  const canPerformAction = (targetUser) => {
-    // Protect current admin from editing/deleting themselves
-    return currentUser?.id !== targetUser.id;
+  const handleRoleManagement = () => {
+    setShowRoleManagement(true);
   };
 
-  const handleViewUser = (user) => {
-    setSelectedUser(user);
-    setShowFullProfileModal(true);
+  const handleCloseRoleManagement = () => {
+    setShowRoleManagement(false);
+  };
+
+  const canPerformAction = (targetUser) => {
+    return currentUser?.id !== targetUser.id;
   };
 
   const handleEditUser = (user) => {
@@ -1902,36 +2092,51 @@ const UserManagement = () => {
 
   return (
     <div className="container bg-white rounded-4 shadow p-4 my-4">
-      {/* Header with Add User Button */}
+      {/* Header with Action Buttons */}
       <div className="d-flex justify-content-between align-items-center mb-4">
         <div>
           <h3 className="fw-bold text-dark mb-1">
             <i className="bi bi-people-fill me-2"></i>
             User Management
           </h3>
-          <p className="text-secondary mb-0">Manage all registered users - Add Admins and Interviewers</p>
+          <p className="text-secondary mb-0">Manage users and roles in the system</p>
         </div>
-        {!showAddUserForm && (
-          <button 
-            className="btn btn-success d-flex align-items-center"
-            onClick={handleAddUser}
-          >
-            <FaUserPlus className="me-2" />
-            Add User
-          </button>
+        {!showAddUserForm && !showRoleManagement && (
+          <div className="d-flex gap-2">
+            <button 
+              className="btn btn-warning d-flex align-items-center"
+              onClick={handleRoleManagement}
+            >
+              <FaShield className="me-2" />
+              Manage Roles
+            </button>
+            <button 
+              className="btn btn-success d-flex align-items-center"
+              onClick={handleAddUser}
+            >
+              <FaUserPlus className="me-2" />
+              Add User
+            </button>
+          </div>
         )}
       </div>
 
+      {/* Role Management Section */}
+      {showRoleManagement && (
+        <RoleManagement onClose={handleCloseRoleManagement} />
+      )}
+
       {/* Add User Form */}
       {showAddUserForm && (
-        <AddUserForm 
+        <RegistrationForm 
+          isAdminRegistration={true}
           onClose={handleCloseAddUser}
           onSuccess={handleAddUserSuccess}
         />
       )}
 
-      {/* User Management Content (hidden when showing Add User Form) */}
-      {!showAddUserForm && (
+      {/* User Management Content */}
+      {!showAddUserForm && !showRoleManagement && (
         <>
           {/* Controls */}
           <div className="row g-3 align-items-center mb-4">
@@ -2022,9 +2227,7 @@ const UserManagement = () => {
               <tbody>
                 {filteredUsers.length > 0 ? (
                   filteredUsers.map((user) => {
-                    const isStudent = user.role === "STUDENT";
                     const isCurrentUser = currentUser?.id === user.id;
-                    const showViewButton = isStudent;
                     const showEditButton = !isCurrentUser;
                     const showDeleteButton = !isCurrentUser;
                     const showDeactivateButton = !isCurrentUser;
@@ -2059,15 +2262,6 @@ const UserManagement = () => {
                         </td>
                         <td className="text-center">
                           <div className="btn-group" role="group">
-                            {showViewButton && (
-                              <button
-                                className="btn btn-sm btn-primary"
-                                onClick={() => handleViewUser(user)}
-                                title="View Full Profile"
-                              >
-                                <FaEye />
-                              </button>
-                            )}
                             {showEditButton && (
                               <button
                                 className="btn btn-sm btn-warning text-dark"
@@ -2127,13 +2321,6 @@ const UserManagement = () => {
       )}
 
       {/* Modals */}
-      {showFullProfileModal && selectedUser && selectedUser.role === "STUDENT" && (
-        <AdminStudentProfileView
-          user={selectedUser}
-          onClose={() => setShowFullProfileModal(false)}
-        />
-      )}
-
       {showEditModal && (
         <EditUserModal
           user={selectedUser}
