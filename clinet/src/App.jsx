@@ -73,8 +73,7 @@ function App() {
           <Route path="usermanagement" element={<UserManagement />} />
           <Route path="manage-roles" element={<ManageRoles/>} />
           <Route path='syllabus' element={<Syllabus/>} />       
-
-           <Route path="" element={<CourseManagement />} />
+          <Route path="" element={<CourseManagement />} />
 
         </Route>
 
