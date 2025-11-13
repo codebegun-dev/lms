@@ -17,5 +17,5 @@ public class UserResponseDto {
    private String role;
    private String status;
    private String profilePicturePath;
-  
+   
 }

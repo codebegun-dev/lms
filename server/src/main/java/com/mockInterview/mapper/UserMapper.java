@@ -53,6 +53,8 @@ public class UserMapper {
         dto.setPhone(user.getPhone());
         dto.setRole(user.getRole() != null ? user.getRole().getName() : null);
         dto.setStatus(user.getStatus());
+      
+
 
         String baseUrl = ServletUriComponentsBuilder.fromCurrentContextPath().toUriString();
         StudentPersonalInfo info = studentPersonalInfoRepository.findByUser_UserId(user.getUserId());
