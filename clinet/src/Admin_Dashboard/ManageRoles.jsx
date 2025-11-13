@@ -159,7 +159,8 @@ const ManageRoles = () => {
               <div>
                 <div className="fw-semibold">{r.name}</div>
                 <div className="mt-1">
-                  {r.permissions.length ? (
+                  {/* Check if r.permissions exists and has length, or default to an empty array */}
+                  {r.permissions?.length ? (
                     r.permissions.map((p, i) => (
                       <span key={i} className="badge bg-secondary me-1">
                         {p}
@@ -170,6 +171,7 @@ const ManageRoles = () => {
                   )}
                 </div>
               </div>
+
 
               <div className="btn-group">
                 <button className="btn btn-sm btn-outline-primary d-flex align-items-center" onClick={() => handleEdit(r)}>

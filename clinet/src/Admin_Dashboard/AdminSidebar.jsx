@@ -95,6 +95,17 @@ const AdminSidebar = () => {
             <FaUsers className="me-2" /> manage Roles
           </NavLink>
         </li>
+
+        <li className="mb-3">
+          <NavLink
+            to="syllabus"
+            className={({ isActive }) =>
+              `d-flex align-items-center text-decoration-none ${isActive ? "fw-bold text-primary" : "text-dark"}`
+            }
+          >
+            <FaUsers className="me-2" /> Syllabus
+          </NavLink>
+        </li>
       </ul>
     </div>
   );
