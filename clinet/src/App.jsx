@@ -9,8 +9,7 @@ import LoginForm from './Registration_Dashboard/LoginForm';
 import ForgotPasswordForm from './Registration_Dashboard/ForgotPasswordForm';
 import SendResetMail from './Registration_Dashboard/SendResetMail';
 import ViewProgress from './Student_Dashboard/ViewProgress';
-import Syllabus from './Admin_Dashboard/Syllabus';
-
+ 
 
 // Student Dashboard
 import StudentDashboard from './Student_Dashboard/StudentDashboard';
@@ -34,6 +33,8 @@ import CreateTopic from './Admin_Dashboard/CreateTopic';
 import CreateSubTopic from './Admin_Dashboard/CreateSubTopic';
 import UserManagement from './Admin_Dashboard/UserManagement';
 import ManageRoles from './Admin_Dashboard/ManageRoles'; 
+import Syllabus from './Admin_Dashboard/Syllabus';
+
 
 function App() {
   return (
@@ -49,8 +50,7 @@ function App() {
       <Route path="/student-profile" element={<StudentProfile />} />
 
       <Route path="/view-progress" element={<ViewProgress />} />    
-      <Route path='/syllabus' element={<Syllabus/>} />
-      
+       
   
         {/* Student Dashboard with nested routes */}
         <Route path="/student-dashboard" element={<StudentDashboard/>}>
@@ -63,6 +63,7 @@ function App() {
         {/* Admin Dashboard with nested routes */}
         <Route path="/admin-dashboard" element={<AdminDashboard />}>
           <Route index element={<CourseManagement />} />
+          <Route path="admin-profile" element={<AdminProfile />} />
           <Route path="course-management" element={<CourseManagement />} />
           <Route path="batch-management" element={<BatchManagement />} />
           <Route path="question-bank" element={<QuestionBank />} />
@@ -71,6 +72,8 @@ function App() {
           <Route path="sub-topic" element={<CreateSubTopic />} />
           <Route path="usermanagement" element={<UserManagement />} />
           <Route path="manage-roles" element={<ManageRoles/>} />
+          <Route path='syllabus' element={<Syllabus/>} />       
+
            <Route path="" element={<CourseManagement />} />
 
         </Route>
