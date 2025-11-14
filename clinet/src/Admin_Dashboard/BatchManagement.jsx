@@ -149,7 +149,7 @@ const BatchManagement = () => {
         showAlert("Batch created successfully!", "success");
       }
       resetForm();
-      fetchBatches();
+       await fetchBatches();
     } catch (err) {
       console.error("Error saving batch:", err);
       const serverMsg =
