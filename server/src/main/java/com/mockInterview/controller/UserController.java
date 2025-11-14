@@ -1,6 +1,7 @@
 package com.mockInterview.controller;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -108,6 +109,12 @@ public class UserController {
         userService.bulkChangeUsersRoleByAdmin(adminId, fromRoleId, toRoleId);
         return "All users with role ID '" + fromRoleId + "' have been reassigned to role ID '" + toRoleId + "'";
     }
+    
+    @GetMapping("/dashboard-counts")
+    public Map<String, Object> fetchDashboardCounts() {
+        return userService.getDashboardCounts();
+    }
+
 
     // ---------------- Sync Master Admin Password ----------------
     @PutMapping("/sync-passwords")

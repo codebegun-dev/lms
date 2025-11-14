@@ -2,6 +2,7 @@ package com.mockInterview.serviceImpl;
 
 import com.mockInterview.entity.StudentPersonalInfo;
 import com.mockInterview.entity.User;
+import com.mockInterview.exception.DuplicateFieldException;
 import com.mockInterview.exception.ResourceNotFoundException;
 import com.mockInterview.repository.StudentPersonalInfoRepository;
 import com.mockInterview.repository.UserRepository;
@@ -9,6 +10,7 @@ import com.mockInterview.requestDtos.StudentPersonalInfoUpdateRequest;
 import com.mockInterview.responseDtos.StudentPersonalInfoDto;
 import com.mockInterview.service.StudentPersonalInfoService;
 import com.mockInterview.util.FileStorageUtil;
+import com.mockInterview.util.RoleValidator;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -30,7 +32,7 @@ public class StudentPersonalInfoServiceImpl implements StudentPersonalInfoServic
     public StudentPersonalInfoDto updateAll(StudentPersonalInfoUpdateRequest request, MultipartFile file) {
         User user = userRepository.findById(request.getUserId())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-
+        RoleValidator.validateStudentOrMasterAdmin(user);
         StudentPersonalInfo info = infoRepository.findByUser_UserId(request.getUserId());
         if (info == null) {
             info = new StudentPersonalInfo();
@@ -41,12 +43,12 @@ public class StudentPersonalInfoServiceImpl implements StudentPersonalInfoServic
         if (request.getParentMobileNumber() != null &&
             user.getPhone() != null &&
             request.getParentMobileNumber().trim().equals(user.getPhone().trim())) {
-            throw new IllegalArgumentException("Parent mobile number cannot be same as student mobile number");
+            throw new DuplicateFieldException("Parent mobile number cannot be same as student mobile number");
         }
 
         StudentPersonalInfo existingParent = infoRepository.findByParentMobileNumber(request.getParentMobileNumber());
         if (existingParent != null && existingParent.getUser().getUserId() != request.getUserId()) {
-            throw new IllegalArgumentException("Parent mobile number already used by another student");
+            throw new DuplicateFieldException("Parent mobile number already used by another student");
         }
 
         // ✅ Update details
@@ -74,6 +76,7 @@ public class StudentPersonalInfoServiceImpl implements StudentPersonalInfoServic
     public StudentPersonalInfoDto getByUserId(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        RoleValidator.validateStudentOrMasterAdmin(user);
         StudentPersonalInfo info = infoRepository.findByUser_UserId(userId);
 
         if (info == null) {

@@ -9,5 +9,5 @@ public interface StudentProjectService {
 
     StudentProjectDto addOrUpdateProject(StudentProjectDto dto);
 
-    void deleteProject(Long projectId);
+    public void deleteProject(Long projectId, Long userId);
 }

@@ -3,7 +3,9 @@ package com.mockInterview.serviceImpl;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.Base64;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -384,6 +386,35 @@ public class UserServiceImpl implements UserService {
             throw new UnauthorizedActionException("Only Master Admin is allowed to perform this action");
         }
     }
+    
+    @Override
+    public Map<String, Object> getDashboardCounts() {
+
+        Map<String, Object> response = new HashMap<>();
+
+        long totalUsers = userRepository.count();
+        long activeUsers = userRepository.countByStatus("ACTIVE");
+        long inactiveUsers = userRepository.countByStatus("INACTIVE");
+
+        response.put("TOTAL_USERS", totalUsers);
+        response.put("ACTIVE_USERS", activeUsers);
+        response.put("INACTIVE_USERS", inactiveUsers);
+
+        // Dynamic role counts
+        List<Object[]> roleCounts = userRepository.findRoleWiseCounts();
+        Map<String, Long> roleMap = new HashMap<>();
+
+        for (Object[] row : roleCounts) {
+            String roleName = (String) row[0];
+            Long count = (Long) row[1];
+            roleMap.put(roleName, count);
+        }
+
+        response.put("ROLE_COUNTS", roleMap);
+
+        return response;
+    }
+
 
 
     // ================= PASSWORD VALIDATION =================

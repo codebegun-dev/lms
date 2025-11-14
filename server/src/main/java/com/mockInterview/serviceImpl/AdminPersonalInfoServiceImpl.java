@@ -9,6 +9,7 @@ import com.mockInterview.requestDtos.AdminPersonalInfoUpdateRequestDto;
 import com.mockInterview.responseDtos.AdminPersonalInfoResponseDto;
 import com.mockInterview.service.AdminPersonalInfoService;
 import com.mockInterview.util.FileStorageUtil;
+import com.mockInterview.util.RoleValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -26,14 +27,17 @@ public class AdminPersonalInfoServiceImpl implements AdminPersonalInfoService {
     private UserRepository userRepository;
 
     @Override
-    public AdminPersonalInfoResponseDto getByUserId(Long userId) {
-        User user = userRepository.findById(userId)
+    public AdminPersonalInfoResponseDto getByUserId(Long requestedUserId) {
+        User currentUser = userRepository.findById(requestedUserId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        AdminPersonalInfo info = infoRepository.findByUser_UserId(userId);
+        // ✅ Check role and ownership
+        RoleValidator.validateNonStudentOwnOrMaster(currentUser, requestedUserId);
+
+        AdminPersonalInfo info = infoRepository.findByUser_UserId(requestedUserId);
         if (info == null) {
             info = new AdminPersonalInfo();
-            info.setUser(user);
+            info.setUser(currentUser);
         }
 
         return mapToDto(info);
@@ -41,31 +45,34 @@ public class AdminPersonalInfoServiceImpl implements AdminPersonalInfoService {
 
     @Override
     public AdminPersonalInfoResponseDto updateFullProfile(AdminPersonalInfoUpdateRequestDto request, MultipartFile file) {
-        User user = userRepository.findById(request.getUserId())
+        User currentUser = userRepository.findById(request.getUserId())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        // ✅ Check role and ownership
+        RoleValidator.validateNonStudentOwnOrMaster(currentUser, request.getUserId());
 
         AdminPersonalInfo info = infoRepository.findByUser_UserId(request.getUserId());
         if (info == null) {
             info = new AdminPersonalInfo();
-            info.setUser(user);
+            info.setUser(currentUser);
         }
 
         // ✅ Update user fields
-        user.setFirstName(request.getFirstName());
-        user.setLastName(request.getLastName());
-        user.setPhone(request.getMobileNumber());
-        userRepository.save(user);
+        currentUser.setFirstName(request.getFirstName());
+        currentUser.setLastName(request.getLastName());
+        currentUser.setPhone(request.getMobileNumber());
+        userRepository.save(currentUser);
 
-        // ✅ Update admin personal info
+        // ✅ Update personal info
         info.setGender(request.getGender());
         info.setDateOfBirth(request.getDateOfBirth());
         info.setBloodGroup(request.getBloodGroup());
 
-        // ✅ Update profile image if provided
+        // ✅ Handle profile picture
         if (file != null && !file.isEmpty()) {
             FileStorageUtil.deleteFile(info.getProfilePicturePath());
             try {
-                String relativePath = FileStorageUtil.saveFile(file, user.getUserId(), "images");
+                String relativePath = FileStorageUtil.saveFile(file, currentUser.getUserId(), "images");
                 info.setProfilePicturePath(relativePath);
             } catch (IOException e) {
                 throw new RuntimeException("Failed to upload image: " + e.getMessage());
@@ -76,6 +83,7 @@ public class AdminPersonalInfoServiceImpl implements AdminPersonalInfoService {
         return mapToDto(info);
     }
 
+    // ======= Helper method =======
     private AdminPersonalInfoResponseDto mapToDto(AdminPersonalInfo info) {
         AdminPersonalInfoResponseDto dto = new AdminPersonalInfoResponseDto();
         dto.setUserId(info.getUser().getUserId());
@@ -92,7 +100,8 @@ public class AdminPersonalInfoServiceImpl implements AdminPersonalInfoService {
             dto.setProfilePicturePath(baseUrl + "/uploads/" + info.getProfilePicturePath());
         } else {
             String initials = (dto.getFirstName() != null && !dto.getFirstName().isEmpty())
-                    ? dto.getFirstName().substring(0, 1).toUpperCase()
+                    ? info.getUser().getFirstName()
+.substring(0, 1).toUpperCase()
                     : "A";
             dto.setProfilePicturePath("https://ui-avatars.com/api/?name=" + initials + "&background=random");
         }

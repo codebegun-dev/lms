@@ -42,7 +42,7 @@ public class User {
     private String password;
 
 
-    @ManyToOne(optional = true)
+    @ManyToOne(fetch = FetchType.LAZY, optional = true)
     @JoinColumn(name = "role_id", referencedColumnName = "id", foreignKey = @ForeignKey(name = "FK_user_role"))
     @OnDelete(action = OnDeleteAction.SET_NULL)
     private Role role;

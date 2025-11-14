@@ -8,6 +8,7 @@ import com.mockInterview.repository.UserRepository;
 import com.mockInterview.responseDtos.StudentGenericDetailsDto;
 import com.mockInterview.service.StudentGenericDetailsService;
 import com.mockInterview.util.FileStorageUtil;
+import com.mockInterview.util.RoleValidator;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
@@ -16,11 +17,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
-
 import java.net.MalformedURLException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Optional;
+
 
 @Service
 public class StudentGenericDetailsServiceImpl implements StudentGenericDetailsService {
@@ -33,11 +33,12 @@ public class StudentGenericDetailsServiceImpl implements StudentGenericDetailsSe
 
     @Override
     public StudentGenericDetailsDto updateGenericDetails(StudentGenericDetailsDto dto) {
-        Optional<User> userOpt = userRepo.findById(dto.getUserId());
-        if (!userOpt.isPresent()) {
-            throw new ResourceNotFoundException("User not found with ID: " + dto.getUserId());
-        }
-        User user = userOpt.get();
+
+        User user = userRepo.findById(dto.getUserId())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + dto.getUserId()));
+
+        // ⭐ ROLE VALIDATION: allow STUDENT or MASTER_ADMIN
+        RoleValidator.validateStudentOrMasterAdmin(user);
 
         StudentGenericDetails details = genericRepo.findByUser_UserId(dto.getUserId());
         if (details == null) {
@@ -68,22 +69,26 @@ public class StudentGenericDetailsServiceImpl implements StudentGenericDetailsSe
 
     @Override
     public StudentGenericDetailsDto uploadDocument(Long userId, String documentType, MultipartFile file) {
-        if (file == null || file.isEmpty())
+
+        if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("File cannot be empty");
+        }
+
+        User user = userRepo.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + userId));
+
+        // ⭐ ROLE VALIDATION
+        RoleValidator.validateStudentOrMasterAdmin(user);
 
         StudentGenericDetails details = genericRepo.findByUser_UserId(userId);
         if (details == null) {
-            User user = userRepo.findById(userId)
-                    .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + userId));
             details = new StudentGenericDetails();
             details.setUser(user);
         }
 
         try {
-            // Save file under uploads/<studentId>/documents/ with original name
             String savedPath = FileStorageUtil.saveStudentDocument(file, userId);
 
-            // Delete old file if exists
             if ("adhaar".equalsIgnoreCase(documentType)) {
                 if (details.getAdhaarFilePath() != null)
                     FileStorageUtil.deleteFile(details.getAdhaarFilePath());
@@ -109,11 +114,12 @@ public class StudentGenericDetailsServiceImpl implements StudentGenericDetailsSe
 
     @Override
     public StudentGenericDetailsDto getGenericDetails(Long userId) {
-        Optional<User> userOpt = userRepo.findById(userId);
-        if (!userOpt.isPresent()) {
-            throw new ResourceNotFoundException("User not found with ID: " + userId);
-        }
-        User user = userOpt.get();
+
+        User user = userRepo.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + userId));
+
+        // ⭐ ROLE VALIDATION
+        RoleValidator.validateStudentOrMasterAdmin(user);
 
         StudentGenericDetails details = genericRepo.findByUser_UserId(userId);
         if (details == null) {
@@ -126,6 +132,13 @@ public class StudentGenericDetailsServiceImpl implements StudentGenericDetailsSe
 
     @Override
     public Resource viewDocument(Long userId, String documentType) {
+
+        User user = userRepo.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + userId));
+
+        // ⭐ ROLE VALIDATION
+        RoleValidator.validateStudentOrMasterAdmin(user);
+
         StudentGenericDetails details = genericRepo.findByUser_UserId(userId);
         if (details == null) {
             throw new ResourceNotFoundException("Student details not found for user ID: " + userId);
@@ -145,19 +158,25 @@ public class StudentGenericDetailsServiceImpl implements StudentGenericDetailsSe
         }
 
         try {
-            Path filePath = Paths.get(System.getProperty("user.dir") + "/uploads").resolve(relativePath).normalize();
+            Path filePath = Paths.get(System.getProperty("user.dir") + "/uploads")
+                    .resolve(relativePath)
+                    .normalize();
+
             Resource resource = new UrlResource(filePath.toUri());
+
             if (!resource.exists()) {
                 throw new ResourceNotFoundException("File not found: " + relativePath);
             }
+
             return resource;
+
         } catch (MalformedURLException e) {
             throw new RuntimeException("Error reading file: " + e.getMessage(), e);
         }
     }
 
-    // --- mapToDto method ---
     private StudentGenericDetailsDto mapToDto(StudentGenericDetails details) {
+
         StudentGenericDetailsDto dto = new StudentGenericDetailsDto();
 
         dto.setUserId(details.getUser().getUserId());
@@ -182,7 +201,6 @@ public class StudentGenericDetailsServiceImpl implements StudentGenericDetailsSe
         dto.setGithubProfile(details.getGithubProfile());
         dto.setLinkedinProfile(details.getLinkedinProfile());
 
-        // Dynamic URLs for frontend
         String baseUrl = ServletUriComponentsBuilder.fromCurrentContextPath().build().toUriString();
 
         if (details.getAdhaarFilePath() != null) {
