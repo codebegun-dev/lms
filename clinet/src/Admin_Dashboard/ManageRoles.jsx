@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import { FaEdit, FaTrash } from "react-icons/fa";
 
-const BASE_URL = "http://localhost:8080/api/roles"; // change if needed
+const BASE_URL = "http://localhost:8080/api/roles"; // Change if needed
 
 // 👇 convert "Permission1, Permission2" → ["Permission1", "Permission2"]
 const parsePermissions = (txt) => {
@@ -48,7 +47,6 @@ const ManageRoles = () => {
 
   const showMessage = (text, variant = "success", timeout = 3000) => {
     setMessage({ text, variant });
-
     if (dismissRef.current) clearTimeout(dismissRef.current);
     dismissRef.current = setTimeout(() => setMessage(null), timeout);
   };
@@ -61,11 +59,19 @@ const ManageRoles = () => {
       return;
     }
 
-    let permissions = parsePermissions(permsText);
+    const permissions = parsePermissions(permsText);
+
+    // ✅ Get masterAdminId from localStorage
+    const masterAdminId = localStorage.getItem("masterAdminId");
+    if (!masterAdminId) {
+      showMessage("Master Admin not found. Please login as Master Admin.", "danger");
+      return;
+    }
 
     const payload = {
       name: trimmed,
-      permissions: permissions
+      permissions,
+      adminAuthId: parseInt(masterAdminId), // Send adminId for create/update
     };
 
     try {
@@ -79,9 +85,8 @@ const ManageRoles = () => {
 
       resetForm();
       fetchRoles();
-
     } catch (e) {
-      showMessage("Failed to save role", "danger");
+      showMessage(e.response?.data?.message || "Failed to save role", "danger");
       console.error(e);
     }
   };
@@ -93,7 +98,7 @@ const ManageRoles = () => {
     setPermsText(stringifyPermissions(role.permissions));
   };
 
-  // ✅ Delete role
+  // ✅ Delete role (no admin required)
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure?")) return;
 
@@ -103,7 +108,7 @@ const ManageRoles = () => {
       showMessage("Role deleted successfully", "warning");
       if (editingId === id) resetForm();
     } catch (e) {
-      showMessage("Failed to delete role", "danger");
+      showMessage(e.response?.data?.message || "Failed to delete role", "danger");
       console.error(e);
     }
   };
@@ -159,19 +164,15 @@ const ManageRoles = () => {
               <div>
                 <div className="fw-semibold">{r.name}</div>
                 <div className="mt-1">
-                  {/* Check if r.permissions exists and has length, or default to an empty array */}
                   {r.permissions?.length ? (
                     r.permissions.map((p, i) => (
-                      <span key={i} className="badge bg-secondary me-1">
-                        {p}
-                      </span>
+                      <span key={i} className="badge bg-secondary me-1">{p}</span>
                     ))
                   ) : (
                     <span className="text-muted small">No Permissions</span>
                   )}
                 </div>
               </div>
-
 
               <div className="btn-group">
                 <button className="btn btn-sm btn-outline-primary d-flex align-items-center" onClick={() => handleEdit(r)}>
