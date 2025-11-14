@@ -7,8 +7,7 @@ import com.mockInterview.repository.StudentCourseDetailsRepository;
 import com.mockInterview.repository.UserRepository;
 import com.mockInterview.responseDtos.StudentCourseDetailsDto;
 import com.mockInterview.service.StudentCourseDetailsService;
-
-import java.util.Optional;
+import com.mockInterview.util.RoleValidator;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -24,51 +23,52 @@ public class StudentCourseDetailsServiceImpl implements StudentCourseDetailsServ
 
     @Override
     public StudentCourseDetailsDto getByUserId(Long userId) {
+
         StudentCourseDetails details = repository.findByUser_UserId(userId);
+
         if (details == null) {
             throw new ResourceNotFoundException("Course details not found for user ID: " + userId);
         }
 
-        StudentCourseDetailsDto dto = new StudentCourseDetailsDto();
-        dto.setId(details.getId());
-        dto.setUserId(details.getUser().getUserId());
-        dto.setCourseName(details.getCourseName());
-        dto.setBatchName(details.getBatchName());
-        dto.setCourseStartDate(details.getCourseStartDate());
-        return dto;
+        return convertToDto(details);
     }
 
     @Override
     public StudentCourseDetailsDto updateCourseDetails(StudentCourseDetailsDto dto) {
-        // Find existing course details for the user
+
+        // Fetch User
+        User user = userRepository.findById(dto.getUserId())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + dto.getUserId()));
+
+        // ⭐ Allow STUDENT or MASTER_ADMIN
+        RoleValidator.validateStudentOrMasterAdmin(user);
+
+        // Fetch or create new course details
         StudentCourseDetails details = repository.findByUser_UserId(dto.getUserId());
-        
-        // If details not found, create a new object
         if (details == null) {
             details = new StudentCourseDetails();
-            Optional<User> userOpt = userRepository.findById(dto.getUserId());
-            if (!userOpt.isPresent()) {
-                throw new ResourceNotFoundException("User not found with ID: " + dto.getUserId());
-            }
-            details.setUser(userOpt.get());
+            details.setUser(user);
         }
 
-        // Update course details
+        // Update fields
         details.setCourseName(dto.getCourseName());
-        details.setBatchName(dto.getBatchName());;
+        details.setBatchName(dto.getBatchName());
         details.setCourseStartDate(dto.getCourseStartDate());
 
-        // Save and prepare response DTO
+        // Save
         StudentCourseDetails saved = repository.save(details);
 
-        StudentCourseDetailsDto response = new StudentCourseDetailsDto();
-        response.setId(saved.getId());
-        response.setUserId(saved.getUser().getUserId());
-        response.setCourseName(saved.getCourseName());
-        response.setBatchName(saved.getBatchName());
-        response.setCourseStartDate(saved.getCourseStartDate());
-
-        return response;
+        return convertToDto(saved);
     }
 
+    // ===================== Helper method ======================
+    private StudentCourseDetailsDto convertToDto(StudentCourseDetails entity) {
+        StudentCourseDetailsDto dto = new StudentCourseDetailsDto();
+        dto.setId(entity.getId());
+        dto.setUserId(entity.getUser().getUserId());
+        dto.setCourseName(entity.getCourseName());
+        dto.setBatchName(entity.getBatchName());
+        dto.setCourseStartDate(entity.getCourseStartDate());
+        return dto;
+    }
 }

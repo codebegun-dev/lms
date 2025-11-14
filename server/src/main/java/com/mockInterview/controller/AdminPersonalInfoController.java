@@ -15,7 +15,7 @@ public class AdminPersonalInfoController {
     @Autowired
     private AdminPersonalInfoService service;
 
-    // ✅ Combined update for details + profile image
+    // ✅ Update personal info + profile picture
     @PutMapping("/update")
     public AdminPersonalInfoResponseDto updateAll(
             @RequestPart("info") AdminPersonalInfoUpdateRequestDto request,
@@ -23,7 +23,7 @@ public class AdminPersonalInfoController {
         return service.updateFullProfile(request, file);
     }
 
-    // ✅ Get info by userId
+    // ✅ Fetch info by userId
     @GetMapping("/{userId}")
     public AdminPersonalInfoResponseDto getInfo(@PathVariable Long userId) {
         return service.getByUserId(userId);

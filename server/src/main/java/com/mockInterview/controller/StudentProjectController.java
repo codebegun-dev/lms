@@ -27,10 +27,11 @@ public class StudentProjectController {
         return projectService.addOrUpdateProject(dto);
     }
 
-    // ✅ Delete a project
+ // ✅ Delete a project
     @DeleteMapping("/{projectId}")
-    public String deleteProject(@PathVariable Long projectId) {
-        projectService.deleteProject(projectId);
+    public String deleteProject(@PathVariable Long projectId, @RequestParam Long userId) {
+        projectService.deleteProject(projectId, userId);
         return "Project deleted successfully with ID: " + projectId;
     }
+
 }

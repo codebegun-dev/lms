@@ -6,6 +6,7 @@ import com.mockInterview.repository.StudentTwelfthGradeRepository;
 import com.mockInterview.repository.UserRepository;
 import com.mockInterview.responseDtos.StudentTwelfthGradeDto;
 import com.mockInterview.service.StudentTwelfthGradeService;
+import com.mockInterview.util.RoleValidator;
 import com.mockInterview.exception.ResourceNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -40,6 +41,7 @@ public class StudentTwelfthGradeServiceImpl implements StudentTwelfthGradeServic
     	    throw new ResourceNotFoundException("User not found with ID: " + dto.getUserId());
     	}
     	User user = userOpt.get();
+    	RoleValidator.validateStudentOrMasterAdmin(user);
 
         // ✅ Step 2: Find existing Twelfth Grade record (or create new)
         Optional<StudentTwelfthGrade> existing = twelfthGradeRepository.findByUser_UserId(dto.getUserId());

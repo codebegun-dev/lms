@@ -28,38 +28,53 @@ public class DataInitializer implements CommandLineRunner {
     @Override
     public void run(String... args) throws Exception {
 
-        // Preload STUDENT role
-        createRoleIfNotFound("STUDENT");
-
-        // Preload MASTER_ADMIN role
-        Role masterRole = createRoleIfNotFound("MASTER_ADMIN");
-
-        // Preload DEFAULT role
-        createRoleIfNotFound("DEFAULT");
-
-        // Preload Master Admin user
-        User masterAdmin = userRepository.findByEmail(MASTER_ADMIN_EMAIL);
-        if (masterAdmin == null) {
-            masterAdmin = new User();
-            masterAdmin.setFirstName("Master");
-            masterAdmin.setLastName("Admin");
-            masterAdmin.setEmail(MASTER_ADMIN_EMAIL);
-            masterAdmin.setPassword(MASTER_ADMIN_PASSWORD);
-            masterAdmin.setPhone("9999999999");
-            masterAdmin.setRole(masterRole); // assign MASTER_ADMIN role
-            masterAdmin.setStatus("ACTIVE");
-            userRepository.save(masterAdmin); 
-        }
+        initializeRoles();
+        initializeMasterAdmin();
     }
 
-    // Helper method to create role if it does not exist
-    private Role createRoleIfNotFound(String roleName) {
-        Role role = roleRepository.findByName(roleName);
-        if (role == null) {
-            role = new Role();
-            role.setName(roleName);
-            roleRepository.save(role);
+    // ========================= ROLE SETUP =========================
+    private void initializeRoles() {
+
+        if (roleRepository.count() > 0) {
+            return; // Roles already exist → skip
         }
-        return role;
+
+        Role student = new Role();
+        student.setName("STUDENT");
+        roleRepository.save(student);
+
+        Role master = new Role();
+        master.setName("MASTER_ADMIN");
+        roleRepository.save(master);
+
+        Role defaultRole = new Role();
+        defaultRole.setName("DEFAULT");
+        roleRepository.save(defaultRole);
+
+        System.out.println("✔ Default roles initialized.");
+    }
+
+    // ========================= MASTER ADMIN SETUP =========================
+    private void initializeMasterAdmin() {
+
+        // Check with lightweight existence check (no full row fetch)
+        if (userRepository.existsByEmail(MASTER_ADMIN_EMAIL)) {
+            return; // Already exists → skip
+        }
+
+        Role masterRole = roleRepository.findByName("MASTER_ADMIN");
+
+        User masterAdmin = new User();
+        masterAdmin.setFirstName("Master"); 
+        masterAdmin.setLastName("Admin");
+        masterAdmin.setEmail(MASTER_ADMIN_EMAIL);
+        masterAdmin.setPassword(MASTER_ADMIN_PASSWORD);
+        masterAdmin.setPhone("9999999999");
+        masterAdmin.setRole(masterRole);
+        masterAdmin.setStatus("ACTIVE");
+
+        userRepository.save(masterAdmin);
+
+        System.out.println("✔ Master Admin created.");
     }
 }

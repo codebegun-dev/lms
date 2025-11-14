@@ -1,6 +1,7 @@
 package com.mockInterview.service;
 
 import java.util.List;
+import java.util.Map;
 
 import com.mockInterview.requestDtos.LoginRequestDto;
 import com.mockInterview.requestDtos.UserRequestDto;
@@ -34,5 +35,5 @@ public void syncPasswordsWithMasterAdmin();
 
 public void bulkChangeUsersRoleByAdmin(Long adminId, Long fromRoleId, Long toRoleId);
 
-
+public Map<String, Object> getDashboardCounts();
 }

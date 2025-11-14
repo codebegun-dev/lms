@@ -18,6 +18,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
 	User findByPhone(String phone);
 
 	User findByEmailOrPhone(String email, String phone);
+	boolean existsByEmail(String email);
+
 
 	User findByRole_Name(String roleName);
 	List<User> findByRole(Role role);
@@ -30,4 +32,12 @@ public interface UserRepository extends JpaRepository<User, Long> {
 	List<User> findByRole_NameNot(String roleName);
 
 	List<User> findByStatusAndRole_NameNot(String status, String roleName);
+	
+	@Query("SELECT r.name AS roleName, COUNT(u) AS count " +
+		       "FROM User u JOIN u.role r GROUP BY r.name")
+		List<Object[]> findRoleWiseCounts();
+
+		long count();
+		long countByStatus(String status);
+
 }

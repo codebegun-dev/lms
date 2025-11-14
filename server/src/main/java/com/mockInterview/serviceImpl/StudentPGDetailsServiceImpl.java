@@ -7,6 +7,7 @@ import com.mockInterview.repository.StudentPGDetailsRepository;
 import com.mockInterview.repository.UserRepository;
 import com.mockInterview.responseDtos.StudentPGDetailsDto;
 import com.mockInterview.service.StudentPGDetailsService;
+import com.mockInterview.util.RoleValidator;
 
 import java.util.Optional;
 
@@ -28,7 +29,9 @@ public class StudentPGDetailsServiceImpl implements StudentPGDetailsService {
     	if (!userOpt.isPresent()) {
     	    throw new ResourceNotFoundException("User not found with ID: " + userId);
     	}
+    	
     	User user = userOpt.get();
+    	 RoleValidator.validateStudentOrMasterAdmin(user);
 
         StudentPGDetails pgDetails = pgRepository.findByUser_UserId(userId);
 
@@ -47,6 +50,7 @@ public class StudentPGDetailsServiceImpl implements StudentPGDetailsService {
     	    throw new ResourceNotFoundException("User not found with ID: " + dto.getUserId());
     	}
     	User user = userOpt.get();
+    	 RoleValidator.validateStudentOrMasterAdmin(user);
 
         StudentPGDetails pgDetails = pgRepository.findByUser_UserId(dto.getUserId());
         if (pgDetails == null) {
