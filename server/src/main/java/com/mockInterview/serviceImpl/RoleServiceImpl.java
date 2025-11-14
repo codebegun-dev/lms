@@ -43,7 +43,7 @@ public class RoleServiceImpl implements RoleService {
         return toResponse(saved);
     }
 
-    // -------------------- UPDATE ROLE --------------------
+ // -------------------- UPDATE ROLE --------------------
     @Override
     public RoleResponseDto updateRole(Long id, RoleRequestDto dto) {
         validateAdmin(dto.getAdminAuthId());
@@ -51,8 +51,10 @@ public class RoleServiceImpl implements RoleService {
         Role role = roleRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Role not found"));
 
-        // Prevent editing STUDENT or MASTER_ADMIN role
-        if ("STUDENT".equalsIgnoreCase(role.getName()) || "MASTER_ADMIN".equalsIgnoreCase(role.getName())) {
+        // Prevent editing STUDENT, MASTER_ADMIN, or DEFAULT role
+        if ("STUDENT".equalsIgnoreCase(role.getName()) || 
+            "MASTER_ADMIN".equalsIgnoreCase(role.getName()) || 
+            "DEFAULT".equalsIgnoreCase(role.getName())) {
             throw new RuntimeException("The " + role.getName() + " role cannot be edited!");
         }
 
@@ -67,29 +69,40 @@ public class RoleServiceImpl implements RoleService {
         return toResponse(updated);
     }
 
-    
- // -------------------- DELETE ROLE --------------------
+    // -------------------- DELETE ROLE --------------------
     @Override
     @Transactional
     public void deleteRole(Long id) {
         Role role = roleRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Role not found"));
 
-        // ❌ Prevent deleting STUDENT or MASTER_ADMIN role
-        if ("STUDENT".equalsIgnoreCase(role.getName()) || "MASTER_ADMIN".equalsIgnoreCase(role.getName())) {
+        // Prevent deleting system roles
+        if ("STUDENT".equalsIgnoreCase(role.getName()) || 
+            "MASTER_ADMIN".equalsIgnoreCase(role.getName()) || 
+            "DEFAULT".equalsIgnoreCase(role.getName())) {
             throw new RuntimeException("The " + role.getName() + " role cannot be deleted!");
         }
 
-        // ✅ Fetch all users assigned to this role
+        // Fetch all users assigned to this role
         List<User> usersWithRole = userRepository.findByRole(role);
         if (usersWithRole != null && !usersWithRole.isEmpty()) {
-            for (User user : usersWithRole) {
-                user.setRole(null); // Remove the role
+            // Get DEFAULT role
+            Role defaultRole = roleRepository.findByName("DEFAULT");
+            if (defaultRole == null) {
+                // If DEFAULT role does not exist, create it
+                defaultRole = new Role();
+                defaultRole.setName("DEFAULT");
+                roleRepository.save(defaultRole);
             }
-            userRepository.saveAll(usersWithRole); // Save updated users
+
+            // Assign DEFAULT role to all users who had the deleted role
+            for (User user : usersWithRole) {
+                user.setRole(defaultRole);
+            }
+            userRepository.saveAll(usersWithRole);
         }
 
-        // ✅ Delete the role
+        // Delete the role
         roleRepository.delete(role);
     }
 

@@ -189,6 +189,34 @@ public class UserServiceImpl implements UserService {
         User updatedUser = userRepository.save(user);
         return userMapper.toResponse(updatedUser);
     }
+    
+    @Override
+    @Transactional
+    public void bulkChangeUsersRoleByAdmin(Long adminId, Long fromRoleId, Long toRoleId) {
+
+        // Validate Admin
+        validateAdmin(adminId);
+
+        Role fromRole = roleRepository.findById(fromRoleId)
+                .orElseThrow(() -> new RuntimeException("From Role not found!"));
+
+        Role toRole = roleRepository.findById(toRoleId)
+                .orElseThrow(() -> new RuntimeException("To Role not found!"));
+
+        // Fetch all users with source role
+        List<User> users = userRepository.findByRole(fromRole);
+
+        if (users.isEmpty()) {
+            throw new RuntimeException("No users found with the specified role");
+        }
+
+        for (User u : users) {
+            u.setRole(toRole);
+        }
+
+        userRepository.saveAll(users);
+    }
+
 
     // ================= SYNC PASSWORDS =================
     @Transactional
@@ -340,6 +368,23 @@ public class UserServiceImpl implements UserService {
 
         return token;
     }
+    
+    private void validateAdmin(Long adminId) {
+
+        if (adminId == null) {
+            throw new UnauthorizedActionException("Admin ID is required");
+        }
+
+        User admin = userRepository.findById(adminId)
+                .orElseThrow(() -> new UnauthorizedActionException("Admin user not found"));
+
+        if (admin.getRole() == null ||
+            !"MASTER_ADMIN".equalsIgnoreCase(admin.getRole().getName())) {
+
+            throw new UnauthorizedActionException("Only Master Admin is allowed to perform this action");
+        }
+    }
+
 
     // ================= PASSWORD VALIDATION =================
     private void validatePassword(String password) {

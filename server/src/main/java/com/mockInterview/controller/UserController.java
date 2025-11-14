@@ -98,6 +98,16 @@ public class UserController {
         userService.deleteUser(userId);
         return "User deleted successfully";
     }
+    
+    @PutMapping("/bulk-change-role/{adminId}/{fromRoleId}/{toRoleId}")
+    public String bulkChangeRole(
+            @PathVariable Long adminId,
+            @PathVariable Long fromRoleId,
+            @PathVariable Long toRoleId) {
+
+        userService.bulkChangeUsersRoleByAdmin(adminId, fromRoleId, toRoleId);
+        return "All users with role ID '" + fromRoleId + "' have been reassigned to role ID '" + toRoleId + "'";
+    }
 
     // ---------------- Sync Master Admin Password ----------------
     @PutMapping("/sync-passwords")

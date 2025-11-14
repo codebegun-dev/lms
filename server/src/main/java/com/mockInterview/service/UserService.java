@@ -32,5 +32,7 @@ public void deleteUser(Long userId);
 
 public void syncPasswordsWithMasterAdmin();
 
+public void bulkChangeUsersRoleByAdmin(Long adminId, Long fromRoleId, Long toRoleId);
+
 
 }
