@@ -53,11 +53,15 @@ function RegistrationForm() {
   const validateForm = () => {
     const tempErrors = {};
 
-    if (!formData.firstName.trim()) tempErrors.firstName = "First name is required";
-    if (!formData.lastName.trim()) tempErrors.lastName = "Last name is required";
+if (formData.firstName.trim().length < 3)
+  tempErrors.firstName = "First name must be at least 3 characters";
+
+if (formData.lastName.trim().length < 3)
+  tempErrors.lastName = "Last name must be at least 3 characters";
+
 
     if (!formData.email.trim()) tempErrors.email = "Email is required";
-    else if (!/\S+@\S+\.\  S+/.test(formData.email)) tempErrors.email = "Invalid email format";
+else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email))
 
     if (!formData.phone.trim()) tempErrors.phone = "Phone is required";
     else if (!/^\d{10}$/.test(formData.phone)) tempErrors.phone = "Phone must be 10 digits";
