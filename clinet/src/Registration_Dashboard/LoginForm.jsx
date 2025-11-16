@@ -11,7 +11,7 @@ function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
-  // ---------------- Handle Input ----------------
+  //  Handle Input 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
@@ -19,7 +19,7 @@ function LoginForm() {
     setGeneralError("");
   };
 
-  // ---------------- Validate Form ----------------
+  //   Validate Form  
   const validateForm = () => {
     const tempErrors = {};
     if (!formData.emailOrPhone.trim()) tempErrors.emailOrPhone = "Email or Phone is required";
@@ -28,10 +28,10 @@ function LoginForm() {
     return Object.keys(tempErrors).length === 0;
   };
 
-  // ---------------- Toggle Password ----------------
+  // Toggle Password 
   const togglePasswordVisibility = () => setShowPassword((prev) => !prev);
 
-  // ---------------- Submit ----------------
+  //Submit
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
@@ -47,10 +47,10 @@ function LoginForm() {
 
       const roleName = user.role.trim().toUpperCase();
 
-      // ✅ Save user to localStorage
+      //  Save user to localStorage
       localStorage.setItem("user", JSON.stringify(user));
 
-      // ✅ If Master Admin, save masterAdminId separately
+      //  If Master Admin, save masterAdminId separately
       if (roleName === "MASTER_ADMIN") {
         localStorage.setItem("masterAdminId", user.userId);
       }
@@ -58,7 +58,7 @@ function LoginForm() {
       window.dispatchEvent(new Event("user-updated"));
       console.log("Logged in as:", roleName);
 
-      // ✅ Role-based navigation
+      //  Role-based navigation
       if (roleName === "STUDENT") navigate("/student-dashboard");
       else if (roleName === "ADMIN" || roleName === "MASTER_ADMIN") navigate("/admin-dashboard");
       else if (roleName === "INTERVIEWER") navigate("/interviewer-dashboard");
@@ -128,7 +128,7 @@ else setGeneralError(`Unknown role: ${roleName}`);
               </div>
 
               <div className="text-end mb-3">
-                <Link to="/forgot-password" className="text-primary">Forgot Password?</Link>
+                <Link to="/sendresetmail" className="text-primary">Forgot Password?</Link>
               </div>
 
               <button type="submit" className="btn btn-primary w-100">Login</button>
