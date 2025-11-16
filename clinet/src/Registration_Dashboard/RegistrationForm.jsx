@@ -1,3 +1,5 @@
+ 
+
 
 import React, { useState, useEffect } from "react";
 import axios from "axios";
@@ -9,7 +11,6 @@ function RegistrationForm() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // ✅ If admin navigates like: navigate("/register", { state: { adminRegistration: true } })
   const isAdminRegistration = location.state?.adminRegistration === true;
 
   const [formData, setFormData] = useState({
@@ -19,7 +20,7 @@ function RegistrationForm() {
     phone: "",
     password: "",
     confirmPassword: "",
-role: isAdminRegistration ? "ADMIN" : "STUDENT",
+    role: isAdminRegistration ? "ADMIN" : "STUDENT",
     status: "ACTIVE",
   });
 
@@ -31,7 +32,7 @@ role: isAdminRegistration ? "ADMIN" : "STUDENT",
   const [errors, setErrors] = useState({});
   const [success, setSuccess] = useState("");
 
-  // ✅ If admin opens registration page → set default password + role
+  // Autofill admin role
   useEffect(() => {
     if (isAdminRegistration) {
       setFormData((prev) => ({
@@ -56,7 +57,7 @@ role: isAdminRegistration ? "ADMIN" : "STUDENT",
     if (!formData.lastName.trim()) tempErrors.lastName = "Last name is required";
 
     if (!formData.email.trim()) tempErrors.email = "Email is required";
-    else if (!/\S+@\S+\.\S+/.test(formData.email)) tempErrors.email = "Invalid email format";
+    else if (!/\S+@\S+\.\  S+/.test(formData.email)) tempErrors.email = "Invalid email format";
 
     if (!formData.phone.trim()) tempErrors.phone = "Phone is required";
     else if (!/^\d{10}$/.test(formData.phone)) tempErrors.phone = "Phone must be 10 digits";
@@ -71,44 +72,60 @@ role: isAdminRegistration ? "ADMIN" : "STUDENT",
     return Object.keys(tempErrors).length === 0;
   };
 
- const handleSubmit = async (e) => {
-  e.preventDefault();
-  setSuccess("");
-  setErrors({});
+  // SUBMIT
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSuccess("");
+    setErrors({});
 
-  if (!validateForm()) return;
+    if (!validateForm()) return;
 
-  try {
-    const payload = {
-      firstName: formData.firstName,
-      lastName: formData.lastName,
-      email: formData.email,
-      phone: formData.phone,
-      password: formData.password,
-      role: isAdminRegistration ? formData.role : "STUDENT",
-      status: "ACTIVE"
-    };
+    try {
+      const payload = {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        phone: formData.phone,
+        password: formData.password,
+        role: isAdminRegistration ? formData.role : "STUDENT",
+        status: "ACTIVE",
+      };
 
-    const res = await axios.post("http://localhost:8080/api/user", payload);
+      const res = await axios.post("http://localhost:8080/api/user", payload);
 
-    // ✅ Show backend success message
-    setSuccess(res.data.message);
+      // SUCCESS
+      setSuccess(res.data.message || "Registered successfully!");
 
-    // ✅ Store user (for login purpose)
-    if (res.data.user) {
-      localStorage.setItem("user", JSON.stringify(res.data.user));
+      if (res.data.user) {
+        localStorage.setItem("user", JSON.stringify(res.data.user));
+      }
+
+      setTimeout(() => {
+        navigate(isAdminRegistration ? "/admin-dashboard/usermanagement" : "/login");
+      }, 1500);
+
+    } catch (error) {
+      const backendMessage = error.response?.data?.message;
+
+      if (!backendMessage) {
+        setErrors({ general: "Server error occurred" });
+        return;
+      }
+
+      // Map backend errors to specific fields
+      const msg = backendMessage.toLowerCase();
+
+      if (msg.includes("phone")) {
+        setErrors({ phone: backendMessage });
+      } else if (msg.includes("email")) {
+        setErrors({ email: backendMessage });
+      } else if (msg.includes("password")) {
+        setErrors({ password: backendMessage });
+      } else {
+        setErrors({ general: backendMessage });
+      }
     }
-
-    setTimeout(() => {
-      navigate(isAdminRegistration ? "/admin-dashboard/usermanagement" : "/login");
-    }, 1500);
-
-  } catch (error) {
-    setErrors({
-      general: error.response?.data?.message || "Server error occurred"
-    });
-  }
-};
+  };
 
   return (
     <div className="container mt-5">
@@ -129,6 +146,7 @@ role: isAdminRegistration ? "ADMIN" : "STUDENT",
           </h3>
 
           {success && <div className="alert alert-success text-center">{success}</div>}
+
           {errors.general && <div className="alert alert-danger text-center">{errors.general}</div>}
 
           <form onSubmit={handleSubmit}>
@@ -194,7 +212,9 @@ role: isAdminRegistration ? "ADMIN" : "STUDENT",
                   <span
                     className="position-absolute"
                     style={{ right: "10px", top: "38px", cursor: "pointer" }}
-                    onClick={() => setShowPassword({ ...showPassword, password: !showPassword.password })}
+                    onClick={() =>
+                      setShowPassword({ ...showPassword, password: !showPassword.password })
+                    }
                   >
                     {showPassword.password ? <EyeOff size={18} /> : <Eye size={18} />}
                   </span>
