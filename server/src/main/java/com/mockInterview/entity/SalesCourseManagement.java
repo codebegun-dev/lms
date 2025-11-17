@@ -29,20 +29,18 @@ public class SalesCourseManagement {
     private String phone;
     
 	@Email(message = "Invalid email format")
-	@Pattern(regexp = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,6}$")
-     private String email;
+	private String email;
 
 	private String gender;
 
-	@Pattern(regexp = "^[0-9]{4}$", message = "Passed out year must be a valid 4 digit year")
-    private String passedOutYear;
+	private String passedOutYear;
 
 	private String qualification;
 	
 	@ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "category_id", nullable = false)
+    @JoinColumn(name = "category_id", nullable=true)
 	private CourseManagement courseManagement;
 	
-	private String status = "INITIAL";
+	private String status = "INITIAL";  
 
 }
