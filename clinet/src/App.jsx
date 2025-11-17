@@ -1,7 +1,6 @@
-
-
 import './App.css';
 import { Routes, Route } from 'react-router-dom';
+
 
 // Registration & Login
 import RegistrationForm from './Registration_Dashboard/RegistrationForm';
@@ -20,8 +19,6 @@ import StudentNavbar from './Student_Dashboard/StudentNavbar';
 import StudentProfile from './Student_Dashboard/Studentprofile';
  
 
-
-
 // Admin Dashboard
 import AdminDashboard from './Admin_Dashboard/AdminDashboard';
 import AdminProfile from './Admin_Dashboard/AdminProfile';
@@ -36,6 +33,13 @@ import ManageRoles from './Admin_Dashboard/ManageRoles';
 import Syllabus from './Admin_Dashboard/Syllabus';
 
 
+// Sales Dash
+import SalesForm from './Sales_Dashboard/SalesForm';
+import SalesDashboard from './Sales_Dashboard/SalesDashboard';
+import LeadsList from "./Sales_Dashboard/LeadsList";
+import SalesProfile from './Sales_Dashboard/SalesProfile';
+
+
 function App() {
   return (
     <>
@@ -48,7 +52,6 @@ function App() {
       <Route path="/start-interview" element={<StartInterview />} />
       <Route path="/studentnavbar" element={<StudentNavbar />} />
       <Route path="/student-profile" element={<StudentProfile />} />
-
       <Route path="/view-progress" element={<ViewProgress />} />    
        
   
@@ -76,12 +79,19 @@ function App() {
           <Route path="" element={<CourseManagement />} />
           <Route path="admin-profile" element={<AdminProfile />} />
         </Route>
+        
+
+        {/* Sales Dashboard */}
+        <Route path="/sales-dashboard" element={<SalesDashboard />}>
+          <Route index element={<h2>Sales Home</h2>} />
+          <Route path="add-enquiry" element={<SalesForm />} />
+          <Route path="leads" element={<LeadsList />} />
+          <Route path="myprofile" element={<SalesProfile />} />
+        </Route>
+
 
         {/* Fallback route (optional) */}
         <Route path="*" element={<h2 className="text-center my-5">Page Not Found</h2>} />
-
-
-
       </Routes>
     </>
   )
