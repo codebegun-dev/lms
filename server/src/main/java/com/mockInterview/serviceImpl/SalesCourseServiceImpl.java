@@ -34,47 +34,59 @@ public class SalesCourseServiceImpl implements SalesCourseService {
      @Override
      public SalesCourseManagementResponseDto createStudent(SalesCourseManagementRequestDto dto) {
 
-         
-         if (dto.getEmail() != null && userRepository.findByEmail(dto.getEmail()) != null) {
+         // --------------------- VALIDATION CHECKS ---------------------
+
+         if (dto.getEmail() != null &&
+             userRepository.findByEmail(dto.getEmail()) != null) {
              throw new DuplicateFieldException("Email already exists!");
          }
 
-         
          if (dto.getPhone() != null &&
              (userRepository.findByPhone(dto.getPhone()) != null ||
               studentPersonalInfoRepository.findByParentMobileNumber(dto.getPhone()) != null)) {
-
              throw new DuplicateFieldException("Phone already exists!");
          }
 
-         
-      
-         SalesCourseManagement emailCheck = salesCourseManagementRepository.findByEmail(dto.getEmail());
-         if (emailCheck != null) {
-             throw new DuplicateFieldException("Email already exists in Sales table!");
+         // Sales table duplicate checks
+         if (dto.getEmail() != null) {
+             SalesCourseManagement emailCheck = salesCourseManagementRepository.findByEmail(dto.getEmail());
+             if (emailCheck != null) {
+                 throw new DuplicateFieldException("Email already exists in Sales table!");
+             }
          }
 
-        
          SalesCourseManagement phoneCheck = salesCourseManagementRepository.findByPhone(dto.getPhone());
          if (phoneCheck != null) {
              throw new DuplicateFieldException("Phone already exists!");
          }
 
+         // --------------------- CREATE ENTITY ---------------------
 
-        
-         CourseManagement course = courseManagementRepository.findById(dto.getCourseId())
-                 .orElseThrow(() -> new ResourceNotFoundException("Course not found!"));
+         SalesCourseManagement entity = new SalesCourseManagement();
+         entity.setStudentName(dto.getStudentName());   // mandatory
+         entity.setPhone(dto.getPhone());               // mandatory
 
-        
-         SalesCourseManagement entity = SalesCourseManagementMapper.toEntity(dto, course);
+         // Optional fields: set only if provided
+         if (dto.getEmail() != null) entity.setEmail(dto.getEmail());
+         if (dto.getGender() != null) entity.setGender(dto.getGender());
+         if (dto.getPassedOutYear() != null) entity.setPassedOutYear(dto.getPassedOutYear());
+         if (dto.getQualification() != null) entity.setQualification(dto.getQualification());
+
+         // Optional: courseId
+         if (dto.getCourseId() > 0) {
+             CourseManagement course = courseManagementRepository.findById(dto.getCourseId())
+                     .orElseThrow(() -> new ResourceNotFoundException("Course not found!"));
+             entity.setCourseManagement(course);
+         }
+
+         // Optional status
          if (dto.getStatus() != null && !dto.getStatus().trim().isEmpty()) {
-        	    entity.setStatus(dto.getStatus().trim());
-        	}
+             entity.setStatus(dto.getStatus().trim());
+         }
 
-         
+         // --------------------- SAVE ---------------------
          SalesCourseManagement saved = salesCourseManagementRepository.save(entity);
 
-         
          return SalesCourseManagementMapper.toResponseDto(saved);
      }
 
@@ -107,59 +119,62 @@ public class SalesCourseServiceImpl implements SalesCourseService {
      @Override
      public SalesCourseManagementResponseDto updateStudentDetails(Long id, SalesCourseManagementRequestDto dto) {
 
-         
          SalesCourseManagement student = salesCourseManagementRepository.findById(id)
                  .orElseThrow(() -> new ResourceNotFoundException("Student not found with ID: " + id));
 
-         
-         if (dto.getEmail() != null) {
+         // -------------------- DUPLICATE CHECKS --------------------
+
+         // Email duplicate check in Sales table
+         if (dto.getEmail() != null && !dto.getEmail().trim().isEmpty()) {
              SalesCourseManagement emailCheck = salesCourseManagementRepository.findByEmail(dto.getEmail());
              if (emailCheck != null && emailCheck.getStudentId() != id) {
                  throw new DuplicateFieldException("Email already exists!");
              }
+
+             if (userRepository.findByEmail(dto.getEmail()) != null) {
+                 throw new DuplicateFieldException("Email already exists in User table!");
+             }
          }
 
-         
-         if (dto.getPhone() != null) {
+         // Phone duplicate checks
+         if (dto.getPhone() != null && !dto.getPhone().trim().isEmpty()) {
+
              SalesCourseManagement phoneCheck = salesCourseManagementRepository.findByPhone(dto.getPhone());
              if (phoneCheck != null && phoneCheck.getStudentId() != id) {
                  throw new DuplicateFieldException("Phone number already exists!");
              }
-         }
 
-                  if (dto.getPhone() != null) {
              if (userRepository.findByPhone(dto.getPhone()) != null ||
                  studentPersonalInfoRepository.findByParentMobileNumber(dto.getPhone()) != null) {
 
-                 throw new DuplicateFieldException("Phone already exists!");
+                 throw new DuplicateFieldException("Phone already exists in User/Parent table!");
              }
          }
 
-         
-         if (dto.getEmail() != null && userRepository.findByEmail(dto.getEmail()) != null) {
-             throw new DuplicateFieldException("Email already exists!");
+         // -------------------- OPTIONAL COURSE UPDATE --------------------
+         if (dto.getCourseId() > 0) {
+             CourseManagement course = courseManagementRepository.findById(dto.getCourseId())
+                     .orElseThrow(() -> new ResourceNotFoundException("Course not found!"));
+             student.setCourseManagement(course);
          }
 
-         CourseManagement course = courseManagementRepository.findById(dto.getCourseId())
-                 .orElseThrow(() -> new ResourceNotFoundException("Course not found!"));
+         // -------------------- UPDATE FIELDS IF PROVIDED --------------------
+
+         if (dto.getStudentName() != null) student.setStudentName(dto.getStudentName());
+         if (dto.getPhone() != null) student.setPhone(dto.getPhone());
+         if (dto.getEmail() != null) student.setEmail(dto.getEmail());
+         if (dto.getGender() != null) student.setGender(dto.getGender());
+         if (dto.getPassedOutYear() != null) student.setPassedOutYear(dto.getPassedOutYear());
+         if (dto.getQualification() != null) student.setQualification(dto.getQualification());
 
          
-         student.setStudentName(dto.getStudentName());
-         student.setPhone(dto.getPhone());
-         student.setEmail(dto.getEmail());
-         student.setGender(dto.getGender());
-         student.setPassedOutYear(dto.getPassedOutYear());
-         student.setQualification(dto.getQualification());
-         student.setCourseManagement(course);
          if (dto.getStatus() != null && !dto.getStatus().trim().isEmpty()) {
-        	    student.setStatus(dto.getStatus().trim());
-        	}
+             student.setStatus(dto.getStatus().trim());
+         }
 
-
-         
+         // -------------------- SAVE --------------------
          SalesCourseManagement updated = salesCourseManagementRepository.save(student);
 
-         
          return SalesCourseManagementMapper.toResponseDto(updated);
      }
 

@@ -15,5 +15,6 @@ public class AdminPersonalInfoResponseDto {
     private String gender;
     private LocalDate dateOfBirth;
     private String bloodGroup;
+    private String jobTitle;
     private String profilePicturePath;
 }
