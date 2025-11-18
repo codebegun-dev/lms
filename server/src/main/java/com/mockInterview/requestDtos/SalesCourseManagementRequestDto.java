@@ -27,7 +27,7 @@ public class SalesCourseManagementRequestDto {
 	
 	private String qualification;
 	
-	private long courseId;
+	private Long courseId;
 	
 	private String status;
 

@@ -18,7 +18,7 @@ import lombok.Data;
 public class SalesCourseManagement {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private long studentId;
+	private Long studentId;
 
 	@NotNull(message = "Student name is required")
     @Size(min = 3, max = 30, message = "Name must be between 3 and 30 characters")

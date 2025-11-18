@@ -1,13 +1,17 @@
 package com.mockInterview.serviceImpl;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.mockInterview.entity.CourseManagement;
 import com.mockInterview.entity.SalesCourseManagement;
+import com.mockInterview.excelHelper.ExcelHelper;
 import com.mockInterview.exception.DuplicateFieldException;
 import com.mockInterview.exception.ResourceNotFoundException;
 import com.mockInterview.mapper.SalesCourseManagementMapper;
@@ -18,201 +22,231 @@ import com.mockInterview.repository.UserRepository;
 import com.mockInterview.requestDtos.SalesCourseManagementRequestDto;
 import com.mockInterview.responseDtos.SalesCourseManagementResponseDto;
 import com.mockInterview.service.SalesCourseService;
+
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
+
 @Service
 public class SalesCourseServiceImpl implements SalesCourseService {
-	@Autowired
-	private UserRepository userRepository;
-     @Autowired
-	private StudentPersonalInfoRepository studentPersonalInfoRepository;
-     
-     @Autowired
-     private SalesCourseManagementRepository  salesCourseManagementRepository;
-     
-     @Autowired
-     private CourseManagementRepository  courseManagementRepository;
 
-     @Override
-     public SalesCourseManagementResponseDto createStudent(SalesCourseManagementRequestDto dto) {
+    @Autowired
+    private UserRepository userRepository;
 
-         // --------------------- VALIDATION CHECKS ---------------------
+    @Autowired
+    private StudentPersonalInfoRepository studentPersonalInfoRepository;
 
-         if (dto.getEmail() != null &&
-             userRepository.findByEmail(dto.getEmail()) != null) {
-             throw new DuplicateFieldException("Email already exists!");
-         }
+    @Autowired
+    private SalesCourseManagementRepository salesCourseManagementRepository;
 
-         if (dto.getPhone() != null &&
-             (userRepository.findByPhone(dto.getPhone()) != null ||
-              studentPersonalInfoRepository.findByParentMobileNumber(dto.getPhone()) != null)) {
-             throw new DuplicateFieldException("Phone already exists!");
-         }
+    @Autowired
+    private CourseManagementRepository courseManagementRepository;
 
-         // Sales table duplicate checks
-         if (dto.getEmail() != null) {
-             SalesCourseManagement emailCheck = salesCourseManagementRepository.findByEmail(dto.getEmail());
-             if (emailCheck != null) {
-                 throw new DuplicateFieldException("Email already exists in Sales table!");
-             }
-         }
+    // ---------------- CREATE STUDENT ----------------
+    @Override
+    public SalesCourseManagementResponseDto createStudent(SalesCourseManagementRequestDto dto) {
 
-         SalesCourseManagement phoneCheck = salesCourseManagementRepository.findByPhone(dto.getPhone());
-         if (phoneCheck != null) {
-             throw new DuplicateFieldException("Phone already exists!");
-         }
+        // Trim email and phone
+        String email = dto.getEmail() != null ? dto.getEmail().trim() : null;
+        String phone = dto.getPhone() != null ? dto.getPhone().trim() : null;
 
-         // --------------------- CREATE ENTITY ---------------------
+        // --------------------- VALIDATION ---------------------
+        if (phone == null || phone.isEmpty()) {
+            throw new DuplicateFieldException("Phone is required!");
+        }
 
-         SalesCourseManagement entity = new SalesCourseManagement();
-         entity.setStudentName(dto.getStudentName());   // mandatory
-         entity.setPhone(dto.getPhone());               // mandatory
+        if (phone != null &&
+                (userRepository.findByPhone(phone) != null ||
+                 studentPersonalInfoRepository.findByParentMobileNumber(phone) != null ||
+                 salesCourseManagementRepository.findByPhone(phone) != null)) {
+            throw new DuplicateFieldException("Phone already exists!");
+        }
 
-         // Optional fields: set only if provided
-         if (dto.getEmail() != null) entity.setEmail(dto.getEmail());
-         if (dto.getGender() != null) entity.setGender(dto.getGender());
-         if (dto.getPassedOutYear() != null) entity.setPassedOutYear(dto.getPassedOutYear());
-         if (dto.getQualification() != null) entity.setQualification(dto.getQualification());
+        if (email != null && !email.isEmpty()) {
+            if (userRepository.findByEmail(email) != null ||
+                salesCourseManagementRepository.findByEmail(email) != null) {
+                throw new DuplicateFieldException("Email already exists!");
+            }
+        }
 
-         // Optional: courseId
-         if (dto.getCourseId() > 0) {
-             CourseManagement course = courseManagementRepository.findById(dto.getCourseId())
-                     .orElseThrow(() -> new ResourceNotFoundException("Course not found!"));
-             entity.setCourseManagement(course);
-         }
+        // --------------------- CREATE ENTITY ---------------------
+        SalesCourseManagement entity = new SalesCourseManagement();
+        entity.setStudentName(dto.getStudentName());
+        entity.setPhone(phone);
 
-         // Optional status
-         if (dto.getStatus() != null && !dto.getStatus().trim().isEmpty()) {
-             entity.setStatus(dto.getStatus().trim());
-         }
+        if (email != null && !email.isEmpty()) entity.setEmail(email);
+        if (dto.getGender() != null) entity.setGender(dto.getGender());
+        if (dto.getPassedOutYear() != null) entity.setPassedOutYear(dto.getPassedOutYear());
+        if (dto.getQualification() != null) entity.setQualification(dto.getQualification());
 
-         // --------------------- SAVE ---------------------
-         SalesCourseManagement saved = salesCourseManagementRepository.save(entity);
+        if (dto.getCourseId() != null && dto.getCourseId() > 0) {
+            CourseManagement course = courseManagementRepository.findById(dto.getCourseId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Course not found!"));
+            entity.setCourseManagement(course);
+        }
 
-         return SalesCourseManagementMapper.toResponseDto(saved);
-     }
+        if (dto.getStatus() != null && !dto.getStatus().trim().isEmpty()) {
+            entity.setStatus(dto.getStatus().trim());
+        }
 
+        SalesCourseManagement saved = salesCourseManagementRepository.save(entity);
+        return SalesCourseManagementMapper.toResponseDto(saved);
+    }
+    
+    
 
-     @Override
-     public SalesCourseManagementResponseDto getStudentsById(Long id) {
+    @Override
+    public Map<String, Object> uploadStudentsFromExcel(MultipartFile file) {
+        List<SalesCourseManagementRequestDto> dtos = ExcelHelper.parseExcelFile(file);
 
-         SalesCourseManagement student = salesCourseManagementRepository.findById(id)
-                 .orElseThrow(() -> new ResourceNotFoundException("Student not found with ID: " + id));
+        int successCount = 0;
+        int failCount = 0;
+        List<Map<String, String>> failedRows = new ArrayList<>();
 
-         return SalesCourseManagementMapper.toResponseDto(student);
-     }
+        for (int i = 0; i < dtos.size(); i++) {
+            SalesCourseManagementRequestDto dto = dtos.get(i);
 
+            // ------------------- CLEAN DATA -------------------
+            // Trim email
+            if (dto.getEmail() != null) dto.setEmail(dto.getEmail().trim());
 
-     @Override
-     public List<SalesCourseManagementResponseDto> getAllStudents() {
+            // Clean phone: remove spaces, dashes, parentheses, etc.
+            if (dto.getPhone() != null) {
+                dto.setPhone(dto.getPhone().replaceAll("\\D", ""));
+            }
 
-         List<SalesCourseManagement> students = salesCourseManagementRepository.findAll();
-         List<SalesCourseManagementResponseDto> dtoList = new ArrayList<>();
+            try {
+                // Reuse existing createStudent method for validation & saving
+                createStudent(dto);
+                successCount++;
+            } catch (ConstraintViolationException cve) {
+                // Handle JPA validation errors
+                failCount++;
+                StringBuilder sb = new StringBuilder();
+                for (ConstraintViolation<?> violation : cve.getConstraintViolations()) {
+                    sb.append(violation.getMessage()).append("; ");
+                }
+                Map<String, String> failInfo = new HashMap<>();
+                failInfo.put("row", String.valueOf(i + 2)); // Excel row number (header skipped)
+                failInfo.put("reason", sb.toString().trim());
+                failedRows.add(failInfo);
+            } catch (Exception e) {
+                // Handle other errors (duplicate phone/email, missing course, etc.)
+                failCount++;
+                Map<String, String> failInfo = new HashMap<>();
+                failInfo.put("row", String.valueOf(i + 2));
+                failInfo.put("reason", e.getMessage());
+                failedRows.add(failInfo);
+            }
+        }
 
-         for (SalesCourseManagement student : students) {
-             SalesCourseManagementResponseDto dto = SalesCourseManagementMapper.toResponseDto(student);
-             dtoList.add(dto);
-         }
+        // ------------------- RETURN RESULT -------------------
+        Map<String, Object> result = new HashMap<>();
+        result.put("successCount", successCount);
+        result.put("failedCount", failCount);
+        result.put("failedRows", failedRows);
 
-         return dtoList;
-     }
-
-
-     @Override
-     public SalesCourseManagementResponseDto updateStudentDetails(Long id, SalesCourseManagementRequestDto dto) {
-
-         SalesCourseManagement student = salesCourseManagementRepository.findById(id)
-                 .orElseThrow(() -> new ResourceNotFoundException("Student not found with ID: " + id));
-
-         // -------------------- DUPLICATE CHECKS --------------------
-
-         // Email duplicate check in Sales table
-         if (dto.getEmail() != null && !dto.getEmail().trim().isEmpty()) {
-             SalesCourseManagement emailCheck = salesCourseManagementRepository.findByEmail(dto.getEmail());
-             if (emailCheck != null && emailCheck.getStudentId() != id) {
-                 throw new DuplicateFieldException("Email already exists!");
-             }
-
-             if (userRepository.findByEmail(dto.getEmail()) != null) {
-                 throw new DuplicateFieldException("Email already exists in User table!");
-             }
-         }
-
-         // Phone duplicate checks
-         if (dto.getPhone() != null && !dto.getPhone().trim().isEmpty()) {
-
-             SalesCourseManagement phoneCheck = salesCourseManagementRepository.findByPhone(dto.getPhone());
-             if (phoneCheck != null && phoneCheck.getStudentId() != id) {
-                 throw new DuplicateFieldException("Phone number already exists!");
-             }
-
-             if (userRepository.findByPhone(dto.getPhone()) != null ||
-                 studentPersonalInfoRepository.findByParentMobileNumber(dto.getPhone()) != null) {
-
-                 throw new DuplicateFieldException("Phone already exists in User/Parent table!");
-             }
-         }
-
-         // -------------------- OPTIONAL COURSE UPDATE --------------------
-         if (dto.getCourseId() > 0) {
-             CourseManagement course = courseManagementRepository.findById(dto.getCourseId())
-                     .orElseThrow(() -> new ResourceNotFoundException("Course not found!"));
-             student.setCourseManagement(course);
-         }
-
-         // -------------------- UPDATE FIELDS IF PROVIDED --------------------
-
-         if (dto.getStudentName() != null) student.setStudentName(dto.getStudentName());
-         if (dto.getPhone() != null) student.setPhone(dto.getPhone());
-         if (dto.getEmail() != null) student.setEmail(dto.getEmail());
-         if (dto.getGender() != null) student.setGender(dto.getGender());
-         if (dto.getPassedOutYear() != null) student.setPassedOutYear(dto.getPassedOutYear());
-         if (dto.getQualification() != null) student.setQualification(dto.getQualification());
-
-         
-         if (dto.getStatus() != null && !dto.getStatus().trim().isEmpty()) {
-             student.setStatus(dto.getStatus().trim());
-         }
-
-         // -------------------- SAVE --------------------
-         SalesCourseManagement updated = salesCourseManagementRepository.save(student);
-
-         return SalesCourseManagementMapper.toResponseDto(updated);
-     }
+        return result;
+    }
 
 
-     @Override
-     public void deleteStudent(Long id) {
 
-        
-         SalesCourseManagement student = salesCourseManagementRepository.findById(id)
-                 .orElseThrow(() -> new ResourceNotFoundException("Student not found with ID: " + id));
+    // ---------------- GET STUDENT BY ID ----------------
+    @Override
+    public SalesCourseManagementResponseDto getStudentsById(Long id) {
+        SalesCourseManagement student = salesCourseManagementRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Student not found with ID: " + id));
+        return SalesCourseManagementMapper.toResponseDto(student);
+    }
 
-         
-         salesCourseManagementRepository.delete(student);
-     }
+    // ---------------- GET ALL STUDENTS ----------------
+    @Override
+    public List<SalesCourseManagementResponseDto> getAllStudents() {
+        List<SalesCourseManagement> students = salesCourseManagementRepository.findAll();
+        List<SalesCourseManagementResponseDto> dtoList = new ArrayList<>();
+        for (SalesCourseManagement student : students) {
+            dtoList.add(SalesCourseManagementMapper.toResponseDto(student));
+        }
+        return dtoList;
+    }
 
-     @Override
-     public List<SalesCourseManagementResponseDto> getStudentsByStatus(String status) {
-         
-         if (status == null || status.trim().isEmpty()) {
-             throw new IllegalArgumentException("Status cannot be empty!");
-         }
+    // ---------------- UPDATE STUDENT ----------------
+    @Override
+    public SalesCourseManagementResponseDto updateStudentDetails(Long id, SalesCourseManagementRequestDto dto) {
 
-         List<SalesCourseManagement> students = salesCourseManagementRepository.findByStatus(status.trim());
+        SalesCourseManagement student = salesCourseManagementRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Student not found with ID: " + id));
 
-         if (students.isEmpty()) {
-             throw new ResourceNotFoundException("No students found with status: " + status);
-         }
+        // Trim email and phone
+        String email = dto.getEmail() != null ? dto.getEmail().trim() : null;
+        String phone = dto.getPhone() != null ? dto.getPhone().trim() : null;
 
-         List<SalesCourseManagementResponseDto> dtoList = new ArrayList<>();
+        // ---------------- DUPLICATE CHECKS ----------------
+        if (phone != null && !phone.isEmpty()) {
+            SalesCourseManagement phoneCheck = salesCourseManagementRepository.findByPhone(phone);
+            if (phoneCheck != null && !phoneCheck.getStudentId().equals(id)) {
+                throw new DuplicateFieldException("Phone already exists!");
+            }
+            if (userRepository.findByPhone(phone) != null ||
+                studentPersonalInfoRepository.findByParentMobileNumber(phone) != null) {
+                throw new DuplicateFieldException("Phone already exists in User/Parent table!");
+            }
+        }
 
-         for (SalesCourseManagement sc : students) {
-             dtoList.add(SalesCourseManagementMapper.toResponseDto(sc));
-         }
+        if (email != null && !email.isEmpty()) {
+            SalesCourseManagement emailCheck = salesCourseManagementRepository.findByEmail(email);
+            if (emailCheck != null && !emailCheck.getStudentId().equals(id)) {
+                throw new DuplicateFieldException("Email already exists!");
+            }
+            if (userRepository.findByEmail(email) != null) {
+                throw new DuplicateFieldException("Email already exists in User table!");
+            }
+        }
 
-         return dtoList;
-     }
+        // ---------------- OPTIONAL COURSE UPDATE ----------------
+        if (dto.getCourseId() != null && dto.getCourseId() > 0) {
+            CourseManagement course = courseManagementRepository.findById(dto.getCourseId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Course not found!"));
+            student.setCourseManagement(course);
+        }
 
-	
-	
+        // ---------------- UPDATE FIELDS ----------------
+        if (dto.getStudentName() != null) student.setStudentName(dto.getStudentName());
+        if (phone != null && !phone.isEmpty()) student.setPhone(phone);
+        if (email != null && !email.isEmpty()) student.setEmail(email);
+        if (dto.getGender() != null) student.setGender(dto.getGender());
+        if (dto.getPassedOutYear() != null) student.setPassedOutYear(dto.getPassedOutYear());
+        if (dto.getQualification() != null) student.setQualification(dto.getQualification());
+        if (dto.getStatus() != null && !dto.getStatus().trim().isEmpty()) student.setStatus(dto.getStatus().trim());
 
+        SalesCourseManagement updated = salesCourseManagementRepository.save(student);
+        return SalesCourseManagementMapper.toResponseDto(updated);
+    }
+
+    // ---------------- DELETE STUDENT ----------------
+    @Override
+    public void deleteStudent(Long id) {
+        SalesCourseManagement student = salesCourseManagementRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Student not found with ID: " + id));
+        salesCourseManagementRepository.delete(student);
+    }
+
+    // ---------------- GET STUDENTS BY STATUS ----------------
+    @Override
+    public List<SalesCourseManagementResponseDto> getStudentsByStatus(String status) {
+
+        if (status == null || status.trim().isEmpty()) {
+            throw new IllegalArgumentException("Status cannot be empty!");
+        }
+
+        List<SalesCourseManagement> students = salesCourseManagementRepository.findByStatus(status.trim());
+        if (students.isEmpty()) {
+            throw new ResourceNotFoundException("No students found with status: " + status);
+        }
+
+        List<SalesCourseManagementResponseDto> dtoList = new ArrayList<>();
+        for (SalesCourseManagement sc : students) {
+            dtoList.add(SalesCourseManagementMapper.toResponseDto(sc));
+        }
+        return dtoList;
+    }
 }
