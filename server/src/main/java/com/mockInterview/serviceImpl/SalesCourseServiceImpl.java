@@ -5,6 +5,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.PageRequest;
+
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -249,4 +255,28 @@ public class SalesCourseServiceImpl implements SalesCourseService {
         }
         return dtoList;
     }
+    
+    
+    
+    @Override
+    public Map<String, Object> getStudentsWithPagination(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+
+        Page<SalesCourseManagement> pagedResult =
+                salesCourseManagementRepository.findAll(pageable);
+
+        List<SalesCourseManagementResponseDto> dtoList = new ArrayList<>();
+        for (SalesCourseManagement student : pagedResult.getContent()) {
+            dtoList.add(SalesCourseManagementMapper.toResponseDto(student));
+        }
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("students", dtoList);
+        response.put("currentPage", pagedResult.getNumber());
+        response.put("totalItems", pagedResult.getTotalElements());
+        response.put("totalPages", pagedResult.getTotalPages());
+
+        return response;
+    }
+
 }

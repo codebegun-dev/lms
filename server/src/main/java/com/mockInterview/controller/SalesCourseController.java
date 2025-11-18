@@ -63,5 +63,15 @@ public class SalesCourseController {
     public List<SalesCourseManagementResponseDto> getStudentsByStatus(@PathVariable String status) {
         return salesCourseService.getStudentsByStatus(status);
     }
+    
+    
+    @GetMapping("/students")
+    public Map<String, Object> getPaginatedStudents(
+            @RequestParam(defaultValue = "0") int page
+    ) {
+        return salesCourseService.getStudentsWithPagination(page, 30);
+    }
+
+
 
 }

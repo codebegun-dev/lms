@@ -26,6 +26,9 @@ public interface SalesCourseService {
    
     void deleteStudent(Long id);
     
+    public Map<String, Object> getStudentsWithPagination(int page, int size);
+
+    
     List<SalesCourseManagementResponseDto> getStudentsByStatus(String status);
 
 }
