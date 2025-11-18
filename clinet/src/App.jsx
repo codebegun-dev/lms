@@ -31,7 +31,8 @@ import CreateSubTopic from './Admin_Dashboard/CreateSubTopic';
 import UserManagement from './Admin_Dashboard/UserManagement';
 import ManageRoles from './Admin_Dashboard/ManageRoles'; 
 import Syllabus from './Admin_Dashboard/Syllabus';
-
+import EditArticle from './Admin_Dashboard/EditArticle';
+import AddSection from './Admin_Dashboard/ContentTypeModal';
 
 // Sales Dash
 import SalesForm from './Sales_Dashboard/SalesForm';
@@ -77,6 +78,8 @@ function App() {
           <Route path="usermanagement" element={<UserManagement />} />
           <Route path="manage-roles" element={<ManageRoles/>} />
           <Route path='syllabus' element={<Syllabus/>} />       
+          <Route path="edit-article" element={<EditArticle/>} />
+          <Route path="add-section" element={<AddSection/>} />
           <Route path="" element={<CourseManagement />} />
           <Route path="admin-profile" element={<AdminProfile />} />
         </Route>
