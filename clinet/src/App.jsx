@@ -38,6 +38,7 @@ import SalesForm from './Sales_Dashboard/SalesForm';
 import SalesDashboard from './Sales_Dashboard/SalesDashboard';
 import LeadsList from "./Sales_Dashboard/LeadsList";
 import SalesProfile from './Sales_Dashboard/SalesProfile';
+import BulkUpload from './Sales_Dashboard/BulkUpload';
 
 
 function App() {
@@ -87,6 +88,7 @@ function App() {
           <Route path="add-enquiry" element={<SalesForm />} />
           <Route path="leads" element={<LeadsList />} />
           <Route path="myprofile" element={<SalesProfile />} />
+          <Route path="bulkupload" element={<BulkUpload />} />
         </Route>
 
 

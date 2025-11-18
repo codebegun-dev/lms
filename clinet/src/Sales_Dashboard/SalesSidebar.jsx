@@ -20,6 +20,10 @@ function SalesSidebar() {
           Leads List
         </Link>
 
+        <Link to="/sales-dashboard/bulkupload" className="list-group-item list-group-item-action">
+          Bulk Upload
+        </Link>
+
       </ul>
     </div>
   );
