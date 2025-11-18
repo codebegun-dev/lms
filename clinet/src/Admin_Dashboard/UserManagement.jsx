@@ -381,10 +381,6 @@ const EditUserModal = ({ user, onClose, onUpdate }) => {
 // ============================================
 // AddUserForm Component
 // ============================================
-
-
-
-
 const AddUserForm = ({ onClose, onSuccess }) => {
   const [formData, setFormData] = useState({
     firstName: "",
@@ -399,9 +395,7 @@ const AddUserForm = ({ onClose, onSuccess }) => {
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
 
-  // -------------------------------------------------------
-  // FETCH ROLES
-  // -------------------------------------------------------
+  // Fetch Roles
   const fetchRoles = async () => {
     try {
       const response = await axios.get("http://localhost:8080/api/roles");
@@ -455,9 +449,7 @@ const AddUserForm = ({ onClose, onSuccess }) => {
     return Object.keys(newErrors).length === 0;
   };
 
-  // -------------------------------------------------------
-  // SUBMIT HANDLER (UPDATED adminAuthId LOGIC)
-  // -------------------------------------------------------
+  // Submit Handler
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
@@ -480,7 +472,7 @@ const AddUserForm = ({ onClose, onSuccess }) => {
         email: formData.email,
         phone: formData.phone,
         roleId: formData.role,
-        adminAuthId: adminId, // <-- userId of logged-in admin
+        adminAuthId: adminId,
       };
 
       await axios.post("http://localhost:8080/api/user", payload);
@@ -501,7 +493,6 @@ const AddUserForm = ({ onClose, onSuccess }) => {
 
   return (
     <div className="card mb-4 border-0 shadow-lg rounded-4 overflow-hidden">
-
       {/* Header */}
       <div
         className="card-header p-4 d-flex justify-content-between align-items-center"
@@ -529,7 +520,6 @@ const AddUserForm = ({ onClose, onSuccess }) => {
 
         <form onSubmit={handleSubmit}>
           <div className="row g-3">
-
             {/* First Name */}
             <div className="col-md-6">
               <label className="form-label fw-semibold">First Name *</label>
@@ -594,7 +584,6 @@ const AddUserForm = ({ onClose, onSuccess }) => {
             {/* Role Dropdown */}
             <div className="col-md-6">
               <label className="form-label fw-semibold">Role *</label>
-
               <select
                 name="role"
                 value={formData.role}
@@ -606,7 +595,6 @@ const AddUserForm = ({ onClose, onSuccess }) => {
                 <option value="">
                   {loadingRoles ? "Loading roles..." : "Select Role"}
                 </option>
-
                 {!loadingRoles &&
                   roles.map((role) => (
                     <option key={role.id} value={role.id}>
@@ -614,7 +602,6 @@ const AddUserForm = ({ onClose, onSuccess }) => {
                     </option>
                   ))}
               </select>
-
               {errors.role && <div className="invalid-feedback">{errors.role}</div>}
             </div>
           </div>
@@ -644,8 +631,6 @@ const AddUserForm = ({ onClose, onSuccess }) => {
     </div>
   );
 };
-
-
 
 // ============================================
 // Main UserManagement Component
@@ -717,8 +702,12 @@ const UserManagement = () => {
     setShowAddUserForm(false);
   };
 
+  // UPDATED: Protection for current admin actions
   const canPerformAction = (targetUser) => {
-    if (currentUser?.role === "ADMIN" && targetUser.role === "ADMIN" && currentUser.id === targetUser.id) {
+    // Prevent current admin from modifying their own account
+    if (currentUser?.role === "ADMIN" && 
+        targetUser.role === "ADMIN" && 
+        currentUser.userId === targetUser.id) {
       return false;
     }
     return true;
@@ -736,7 +725,7 @@ const UserManagement = () => {
 
   const handleDeleteUser = (user) => {
     if (!canPerformAction(user)) {
-      alert("You cannot delete your own admin account!");
+      alert("⚠️ Protected Action: You cannot delete your own admin account!");
       return;
     }
     setUserToDelete(user);
@@ -749,16 +738,16 @@ const UserManagement = () => {
       await loadUsers();
       setShowDeleteConfirm(false);
       setUserToDelete(null);
-      alert("User deleted successfully");
+      alert("✅ User deleted successfully");
     } catch (error) {
       console.error("Error deleting user:", error);
-      alert("Failed to delete user");
+      alert("❌ Failed to delete user");
     }
   };
 
   const handleDeactivateUser = (user) => {
     if (!canPerformAction(user)) {
-      alert("You cannot change your own admin status!");
+      alert("⚠️ Protected Action: You cannot change your own admin account status!");
       return;
     }
     setUserToDeactivate(user);
@@ -772,10 +761,10 @@ const UserManagement = () => {
       await loadUsers();
       setShowDeactivateConfirm(false);
       setUserToDeactivate(null);
-      alert(`User ${newStatus === "active" ? "activated" : "deactivated"} successfully`);
+      alert(`✅ User ${newStatus === "active" ? "activated" : "deactivated"} successfully`);
     } catch (error) {
       console.error("Error updating user status:", error);
-      alert("Failed to update user status");
+      alert("❌ Failed to update user status");
     }
   };
 
@@ -974,8 +963,9 @@ const UserManagement = () => {
                     <tbody>
                       {filteredUsers.length > 0 ? (
                         filteredUsers.map((user) => {
-                          const isCurrentAdmin = currentUser?.id === user.id && user.role === "ADMIN";
+                          const isCurrentAdmin = currentUser?.userId === user.id && user.role === "ADMIN";
                           const isStudent = user.role === "STUDENT";
+                          const actionProtected = !canPerformAction(user);
 
                           return (
                             <tr key={user.id} style={{ transition: 'all 0.3s ease' }}>
@@ -1060,9 +1050,15 @@ const UserManagement = () => {
                                     </button>
                                   )}
                                   
-                                  {/* Deactivate/Activate and Delete - For non-current-admin users */}
-                                  {!isCurrentAdmin && (
+                                  {/* Protected Actions Badge for Current Admin */}
+                                  {actionProtected ? (
+                                    <span className="badge bg-warning text-dark px-3 py-2 d-flex align-items-center" style={{ borderRadius: '20px' }}>
+                                      <i className="bi bi-shield-lock-fill me-1"></i>
+                                      Protected
+                                    </span>
+                                  ) : (
                                     <>
+                                      {/* Deactivate/Activate Button */}
                                       <button
                                         className={`btn btn-sm shadow-sm ${
                                           user.status === "active"
@@ -1075,6 +1071,8 @@ const UserManagement = () => {
                                       >
                                         <FaBan />
                                       </button>
+                                      
+                                      {/* Delete Button */}
                                       <button
                                         className="btn btn-sm btn-outline-danger shadow-sm"
                                         onClick={() => handleDeleteUser(user)}
@@ -1084,14 +1082,6 @@ const UserManagement = () => {
                                         <FaTrash />
                                       </button>
                                     </>
-                                  )}
-                                  
-                                  {/* Current Admin Badge */}
-                                  {isCurrentAdmin && (
-                                    <span className="badge bg-warning text-dark px-3 py-2" style={{ borderRadius: '20px' }}>
-                                      <i className="bi bi-person-check-fill me-1"></i>
-                                      You
-                                    </span>
                                   )}
                                 </div>
                               </td>
@@ -1216,10 +1206,3 @@ const UserManagement = () => {
 };
 
 export default UserManagement;
-
-
-
-
-
-
-

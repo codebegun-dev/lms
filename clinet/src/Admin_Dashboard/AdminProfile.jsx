@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { FaArrowLeft, FaEdit, FaSave, FaTimes, FaUser, FaEnvelope, FaPhone, FaCalendar, FaVenusMars, FaTint, FaCamera, FaTrash } from "react-icons/fa";
+import { FaArrowLeft, FaEdit, FaSave, FaTimes, FaUser, FaEnvelope, FaPhone, FaCalendar, FaVenusMars, FaTint, FaCamera, FaTrash, FaBriefcase } from "react-icons/fa";
 import axios from "axios";
 
 const AdminProfile = () => {
@@ -21,6 +21,7 @@ const AdminProfile = () => {
     bloodGroup: "",
     email: "",
     phone: "",
+    jobTitle: "",
   });
 
   const originalForm = React.useRef(null);
@@ -50,6 +51,7 @@ const AdminProfile = () => {
           bloodGroup: userData.bloodGroup || "",
           email: user.email || "",
           phone: user.phone || "",
+          jobTitle: userData.jobTitle || "",
         });
 
         setImagePreview(userData.profilePicturePath);
@@ -67,6 +69,7 @@ const AdminProfile = () => {
           dateOfBirth: "",
           bloodGroup: "",
           profilePicturePath: "",
+          jobTitle: "",
         });
       } finally {
         setLoading(false);
@@ -206,6 +209,7 @@ const AdminProfile = () => {
         gender: formData.gender,
         dateOfBirth: formData.dateOfBirth,
         bloodGroup: formData.bloodGroup,
+        jobTitle: formData.jobTitle,
       };
 
       await axios.put("http://localhost:8080/api/student/personal-info/update", payload);
@@ -251,24 +255,21 @@ const AdminProfile = () => {
   const showLetterAvatar = !imagePreview || imagePreview.includes("ui-avatars.com") || imagePreview.includes("/uploads/") === false;
 
   return (
-    <div className="container py-4">
-      <div className="card border-0 shadow-lg rounded-4 overflow-hidden">
-        {/* Header with Gradient */}
-        <div className="card-header p-4 border-0" style={{ 
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
-        }}>
-          <div className="d-flex justify-content-between align-items-center">
-            <div className="text-white">
-              <h3 className="mb-1 fw-bold d-flex align-items-center">
+    <div className="container-fluid py-4">
+      <div className="card border-0 shadow-lg rounded-4">
+        {/* Header */}
+        <div className="card-header bg-primary text-white border-0 p-4">
+          <div className="d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div>
+              <h3 className="mb-2 fw-bold">
                 <FaUser className="me-2" />
                 My Profile
               </h3>
-              <p className="mb-0 opacity-75">Manage your personal information</p>
+              <p className="mb-0 small opacity-75">Manage your personal information</p>
             </div>
             <button
-              className="btn btn-light shadow d-flex align-items-center"
+              className="btn btn-light shadow-sm"
               onClick={() => navigate("/admin-dashboard/usermanagement")}
-              style={{ borderRadius: '20px', padding: '10px 20px' }}
             >
               <FaArrowLeft className="me-2" />
               Back to Dashboard
@@ -281,15 +282,8 @@ const AdminProfile = () => {
           <div className="d-flex justify-content-end mb-4">
             {!isEditing ? (
               <button 
-                className="btn shadow d-flex align-items-center"
+                className="btn btn-primary shadow-sm"
                 onClick={() => setIsEditing(true)}
-                style={{ 
-                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                  color: 'white',
-                  borderRadius: '20px',
-                  padding: '10px 24px',
-                  border: 'none'
-                }}
               >
                 <FaEdit className="me-2" />
                 Edit Profile
@@ -297,17 +291,15 @@ const AdminProfile = () => {
             ) : (
               <div className="d-flex gap-2">
                 <button 
-                  className="btn btn-secondary shadow d-flex align-items-center"
+                  className="btn btn-secondary"
                   onClick={handleCancel}
-                  style={{ borderRadius: '20px', padding: '10px 20px' }}
                 >
                   <FaTimes className="me-2" />
                   Cancel
                 </button>
                 <button 
-                  className="btn btn-success shadow d-flex align-items-center"
+                  className="btn btn-success"
                   onClick={handleSave}
-                  style={{ borderRadius: '20px', padding: '10px 20px' }}
                 >
                   <FaSave className="me-2" />
                   Save Changes
@@ -317,19 +309,16 @@ const AdminProfile = () => {
           </div>
 
           {/* Profile Picture Section */}
-          <div className="text-center mb-5">
+          <div className="text-center mb-4">
             <div className="d-flex flex-column align-items-center">
               <div className="position-relative mb-3">
                 {showLetterAvatar ? (
                   <div
-                    className="rounded-circle d-flex justify-content-center align-items-center fw-bold shadow-lg"
+                    className="rounded-circle d-flex justify-content-center align-items-center fw-bold shadow-lg bg-primary text-white border border-4 border-white"
                     style={{ 
-                      width: "140px", 
-                      height: "140px", 
-                      fontSize: "56px", 
-                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                      color: "white",
-                      border: '5px solid white'
+                      width: "130px", 
+                      height: "130px", 
+                      fontSize: "52px"
                     }}
                   >
                     {formData.firstName?.[0]?.toUpperCase() || "A"}
@@ -338,11 +327,10 @@ const AdminProfile = () => {
                   <>
                     <img
                       src={`${imagePreview}?t=${Date.now()}`}
-                      className="rounded-circle object-fit-cover shadow-lg"
+                      className="rounded-circle object-fit-cover shadow-lg border border-4 border-white"
                       style={{ 
-                        width: "140px", 
-                        height: "140px",
-                        border: '5px solid white'
+                        width: "130px", 
+                        height: "130px"
                       }}
                       alt="Profile"
                     />
@@ -350,8 +338,8 @@ const AdminProfile = () => {
                       <button
                         className="btn btn-danger btn-sm position-absolute rounded-circle shadow"
                         style={{ 
-                          width: "36px", 
-                          height: "36px",
+                          width: "34px", 
+                          height: "34px",
                           top: '0',
                           right: '0',
                           padding: 0
@@ -359,23 +347,20 @@ const AdminProfile = () => {
                         onClick={removeProfilePicture}
                         title="Remove profile picture"
                       >
-                        <FaTrash />
+                        <FaTrash size={12} />
                       </button>
                     )}
                   </>
                 )}
                 {isEditing && (
                   <label 
-                    className="btn btn-sm position-absolute rounded-circle shadow"
+                    className="btn btn-primary btn-sm position-absolute rounded-circle shadow"
                     style={{ 
-                      width: "36px", 
-                      height: "36px",
+                      width: "34px", 
+                      height: "34px",
                       bottom: '0',
                       right: '0',
                       padding: 0,
-                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                      color: 'white',
-                      border: 'none',
                       cursor: 'pointer',
                       display: 'flex',
                       alignItems: 'center',
@@ -383,7 +368,7 @@ const AdminProfile = () => {
                     }}
                     title="Upload profile picture"
                   >
-                    <FaCamera />
+                    <FaCamera size={14} />
                     <input 
                       type="file" 
                       className="d-none" 
@@ -396,7 +381,13 @@ const AdminProfile = () => {
               </div>
 
               <h4 className="fw-bold mb-1">{formData.firstName} {formData.lastName}</h4>
-              <p className="text-muted mb-0">{formData.email}</p>
+              {formData.jobTitle && (
+                <p className="text-primary mb-1 fw-semibold">
+                  <FaBriefcase className="me-1" size={14} />
+                  {formData.jobTitle}
+                </p>
+              )}
+              <p className="text-muted mb-0 small">{formData.email}</p>
               
               {isEditing && (
                 <div className="mt-3">
@@ -407,7 +398,7 @@ const AdminProfile = () => {
                         Uploading...
                       </span>
                     ) : (
-                      "📸 Supported formats: JPG, JPEG, PNG, GIF, WEBP (Max 5MB)"
+                      "📸 Supported: JPG, JPEG, PNG, GIF, WEBP (Max 5MB)"
                     )}
                   </small>
                 </div>
@@ -419,19 +410,18 @@ const AdminProfile = () => {
           <div className="row g-4">
             {/* Personal Information Section */}
             <div className="col-12">
-              <div className="card border-0 shadow-sm" style={{ borderRadius: '12px' }}>
-                <div className="card-header border-0 p-3" style={{ 
-                  background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
-                  borderRadius: '12px 12px 0 0'
-                }}>
-                  <h6 className="mb-0 fw-bold text-dark">👤 Personal Information</h6>
+              <div className="card border shadow-sm">
+                <div className="card-header bg-light border-bottom py-3">
+                  <h6 className="mb-0 fw-bold text-dark">
+                    👤 Personal Information
+                  </h6>
                 </div>
                 <div className="card-body p-4">
                   <div className="row g-3">
                     <div className="col-md-6">
-                      <label className="form-label fw-semibold text-secondary">
+                      <label className="form-label fw-semibold small">
                         <FaUser className="me-2 text-primary" />
-                        First Name *
+                        First Name <span className="text-danger">*</span>
                       </label>
                       <input
                         type="text"
@@ -440,19 +430,14 @@ const AdminProfile = () => {
                         onChange={handleChange}
                         disabled={!isEditing}
                         className={`form-control ${errors.firstName ? "is-invalid" : ""}`}
-                        style={{ 
-                          borderRadius: '8px',
-                          border: '2px solid #e0e0e0',
-                          padding: '10px 15px'
-                        }}
                       />
                       {errors.firstName && <div className="invalid-feedback">{errors.firstName}</div>}
                     </div>
 
                     <div className="col-md-6">
-                      <label className="form-label fw-semibold text-secondary">
+                      <label className="form-label fw-semibold small">
                         <FaUser className="me-2 text-primary" />
-                        Last Name *
+                        Last Name <span className="text-danger">*</span>
                       </label>
                       <input
                         type="text"
@@ -461,17 +446,28 @@ const AdminProfile = () => {
                         onChange={handleChange}
                         disabled={!isEditing}
                         className={`form-control ${errors.lastName ? "is-invalid" : ""}`}
-                        style={{ 
-                          borderRadius: '8px',
-                          border: '2px solid #e0e0e0',
-                          padding: '10px 15px'
-                        }}
                       />
                       {errors.lastName && <div className="invalid-feedback">{errors.lastName}</div>}
                     </div>
 
                     <div className="col-md-6">
-                      <label className="form-label fw-semibold text-secondary">
+                      <label className="form-label fw-semibold small">
+                        <FaBriefcase className="me-2 text-primary" />
+                        Job Title
+                      </label>
+                      <input
+                        type="text"
+                        name="jobTitle"
+                        value={formData.jobTitle}
+                        onChange={handleChange}
+                        disabled={!isEditing}
+                        className="form-control"
+                        placeholder="e.g., Senior Developer, Project Manager"
+                      />
+                    </div>
+
+                    <div className="col-md-6">
+                      <label className="form-label fw-semibold small">
                         <FaVenusMars className="me-2 text-primary" />
                         Gender
                       </label>
@@ -481,11 +477,6 @@ const AdminProfile = () => {
                         onChange={handleChange}
                         disabled={!isEditing}
                         className="form-select"
-                        style={{ 
-                          borderRadius: '8px',
-                          border: '2px solid #e0e0e0',
-                          padding: '10px 15px'
-                        }}
                       >
                         <option value="">Select Gender</option>
                         <option value="Male">Male</option>
@@ -495,7 +486,7 @@ const AdminProfile = () => {
                     </div>
 
                     <div className="col-md-6">
-                      <label className="form-label fw-semibold text-secondary">
+                      <label className="form-label fw-semibold small">
                         <FaCalendar className="me-2 text-primary" />
                         Date of Birth
                       </label>
@@ -506,16 +497,11 @@ const AdminProfile = () => {
                         onChange={handleChange}
                         disabled={!isEditing}
                         className="form-control"
-                        style={{ 
-                          borderRadius: '8px',
-                          border: '2px solid #e0e0e0',
-                          padding: '10px 15px'
-                        }}
                       />
                     </div>
 
                     <div className="col-md-6">
-                      <label className="form-label fw-semibold text-secondary">
+                      <label className="form-label fw-semibold small">
                         <FaTint className="me-2 text-primary" />
                         Blood Group
                       </label>
@@ -525,11 +511,6 @@ const AdminProfile = () => {
                         onChange={handleChange}
                         disabled={!isEditing}
                         className="form-select"
-                        style={{ 
-                          borderRadius: '8px',
-                          border: '2px solid #e0e0e0',
-                          padding: '10px 15px'
-                        }}
                       >
                         <option value="">Select Blood Group</option>
                         <option value="A+">A+</option>
@@ -549,19 +530,18 @@ const AdminProfile = () => {
 
             {/* Contact Information Section */}
             <div className="col-12">
-              <div className="card border-0 shadow-sm" style={{ borderRadius: '12px' }}>
-                <div className="card-header border-0 p-3" style={{ 
-                  background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
-                  borderRadius: '12px 12px 0 0'
-                }}>
-                  <h6 className="mb-0 fw-bold text-dark">📞 Contact Information</h6>
+              <div className="card border shadow-sm">
+                <div className="card-header bg-light border-bottom py-3">
+                  <h6 className="mb-0 fw-bold text-dark">
+                    📞 Contact Information
+                  </h6>
                 </div>
                 <div className="card-body p-4">
                   <div className="row g-3">
                     <div className="col-md-6">
-                      <label className="form-label fw-semibold text-secondary">
+                      <label className="form-label fw-semibold small">
                         <FaEnvelope className="me-2 text-primary" />
-                        Email Address *
+                        Email Address <span className="text-danger">*</span>
                       </label>
                       <input
                         type="email"
@@ -570,19 +550,14 @@ const AdminProfile = () => {
                         onChange={handleChange}
                         disabled={!isEditing}
                         className={`form-control ${errors.email ? "is-invalid" : ""}`}
-                        style={{ 
-                          borderRadius: '8px',
-                          border: '2px solid #e0e0e0',
-                          padding: '10px 15px'
-                        }}
                       />
                       {errors.email && <div className="invalid-feedback">{errors.email}</div>}
                     </div>
 
                     <div className="col-md-6">
-                      <label className="form-label fw-semibold text-secondary">
+                      <label className="form-label fw-semibold small">
                         <FaPhone className="me-2 text-primary" />
-                        Mobile Number *
+                        Mobile Number <span className="text-danger">*</span>
                       </label>
                       <input
                         type="tel"
@@ -592,17 +567,12 @@ const AdminProfile = () => {
                         disabled={!isEditing}
                         maxLength="10"
                         className={`form-control ${errors.mobileNumber ? "is-invalid" : ""}`}
-                        style={{ 
-                          borderRadius: '8px',
-                          border: '2px solid #e0e0e0',
-                          padding: '10px 15px'
-                        }}
                       />
                       {errors.mobileNumber && <div className="invalid-feedback">{errors.mobileNumber}</div>}
                     </div>
 
                     <div className="col-md-6">
-                      <label className="form-label fw-semibold text-secondary">
+                      <label className="form-label fw-semibold small">
                         <FaPhone className="me-2 text-primary" />
                         Alternate Phone
                       </label>
@@ -614,11 +584,6 @@ const AdminProfile = () => {
                         disabled={!isEditing}
                         maxLength="10"
                         className="form-control"
-                        style={{ 
-                          borderRadius: '8px',
-                          border: '2px solid #e0e0e0',
-                          padding: '10px 15px'
-                        }}
                       />
                     </div>
                   </div>
@@ -628,15 +593,12 @@ const AdminProfile = () => {
           </div>
 
           {/* Info Alert */}
-          <div className="alert border-0 shadow-sm mt-4" style={{ 
-            background: 'linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%)',
-            borderRadius: '12px'
-          }}>
+          <div className="alert alert-info border-0 shadow-sm mt-4">
             <div className="d-flex align-items-start">
-              <i className="bi bi-info-circle-fill text-primary me-3 fs-5"></i>
+              <span className="badge bg-info rounded-circle p-2 me-3">ℹ️</span>
               <div>
-                <strong className="text-primary">Administrator Note</strong>
-                <p className="mb-0 text-secondary mt-1">
+                <strong>Administrator Note</strong>
+                <p className="mb-0 small mt-1">
                   As an administrator, you can update your personal information here. Changes will be reflected across the system immediately.
                 </p>
               </div>
