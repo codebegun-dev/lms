@@ -22,7 +22,7 @@ import java.util.Optional;
 @Service
 public class TextAnalysisService {
 
-   @Value("${openai.api.key}")
+//   @Value("${openai.api.key}")
     private String apiKey;
 
     @Autowired
