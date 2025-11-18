@@ -22,8 +22,8 @@ import java.util.Optional;
 @Service
 public class TextAnalysisService {
 
-//   @Value("${openai.api.key}")
-    private String apiKey;
+//   @Value("${openai.api.key}") 
+    private String  apiKey;
 
     @Autowired
     private StudentInterviewRepository studentInterviewRepository;
