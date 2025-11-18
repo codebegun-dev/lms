@@ -1,5 +1,3 @@
-
-
 package com.mockInterview.aiEngine;
 
 import com.mockInterview.entity.InterviewTranscript;
@@ -23,6 +21,7 @@ public class WhisperProcessService {
 
     private final StudentInterviewRepository interviewRepo;
     private final InterviewTranscriptRepository transcriptRepo;
+    private final TextAnalysisService textAnalysisService;
     
 
     @Async("whisperExecutor")
@@ -112,6 +111,14 @@ public class WhisperProcessService {
             transcriptRepo.save(transcript);
 
             System.out.println("✅ Transcript saved: " + savedPath);
+            
+            try {
+                System.out.println("🤖 Generating AI Feedback...");
+                textAnalysisService.analyzeText(transcriptText, interview);
+                System.out.println("🎉 AI Feedback successfully saved in DB!");
+            } catch (Exception ex) {
+                System.out.println("❌ Error generating AI Feedback: " + ex.getMessage());
+            }
 
         } catch (Exception e) {
             System.out.println("❌ Error in WhisperProcessService: " + e.getMessage());
@@ -141,3 +148,4 @@ public class WhisperProcessService {
         return System.getProperty("os.name").toLowerCase().contains("win");
     }
 }
+

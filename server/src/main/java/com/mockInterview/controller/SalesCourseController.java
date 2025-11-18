@@ -2,6 +2,7 @@ package com.mockInterview.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.mockInterview.requestDtos.SalesCourseManagementRequestDto;
 import com.mockInterview.responseDtos.SalesCourseManagementResponseDto;
@@ -9,6 +10,7 @@ import com.mockInterview.service.SalesCourseService;
 
 import jakarta.validation.Valid;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/saleCourse/student")
@@ -23,6 +25,11 @@ public class SalesCourseController {
     public SalesCourseManagementResponseDto createStudent(
             @Valid @RequestBody SalesCourseManagementRequestDto dto) {
         return salesCourseService.createStudent(dto);
+    }
+    
+    @PostMapping("/bulk-upload")
+    public Map<String, Object> uploadStudents(@RequestParam("file") MultipartFile file) {
+        return salesCourseService.uploadStudentsFromExcel(file);
     }
 
     // GET BY ID
