@@ -1,1680 +1,699 @@
-// import React, { useEffect, useState, useRef } from "react";
-// import { FaPlus, FaEdit, FaTrash, FaGripVertical, FaEllipsisV } from "react-icons/fa";
-
-// // Small helper to generate unique ids
-// const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-
-// function Syllabus() {
-//   const [showForm, setShowForm] = useState(false);
-//   const [sections, setSections] = useState([]); // { id, name }
-//   const [inputValue, setInputValue] = useState("");
-//   const [editingId, setEditingId] = useState(null);
-//   const [error, setError] = useState("");
-//   const [menuOpenId, setMenuOpenId] = useState(null);
-//   const containerRef = useRef(null);
-//   const [parentForAdd, setParentForAdd] = useState(null); // parent id when adding syllabus (child)
-//   const [editingChildId, setEditingChildId] = useState(null);
-//   const [parentForGrandChild, setParentForGrandChild] = useState(null); // { parentId, childId }
-//   const [editingGrandchildId, setEditingGrandchildId] = useState(null);
-//   const [parentForGreatChild, setParentForGreatChild] = useState(null); // { parentId, childId, grandId }
-//   const [editingGreatchildId, setEditingGreatchildId] = useState(null);
-//   const [expandedIds, setExpandedIds] = useState(new Set());
-//   const [draggingId, setDraggingId] = useState(null); // stores typed id like 'p:<id>' or 'c:<parentId>:<childId>'
-//   const [dragOverId, setDragOverId] = useState(null);
-
-//   // Load from localStorage
-//   useEffect(() => {
-//     try {
-//       const raw = localStorage.getItem("syllabus_sections");
-//       if (raw) setSections(JSON.parse(raw));
-//     } catch (e) {
-//       console.error(e);
-//     }
-//   }, []);
-
-//   // Persist
-//   useEffect(() => {
-//     localStorage.setItem("syllabus_sections", JSON.stringify(sections));
-//   }, [sections]);
-
-//   const openAdd = () => {
-//     setEditingId(null);
-//     setInputValue("");
-//     setError("");
-//     setShowForm(true);
-//   };
-
-//   const openAddChild = (parentId) => {
-//     setParentForAdd(parentId);
-//     setEditingChildId(null);
-//     setInputValue("");
-//     setError("");
-//     setShowForm(true);
-//     setMenuOpenId(null);
-//   };
-
-//   const openAddGrandChild = (parentId, childId) => {
-//     setParentForGrandChild({ parentId, childId });
-//     setEditingGrandchildId(null);
-//     setParentForAdd(null);
-//     setEditingChildId(null);
-//     setInputValue("");
-//     setError("");
-//     setShowForm(true);
-//     setMenuOpenId(null);
-//   };
-
-//   const openEditGrandChild = (parentId, childId, grandchildId) => {
-//     const p = sections.find((x) => x.id === parentId);
-//     if (!p) return;
-//     const c = (p.children || []).find((x) => x.id === childId);
-//     if (!c) return;
-//     const g = (c.grandchildren || []).find((x) => x.id === grandchildId);
-//     if (!g) return;
-//     setParentForGrandChild({ parentId, childId });
-//     setEditingGrandchildId(grandchildId);
-//     setInputValue(g.name);
-//     setError("");
-//     setShowForm(true);
-//     setMenuOpenId(null);
-//   };
-
-//   const openAddGreatChild = (parentId, childId, grandchildId) => {
-//     setParentForGreatChild({ parentId, childId, grandchildId });
-//     setEditingGreatchildId(null);
-//     setParentForGrandChild(null);
-//     setEditingGrandchildId(null);
-//     setParentForAdd(null);
-//     setEditingChildId(null);
-//     setInputValue("");
-//     setError("");
-//     setShowForm(true);
-//     setMenuOpenId(null);
-//   };
-
-//   const openEditGreatChild = (parentId, childId, grandchildId, greatchildId) => {
-//     const p = sections.find((x) => x.id === parentId);
-//     if (!p) return;
-//     const c = (p.children || []).find((x) => x.id === childId);
-//     if (!c) return;
-//     const g = (c.grandchildren || []).find((x) => x.id === grandchildId);
-//     if (!g) return;
-//     const h = (g.greatchildren || []).find((x) => x.id === greatchildId);
-//     if (!h) return;
-//     setParentForGreatChild({ parentId, childId, grandchildId });
-//     setEditingGreatchildId(greatchildId);
-//     setInputValue(h.name);
-//     setError("");
-//     setShowForm(true);
-//     setMenuOpenId(null);
-//   };
-
-//   const handleSave = () => {
-//     const name = inputValue.trim();
-//     if (!name) {
-//       setError("Name is required");
-//       return;
-//     }
-
-//     if (parentForGreatChild) {
-//       // adding or editing a great-grandchild (level 4)
-//       const { parentId, childId, grandchildId } = parentForGreatChild;
-//       setSections((prev) => prev.map((p) => {
-//         if (p.id !== parentId) return p;
-//         return {
-//           ...p,
-//           children: (p.children || []).map((c) => {
-//             if (c.id !== childId) return c;
-//             return {
-//               ...c,
-//               grandchildren: (c.grandchildren || []).map((g) => {
-//                 if (g.id !== grandchildId) return g;
-//                 const greatchildren = Array.isArray(g.greatchildren) ? [...g.greatchildren] : [];
-//                 if (editingGreatchildId) {
-//                   return { ...g, greatchildren: greatchildren.map(h => h.id === editingGreatchildId ? { ...h, name } : h) };
-//                 }
-//                 const greatchild = { id: uid(), name };
-//                 return { ...g, greatchildren: [...greatchildren, greatchild] };
-//               })
-//             };
-//           }),
-//         };
-//       }));
-//       // ensure grandchild is expanded to show newly added great-grandchild
-//       setExpandedIds(prev => new Set(prev).add(parentForGreatChild.grandchildId));
-//     } else if (parentForGrandChild) {
-//       // adding or editing a grandchild (level 3)
-//       const { parentId, childId } = parentForGrandChild;
-//       setSections((prev) => prev.map((p) => {
-//         if (p.id !== parentId) return p;
-//         return {
-//           ...p,
-//           children: (p.children || []).map((c) => {
-//             if (c.id !== childId) return c;
-//             const grandchildren = Array.isArray(c.grandchildren) ? [...c.grandchildren] : [];
-//             if (editingGrandchildId) {
-//               return { ...c, grandchildren: grandchildren.map(g => g.id === editingGrandchildId ? { ...g, name, greatchildren: g.greatchildren || [] } : g) };
-//             }
-//             const grandchild = { id: uid(), name, greatchildren: [] };
-//             return { ...c, grandchildren: [...grandchildren, grandchild] };
-//           }),
-//         };
-//       }));
-//       // ensure child is expanded to show newly added grandchild
-//       setExpandedIds(prev => new Set(prev).add(parentForGrandChild.childId));
-//     } else if (parentForAdd) {
-//       // adding or editing a child (syllabus)
-//       setSections((prev) => prev.map((p) => {
-//         if (p.id !== parentForAdd) return p;
-//         const children = Array.isArray(p.children) ? [...p.children] : [];
-//         if (editingChildId) {
-//           return { ...p, children: children.map(c => c.id === editingChildId ? { ...c, name } : c) };
-//         }
-//         const child = { id: uid(), name, grandchildren: [] };
-//         return { ...p, children: [...children, child] };
-//       }));
-//     } else if (editingId) {
-//       setSections((prev) => prev.map((s) => (s.id === editingId ? { ...s, name } : s)));
-//     } else {
-//       const newSection = { id: uid(), name, children: [] };
-//       setSections((prev) => [newSection, ...prev]);
-//     }
-
-//     setInputValue("");
-//     setEditingId(null);
-//     setShowForm(false);
-//     setParentForAdd(null);
-//     setEditingChildId(null);
-//     setParentForGrandChild(null);
-//     setEditingGrandchildId(null);
-//     setParentForGreatChild(null);
-//     setEditingGreatchildId(null);
-//   };
-
-//   // Form labels depending on current context (level)
-//   const getFormTitle = () => {
-//     if (parentForGreatChild) return editingGreatchildId ? 'Edit Concept' : 'Add Concept';
-//     if (parentForGrandChild) return editingGrandchildId ? 'Edit Subtopic' : 'Add Subtopic';
-//     if (parentForAdd) return editingChildId ? 'Edit Syllabus Item' : 'Add Syllabus Item';
-//     return editingId ? 'Edit Section' : 'Add Section';
-//   };
-
-//   const getActionText = () => {
-//     if (parentForGreatChild) return editingGreatchildId ? 'Update' : 'Create';
-//     if (parentForGrandChild) return editingGrandchildId ? 'Update' : 'Create';
-//     if (parentForAdd) return editingChildId ? 'Update' : 'Create';
-//     return editingId ? 'Update' : 'Create';
-//   };
-
-//   const handleEdit = (id) => {
-//     const s = sections.find((x) => x.id === id);
-//     if (!s) return;
-//     setEditingId(id);
-//     setInputValue(s.name);
-//     setError("");
-//     setShowForm(true);
-//   };
-
-//   const handleEditChild = (parentId, childId) => {
-//     const p = sections.find((x) => x.id === parentId);
-//     if (!p) return;
-//     const c = (p.children || []).find((x) => x.id === childId);
-//     if (!c) return;
-//     setParentForAdd(parentId);
-//     setEditingChildId(childId);
-//     setInputValue(c.name);
-//     setError("");
-//     setShowForm(true);
-//     setMenuOpenId(null);
-//   };
-
-//   const handleDeleteChild = (parentId, childId) => {
-//     if (!window.confirm("Delete this syllabus item?")) return;
-//     setSections((prev) => {
-//       const next = prev.map((p) => p.id === parentId ? { ...p, children: (p.children || []).filter(c => c.id !== childId) } : p);
-//       const parent = next.find(p => p.id === parentId);
-//       if (!parent || !parent.children || parent.children.length === 0) {
-//         setExpandedIds((prevSet) => {
-//           const copy = new Set(prevSet);
-//           copy.delete(parentId);
-//           return copy;
-//         });
-//       }
-//       return next;
-//     });
-//     setMenuOpenId(null);
-//     console.debug(`Deleted child ${childId} from parent ${parentId}`);
-//   };
-
-//   const handleDeleteGrandChild = (parentId, childId, grandchildId) => {
-//     if (!window.confirm("Delete this item?")) return;
-//     setSections((prev) => {
-//       const next = prev.map((p) => {
-//         if (p.id !== parentId) return p;
-//         return {
-//           ...p,
-//           children: (p.children || []).map((c) => {
-//             if (c.id !== childId) return c;
-//             return { ...c, grandchildren: (c.grandchildren || []).filter(g => g.id !== grandchildId) };
-//           }),
-//         };
-//       });
-//       const parent = next.find(p => p.id === parentId);
-//       const child = parent && (parent.children || []).find(c => c.id === childId);
-//       if (!child || !child.grandchildren || child.grandchildren.length === 0) {
-//         setExpandedIds((prevSet) => {
-//           const copy = new Set(prevSet);
-//           copy.delete(childId);
-//           return copy;
-//         });
-//       }
-//       return next;
-//     });
-//     setMenuOpenId(null);
-//     console.debug(`Deleted grandchild ${grandchildId} from child ${childId} of parent ${parentId}`);
-//   };
-
-//   const toggleExpand = (id) => {
-//     setExpandedIds(prev => {
-//       const copy = new Set(prev);
-//       if (copy.has(id)) copy.delete(id); else copy.add(id);
-//       return copy;
-//     });
-//   };
-
-//   const handleDelete = (id) => {
-//     if (!window.confirm("Delete this section?")) return;
-//     setSections((prev) => {
-//       const next = prev.filter((s) => s.id !== id);
-//       return next;
-//     });
-//     setMenuOpenId(null);
-//     setExpandedIds((prevSet) => {
-//       const copy = new Set(prevSet);
-//       copy.delete(id);
-//       return copy;
-//     });
-//     if (editingId === id) {
-//       setEditingId(null);
-//       setShowForm(false);
-//       setInputValue("");
-//     }
-//     console.debug(`Deleted parent section ${id}`);
-//   };
-
-//   // move-to-top helpers removed per UX change: 'Show/Hide' replaced Move-to-Top in menus
-
-//   const duplicateGreatChild = (parentId, childId, grandId, greatId) => {
-//     setSections(prev => prev.map(p => {
-//       if (p.id !== parentId) return p;
-//       return {
-//         ...p,
-//         children: (p.children || []).map(c => {
-//           if (c.id !== childId) return c;
-//           return {
-//             ...c,
-//             grandchildren: (c.grandchildren || []).map(g => {
-//               if (g.id !== grandId) return g;
-//               const greatchildren = [...(g.greatchildren || [])];
-//               const original = greatchildren.find(h => h.id === greatId);
-//               if (!original) return g;
-//               const copy = { id: uid(), name: original.name + ' (copy)' };
-//               return { ...g, greatchildren: [...greatchildren, copy] };
-//             })
-//           };
-//         })
-//       };
-//     }));
-//     setMenuOpenId(null);
-//   };
-
-//   const handleDeleteGreatChild = (parentId, childId, grandchildId, greatId) => {
-//     if (!window.confirm('Delete this item?')) return;
-//     setSections(prev => {
-//       const next = prev.map(p => {
-//         if (p.id !== parentId) return p;
-//         return {
-//           ...p,
-//           children: (p.children || []).map(c => {
-//             if (c.id !== childId) return c;
-//             return {
-//               ...c,
-//               grandchildren: (c.grandchildren || []).map(g => {
-//                 if (g.id !== grandchildId) return g;
-//                 return { ...g, greatchildren: (g.greatchildren || []).filter(h => h.id !== greatId) };
-//               })
-//             };
-//           })
-//         };
-//       });
-//       // collapse if none left
-//       const parent = next.find(p => p.id === parentId);
-//       const child = parent && (parent.children || []).find(c => c.id === childId);
-//       const grand = child && (child.grandchildren || []).find(g => g.id === grandchildId);
-//       if (!grand || !grand.greatchildren || grand.greatchildren.length === 0) {
-//         setExpandedIds(prevSet => {
-//           const copy = new Set(prevSet);
-//           copy.delete(grandchildId);
-//           return copy;
-//         });
-//       }
-//       return next;
-//     });
-//     setMenuOpenId(null);
-//   };
-
-//   // Drag handlers for native drag-and-drop (typed ids)
-//   const handleDragStart = (e, typedId) => {
-//     setDraggingId(typedId);
-//     e.dataTransfer.effectAllowed = "move";
-//     try { e.dataTransfer.setData("text/plain", typedId); } catch (err) { /* IE fallback */ }
-//   };
-
-//   const handleDragOver = (e, typedId) => {
-//     e.preventDefault();
-//     setDragOverId(typedId);
-//   };
-
-//   const handleDrop = (e, typedTargetId) => {
-//     e.preventDefault();
-//     const fromTyped = draggingId || e.dataTransfer.getData("text/plain");
-//     const toTyped = typedTargetId;
-//     if (!fromTyped) return;
-//     if (fromTyped === toTyped) {
-//       setDraggingId(null);
-//       setDragOverId(null);
-//       return;
-//     }
-
-//     // parse typed ids
-//     const parse = (t) => t.split(":");
-//     const fromParts = parse(fromTyped);
-//     const toParts = parse(toTyped);
-
-//     // Parent reordering: fromParts[0] === 'p'
-//     if (fromParts[0] === 'p' && toParts[0] === 'p') {
-//       const fromId = fromParts[1];
-//       const toId = toParts[1];
-//       setSections((prev) => {
-//         const copy = [...prev];
-//         const fromIndex = copy.findIndex((s) => s.id === fromId);
-//         const toIndex = copy.findIndex((s) => s.id === toId);
-//         if (fromIndex === -1 || toIndex === -1) return prev;
-//         const [moved] = copy.splice(fromIndex, 1);
-//         copy.splice(toIndex, 0, moved);
-//         return copy;
-//       });
-//     }
-
-//     // Child moved to child position
-//     if (fromParts[0] === 'c' && toParts[0] === 'c') {
-//       const fromParent = fromParts[1];
-//       const fromChild = fromParts[2];
-//       const toParent = toParts[1];
-//       const toChild = toParts[2];
-
-//       setSections((prev) => {
-//         const copy = prev.map(p => ({ ...p, children: p.children ? [...p.children] : [] }));
-//         const fp = copy.find(p => p.id === fromParent);
-//         const tp = copy.find(p => p.id === toParent);
-//         if (!fp || !tp) return prev;
-//         const fromIndex = fp.children.findIndex(c => c.id === fromChild);
-//         const toIndex = tp.children.findIndex(c => c.id === toChild);
-//         if (fromIndex === -1 || toIndex === -1) return prev;
-//         const [moved] = fp.children.splice(fromIndex, 1);
-//         // if same parent and removal shifted index, adjust
-//         if (fp.id === tp.id && fromIndex < toIndex) {
-//           tp.children.splice(toIndex, 0, moved);
-//         } else {
-//           tp.children.splice(toIndex, 0, moved);
-//         }
-//         return copy;
-//       });
-//     }
-
-//     // Child -> Parent (append child to target parent's children)
-//     if (fromParts[0] === 'c' && toParts[0] === 'p') {
-//       const fromParent = fromParts[1];
-//       const fromChild = fromParts[2];
-//       const toParent = toParts[1];
-//       setSections((prev) => {
-//         const copy = prev.map(p => ({ ...p, children: p.children ? [...p.children] : [] }));
-//         const fp = copy.find(p => p.id === fromParent);
-//         const tp = copy.find(p => p.id === toParent);
-//         if (!fp || !tp) return prev;
-//         const fromIndex = fp.children.findIndex(c => c.id === fromChild);
-//         if (fromIndex === -1) return prev;
-//         const [moved] = fp.children.splice(fromIndex, 1);
-//         tp.children.push(moved);
-//         return copy;
-//       });
-//     }
-
-//     // Grandchild moved to grandchild position
-//     if (fromParts[0] === 'g' && toParts[0] === 'g') {
-//       const fromParent = fromParts[1];
-//       const fromChild = fromParts[2];
-//       const fromGrand = fromParts[3];
-//       const toParent = toParts[1];
-//       const toChild = toParts[2];
-//       const toGrand = toParts[3];
-
-//       setSections((prev) => {
-//         const copy = prev.map(p => ({
-//           ...p,
-//           children: (p.children || []).map(c => ({ ...c, grandchildren: c.grandchildren ? [...c.grandchildren] : [] }))
-//         }));
-//         const fp = copy.find(p => p.id === fromParent);
-//         const fc = fp && (fp.children || []).find(c => c.id === fromChild);
-//         const tp = copy.find(p => p.id === toParent);
-//         const tc = tp && (tp.children || []).find(c => c.id === toChild);
-//         if (!fp || !fc || !tp || !tc) return prev;
-//         const fromIndex = fc.grandchildren.findIndex(g => g.id === fromGrand);
-//         const toIndex = tc.grandchildren.findIndex(g => g.id === toGrand);
-//         if (fromIndex === -1 || toIndex === -1) return prev;
-//         const [moved] = fc.grandchildren.splice(fromIndex, 1);
-//         if (fc.id === tc.id && fromIndex < toIndex) {
-//           tc.grandchildren.splice(toIndex, 0, moved);
-//         } else {
-//           tc.grandchildren.splice(toIndex, 0, moved);
-//         }
-//         return copy;
-//       });
-//     }
-
-//     // Grandchild -> Child (move grandchild to another child's grandchildren list)
-//     if (fromParts[0] === 'g' && toParts[0] === 'c') {
-//       const fromParent = fromParts[1];
-//       const fromChild = fromParts[2];
-//       const fromGrand = fromParts[3];
-//       const toParent = toParts[1];
-//       const toChild = toParts[2];
-
-//       setSections((prev) => {
-//         const copy = prev.map(p => ({
-//           ...p,
-//           children: (p.children || []).map(c => ({ ...c, grandchildren: c.grandchildren ? [...c.grandchildren] : [] }))
-//         }));
-//         const fp = copy.find(p => p.id === fromParent);
-//         const fc = fp && (fp.children || []).find(c => c.id === fromChild);
-//         const tp = copy.find(p => p.id === toParent);
-//         const tc = tp && (tp.children || []).find(c => c.id === toChild);
-//         if (!fp || !fc || !tp || !tc) return prev;
-//         const fromIndex = fc.grandchildren.findIndex(g => g.id === fromGrand);
-//         if (fromIndex === -1) return prev;
-//         const [moved] = fc.grandchildren.splice(fromIndex, 1);
-//         tc.grandchildren.push(moved);
-//         return copy;
-//       });
-//     }
-
-//     // Parent -> Child: ignore (not supported)
-
-//     setDraggingId(null);
-//     setDragOverId(null);
-//   };
-
-//   const handleDragEnd = () => {
-//     setDraggingId(null);
-//     setDragOverId(null);
-//   };
-
-//   // Close menu on outside click
-//   useEffect(() => {
-//     const onDocClick = (e) => {
-//       if (!containerRef.current) return;
-//       if (!containerRef.current.contains(e.target)) {
-//         setMenuOpenId(null);
-//       }
-//     };
-//     document.addEventListener("click", onDocClick);
-//     return () => document.removeEventListener("click", onDocClick);
-//   }, []);
-
-//   return (
-//     <div className="d-flex flex-column align-items-center justify-content-center vh-100 bg-light">
-
-//       <div style={{ width: "520px" }} ref={containerRef}>
-//         <div className="mt-4 mb-3 card shadow-sm">
-//           <div className="card-body">
-//             <div className="d-flex justify-content-between align-items-center mb-3">
-//               <h6 className="mb-0 fw-bold">All Sections</h6>
-//               <small className="text-muted">Manage syllabus structure</small>
-//             </div>
-//             {sections.length === 0 && <div className="text-muted mb-2 small">No sections yet. Click + to add one.</div>}
-//             <ul className="list-group list-group-flush mt-1">
-//               {sections.map((s) => (
-//                 <React.Fragment key={s.id}>
-//                   <li
-//                     className={`list-group-item d-flex justify-content-between align-items-center ${dragOverId === `p:${s.id}` ? 'bg-light' : ''}`}
-//                     style={{ paddingLeft: '1rem' }}
-//                     draggable
-//                     onDragStart={(e) => handleDragStart(e, `p:${s.id}`)}
-//                     onDragOver={(e) => handleDragOver(e, `p:${s.id}`)}
-//                     onDrop={(e) => handleDrop(e, `p:${s.id}`)}
-//                     onDragEnd={handleDragEnd}
-//                   >
-//                     <div className="d-flex align-items-center gap-3">
-//                       <FaGripVertical className="text-muted" />
-//                       <span
-//                         style={{ display: 'inline-block', cursor: 'pointer' }}
-//                         onClick={(e) => { e.stopPropagation(); toggleExpand(s.id); setMenuOpenId(null); }}
-//                         title={expandedIds.has(s.id) ? 'Hide syllabus' : 'Show syllabus'}
-//                       >
-//                         {s.name}
-//                       </span>
-//                     </div>
-
-//                     {/* Ellipsis menu button */}
-//                     <div>
-//                       <button
-//                         className="btn btn-sm btn-light border rounded-circle"
-//                         onClick={(e) => { e.stopPropagation(); setMenuOpenId(menuOpenId === `p:${s.id}` ? null : `p:${s.id}`); }}
-//                         aria-haspopup="true"
-//                         aria-expanded={menuOpenId === `p:${s.id}`}
-//                       >
-//                         <FaEllipsisV />
-//                       </button>
-
-//                       {menuOpenId === `p:${s.id}` && (
-//                         <div className="card position-absolute shadow-sm" style={{ right: 0, top: "120%", zIndex: 60, minWidth: 180 }}>
-//                           <div className="card-body p-2">
-//                             <button className="btn btn-sm btn-outline-info w-100 mb-2" onClick={() => { toggleExpand(s.id); setMenuOpenId(null); }}>{expandedIds.has(s.id) ? 'Hide Syllabus' : 'Show Syllabus'}</button>
-//                             <button className="btn btn-sm btn-outline-primary w-100 mb-2" onClick={() => { openAddChild(s.id); setMenuOpenId(null); }}>Add Syllabus</button>
-//                             <button className="btn btn-sm btn-outline-secondary w-100 mb-2" onClick={() => { handleEdit(s.id); setMenuOpenId(null); }}>Edit</button>
-//                             <button className="btn btn-sm btn-outline-danger w-100" onClick={() => { handleDelete(s.id); setMenuOpenId(null); }}>Delete</button>
-//                           </div>
-//                         </div>
-//                       )}
-//                     </div>
-//                   </li>
-//                   {expandedIds.has(s.id) && (s.children || []).map(c => (
-//                     <React.Fragment key={c.id}>
-//                       <li
-//                         className={`list-group-item syllabus-item d-flex justify-content-between align-items-center mb-2 position-relative ${dragOverId === `c:${s.id}:${c.id}` ? 'bg-light' : ''}`}
-//                         style={{ paddingLeft: '2.5rem', borderLeft: '2px solid rgba(0,0,0,0.04)' }}
-//                         draggable
-//                         onDragStart={(e) => handleDragStart(e, `c:${s.id}:${c.id}`)}
-//                         onDragOver={(e) => handleDragOver(e, `c:${s.id}:${c.id}`)}
-//                         onDrop={(e) => handleDrop(e, `c:${s.id}:${c.id}`)}
-//                         onDragEnd={handleDragEnd}
-//                       >
-//                         <div
-//                           className="d-flex align-items-center gap-3"
-//                           onClick={(e) => { e.stopPropagation(); toggleExpand(c.id); setMenuOpenId(null); }}
-//                           style={{ cursor: 'pointer' }}
-//                           title={expandedIds.has(c.id) ? 'Hide subtopics' : 'Show subtopics'}
-//                         >
-//                           <FaGripVertical className="text-muted" />
-//                           <span>{c.name}</span>
-//                         </div>
-//                         <div>
-//                           <button
-//                             className="btn btn-sm btn-light border rounded-circle"
-//                             onClick={(e) => { e.stopPropagation(); setMenuOpenId(menuOpenId === `c:${s.id}:${c.id}` ? null : `c:${s.id}:${c.id}`); }}
-//                             aria-haspopup="true"
-//                             aria-expanded={menuOpenId === `c:${s.id}:${c.id}`}
-//                           >
-//                             <FaEllipsisV />
-//                           </button>
-
-//                           {menuOpenId === `c:${s.id}:${c.id}` && (
-//                             <div className="card position-absolute shadow-sm" style={{ right: 0, top: "110%", zIndex: 60, minWidth: 180 }}>
-//                               <div className="card-body p-2">
-//                                 <button className="btn btn-sm btn-outline-info w-100 mb-2" onClick={() => { toggleExpand(c.id); setMenuOpenId(null); }}>{expandedIds.has(c.id) ? 'Hide Subtopics' : 'Show Subtopics'}</button>
-//                                 <button className="btn btn-sm btn-outline-primary w-100 mb-2" onClick={() => { openAddGrandChild(s.id, c.id); setMenuOpenId(null); }}>Add Sub-Item</button>
-//                                 <button className="btn btn-sm btn-outline-secondary w-100 mb-2" onClick={() => { handleEditChild(s.id, c.id); setMenuOpenId(null); }}>Edit</button>
-//                                 <button className="btn btn-sm btn-outline-danger w-100" onClick={() => { handleDeleteChild(s.id, c.id); setMenuOpenId(null); }}>Delete</button>
-//                               </div>
-//                             </div>
-//                           )}
-//                         </div>
-//                       </li>
-
-//                       {expandedIds.has(c.id) && (c.grandchildren || []).map(g => (
-//                         <React.Fragment key={g.id}>
-//                           <li
-//                             className={`list-group-item syllabus-item d-flex justify-content-between align-items-center mb-2 position-relative ${dragOverId === `g:${s.id}:${c.id}:${g.id}` ? 'bg-light' : ''}`}
-//                             style={{ paddingLeft: '4.5rem', borderLeft: '2px dashed rgba(0,0,0,0.03)' }}
-//                             draggable
-//                             onDragStart={(e) => handleDragStart(e, `g:${s.id}:${c.id}:${g.id}`)}
-//                             onDragOver={(e) => handleDragOver(e, `g:${s.id}:${c.id}:${g.id}`)}
-//                             onDrop={(e) => handleDrop(e, `g:${s.id}:${c.id}:${g.id}`)}
-//                             onDragEnd={handleDragEnd}
-//                           >
-//                             <div
-//                               className="d-flex align-items-center gap-3"
-//                               onClick={(e) => { e.stopPropagation(); toggleExpand(g.id); setMenuOpenId(null); }}
-//                               style={{ cursor: 'pointer' }}
-//                               title={expandedIds.has(g.id) ? 'Hide concepts' : 'Show concepts'}
-//                             >
-//                               <FaGripVertical className="text-muted" />
-//                               <span>{g.name}</span>
-//                             </div>
-//                             <div>
-//                               <button
-//                                 className="btn btn-sm btn-light border rounded-circle"
-//                                 onClick={(e) => { e.stopPropagation(); setMenuOpenId(menuOpenId === `g:${s.id}:${c.id}:${g.id}` ? null : `g:${s.id}:${c.id}:${g.id}`); }}
-//                                 aria-haspopup="true"
-//                                 aria-expanded={menuOpenId === `g:${s.id}:${c.id}:${g.id}`}
-//                               >
-//                                 <FaEllipsisV />
-//                               </button>
-
-//                               {menuOpenId === `g:${s.id}:${c.id}:${g.id}` && (
-//                                 <div className="card position-absolute shadow-sm" style={{ right: 0, top: "110%", zIndex: 60, minWidth: 180 }}>
-//                                   <div className="card-body p-2">
-//                                     <button className="btn btn-sm btn-outline-info w-100 mb-2" onClick={() => { toggleExpand(g.id); setMenuOpenId(null); }}>{expandedIds.has(g.id) ? 'Hide Concepts' : 'Show Concepts'}</button>
-//                                     <button className="btn btn-sm btn-outline-primary w-100 mb-2" onClick={() => { openAddGreatChild(s.id, c.id, g.id); setMenuOpenId(null); }}>Add Sub-Item</button>
-//                                     <button className="btn btn-sm btn-outline-secondary w-100 mb-2" onClick={() => { openEditGrandChild(s.id, c.id, g.id); setMenuOpenId(null); }}>Edit</button>
-//                                     <button className="btn btn-sm btn-outline-danger w-100" onClick={() => { handleDeleteGrandChild(s.id, c.id, g.id); setMenuOpenId(null); }}>Delete</button>
-//                                   </div>
-//                                 </div>
-//                               )}
-//                             </div>
-//                           </li>
-
-//                           {/* Render great-grandchildren (level 4) when grandchild is expanded */}
-//                           {expandedIds.has(g.id) && (g.greatchildren || []).map(h => (
-//                             <React.Fragment key={h.id}>
-//                               <li
-//                                 key={h.id}
-//                                 className={`list-group-item d-flex justify-content-between align-items-center mb-2 position-relative`}
-//                                 style={{ paddingLeft: '6rem', borderLeft: '1px solid rgba(0,0,0,0.02)' }}
-//                               >
-//                                 <div
-//                                   className="d-flex align-items-center gap-3"
-//                                   onClick={(e) => { e.stopPropagation(); /* leaf level - no expand */ setMenuOpenId(null); }}
-//                                   style={{ cursor: 'pointer' }}
-//                                   title="Concept"
-//                                 >
-//                                   <FaGripVertical className="text-muted" />
-//                                   <span>{h.name}</span>
-//                                 </div>
-//                                 <div>
-//                                   <button
-//                                     className="btn btn-sm btn-light border rounded-circle"
-//                                     onClick={(e) => { e.stopPropagation(); setMenuOpenId(menuOpenId === `h:${s.id}:${c.id}:${g.id}:${h.id}` ? null : `h:${s.id}:${c.id}:${g.id}:${h.id}`); }}
-//                                     aria-haspopup="true"
-//                                     aria-expanded={menuOpenId === `h:${s.id}:${c.id}:${g.id}:${h.id}`}
-//                                   >
-//                                     <FaEllipsisV />
-//                                   </button>
-
-//                                   {menuOpenId === `h:${s.id}:${c.id}:${g.id}:${h.id}` && (
-//                                     <div className="card position-absolute shadow-sm" style={{ right: 0, top: "110%", zIndex: 60, minWidth: 180 }}>
-//                                       <div className="card-body p-2">
-//                                         <button className="btn btn-sm btn-outline-primary w-100 mb-2" onClick={() => { duplicateGreatChild(s.id, c.id, g.id, h.id); }}>Duplicate</button>
-//                                         <button className="btn btn-sm btn-outline-secondary w-100 mb-2" onClick={() => { openEditGreatChild(s.id, c.id, g.id, h.id); setMenuOpenId(null); }}>Edit</button>
-//                                         <button className="btn btn-sm btn-outline-danger w-100" onClick={() => { handleDeleteGreatChild(s.id, c.id, g.id, h.id); setMenuOpenId(null); }}>Delete</button>
-//                                       </div>
-//                                     </div>
-//                                   )}
-//                                 </div>
-//                               </li>
-//                             </React.Fragment>
-//                           ))}
-//                         </React.Fragment>
-//                       ))}
-
-//                     </React.Fragment>
-//                   ))}
-//                 </React.Fragment>
-//               ))}
-//             </ul>
-//           </div>
-//         </div>
-
-//         {/* Outer box (Add new section) */}
-//         <div className="mt-4 d-flex justify-content-center">
-//           <div className="d-flex flex-column align-items-center">
-//             <div 
-//               onClick={openAdd} 
-//               role="button" 
-//               title="Add Section"
-//               className="bg-primary rounded d-flex align-items-center justify-content-center"
-//               style={{ width: '100px', height: '100px', cursor: 'pointer' }}
-//             >
-//               <FaPlus size={48} className="text-white" />
-//             </div>
-//             <div className="small text-muted mt-2">Add Section</div>
-//           </div>
-//         </div>
-
-//         {/* Form shown below the box */}
-//         {showForm && (
-//           <div className="card p-3 mt-4 shadow" style={{ width: "420px" }}>
-//             <div className="d-flex justify-content-between align-items-center mb-2">
-//               <h6 className="mb-0">{getFormTitle()}</h6>
-//               <div className="small-muted small">Click a label to open its items</div>
-//             </div>
-
-//             <label className="form-label mt-2">Name</label>
-//             <input
-//               type="text"
-//               className="form-control mb-2"
-//               value={inputValue}
-//               onChange={(e) => setInputValue(e.target.value)}
-//               placeholder="Enter section name"
-//             />
-//             {error && <div className="text-danger small mb-2">{error}</div>}
-
-//             <div className="d-flex gap-2">
-//               <button className="btn btn-primary flex-grow-1" onClick={handleSave}>{getActionText()}</button>
-//               <button className="btn btn-outline-secondary" onClick={() => { setShowForm(false); setEditingId(null); setInputValue(""); setError(""); }}>
-//                 Cancel
-//               </button>
-//             </div>
-//           </div>
-//         )}
-//       </div>
-//     </div>
-//   );
-// }
-
-// export default Syllabus;      
-
-
-import React, { useEffect, useState, useRef } from "react";
-import { FaPlus, FaEdit, FaTrash, FaGripVertical, FaEllipsisV } from "react-icons/fa";
-
-// Small helper to generate unique ids
-const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-
-function Syllabus() {
-  const [showForm, setShowForm] = useState(false);
-  const [sections, setSections] = useState([]); // { id, name }
-  const [inputValue, setInputValue] = useState("");
-  const [editingId, setEditingId] = useState(null);
-  const [error, setError] = useState("");
-  const [menuOpenId, setMenuOpenId] = useState(null);
-  const containerRef = useRef(null);
-  const [parentForAdd, setParentForAdd] = useState(null); // parent id when adding syllabus (child)
-  const [editingChildId, setEditingChildId] = useState(null);
-  const [parentForGrandChild, setParentForGrandChild] = useState(null); // { parentId, childId }
-  const [editingGrandchildId, setEditingGrandchildId] = useState(null);
-  const [parentForGreatChild, setParentForGreatChild] = useState(null); // { parentId, childId, grandchildId }
-  const [editingGreatchildId, setEditingGreatchildId] = useState(null);
-  const [expandedIds, setExpandedIds] = useState(new Set());
-  const [draggingId, setDraggingId] = useState(null); // stores typed id like 'p:<id>' or 'c:<parentId>:<childId>'
-  const [dragOverId, setDragOverId] = useState(null);
-
-  // Load from localStorage
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem("syllabus_sections");
-      if (raw) setSections(JSON.parse(raw));
-    } catch (e) {
-      console.error(e);
-    }
-  }, []);
-
-  // Persist
-  useEffect(() => {
-    localStorage.setItem("syllabus_sections", JSON.stringify(sections));
-  }, [sections]);
-
-  // ---------- OPEN / PREPARE FORM ACTIONS ----------
-  const openAdd = () => {
-    // top-level (keeps the global form as before)
-    setEditingId(null);
-    setInputValue("");
-    setError("");
-    setShowForm(true);
-    // clear nested add/edit states
-    setParentForAdd(null);
-    setEditingChildId(null);
-    setParentForGrandChild(null);
-    setEditingGrandchildId(null);
-    setParentForGreatChild(null);
-    setEditingGreatchildId(null);
-    setMenuOpenId(null);
-  };
-
-  const openAddChild = (parentId) => {
-    // add a child (syllabus item) inside parent — show inline under parent
-    setParentForAdd(parentId);
-    setEditingChildId(null);
-    setInputValue("");
-    setError("");
-    setShowForm(true);
-    setMenuOpenId(null);
-    // ensure parent expanded to see input
-    setExpandedIds(prev => new Set(prev).add(parentId));
-  };
-
-  const openAddGrandChild = (parentId, childId) => {
-    setParentForGrandChild({ parentId, childId });
-    setEditingGrandchildId(null);
-    setParentForAdd(null);
-    setEditingChildId(null);
-    setInputValue("");
-    setError("");
-    setShowForm(true);
-    setMenuOpenId(null);
-    // ensure child expanded
-    setExpandedIds(prev => new Set(prev).add(childId));
-  };
-
-  const openEditGrandChild = (parentId, childId, grandchildId) => {
-    const p = sections.find((x) => x.id === parentId);
-    if (!p) return;
-    const c = (p.children || []).find((x) => x.id === childId);
-    if (!c) return;
-    const g = (c.grandchildren || []).find((x) => x.id === grandchildId);
-    if (!g) return;
-    setParentForGrandChild({ parentId, childId });
-    setEditingGrandchildId(grandchildId);
-    setInputValue(g.name);
-    setError("");
-    setShowForm(true);
-    setMenuOpenId(null);
-    setExpandedIds(prev => new Set(prev).add(childId));
-  };
-
-  const openAddGreatChild = (parentId, childId, grandchildId) => {
-    setParentForGreatChild({ parentId, childId, grandchildId });
-    setEditingGreatchildId(null);
-    setParentForGrandChild(null);
-    setEditingGrandchildId(null);
-    setParentForAdd(null);
-    setEditingChildId(null);
-    setInputValue("");
-    setError("");
-    setShowForm(true);
-    setMenuOpenId(null);
-    // ensure grandchild expanded
-    setExpandedIds(prev => new Set(prev).add(grandchildId));
-  };
-
-  const openEditGreatChild = (parentId, childId, grandchildId, greatchildId) => {
-    const p = sections.find((x) => x.id === parentId);
-    if (!p) return;
-    const c = (p.children || []).find((x) => x.id === childId);
-    if (!c) return;
-    const g = (c.grandchildren || []).find((x) => x.id === grandchildId);
-    if (!g) return;
-    const h = (g.greatchildren || []).find((x) => x.id === greatchildId);
-    if (!h) return;
-    setParentForGreatChild({ parentId, childId, grandchildId });
-    setEditingGreatchildId(greatchildId);
-    setInputValue(h.name);
-    setError("");
-    setShowForm(true);
-    setMenuOpenId(null);
-    setExpandedIds(prev => new Set(prev).add(grandchildId));
-  };
-
-  const handleEdit = (id) => {
-    const s = sections.find((x) => x.id === id);
-    if (!s) return;
-    // show inline edit inside the parent item
-    setEditingId(id);
-    setInputValue(s.name);
-    setError("");
-    setShowForm(true);
-    setParentForAdd(null);
-    setParentForGrandChild(null);
-    setParentForGreatChild(null);
-    setMenuOpenId(null);
-    // ensure parent visible/expanded
-    setExpandedIds(prev => {
-      const copy = new Set(prev);
-      copy.add(id);
-      return copy;
-    });
-  };
-
-  const handleEditChild = (parentId, childId) => {
-    const p = sections.find((x) => x.id === parentId);
-    if (!p) return;
-    const c = (p.children || []).find((x) => x.id === childId);
-    if (!c) return;
-    // show inline edit inside the child item
-    setParentForAdd(parentId);
-    setEditingChildId(childId);
-    setInputValue(c.name);
-    setError("");
-    setShowForm(true);
-    setMenuOpenId(null);
-    // ensure parent & child expanded
-    setExpandedIds(prev => {
-      const copy = new Set(prev);
-      copy.add(parentId);
-      copy.add(childId);
-      return copy;
-    });
-  };
-
-  // ---------- CANCEL helper used for inline forms ----------
-  const cancelInline = () => {
-    setShowForm(false);
-    setInputValue("");
-    setError("");
-    setEditingId(null);
-    setParentForAdd(null);
-    setEditingChildId(null);
-    setParentForGrandChild(null);
-    setEditingGrandchildId(null);
-    setParentForGreatChild(null);
-    setEditingGreatchildId(null);
-  };
-
-  // ---------- SAVE (unchanged logic, reused) ----------
-  const handleSave = () => {
-    const name = inputValue.trim();
-    if (!name) {
-      setError("Name is required");
-      return;
-    }
-
-    if (parentForGreatChild) {
-      // adding or editing a great-grandchild (level 4)
-      const { parentId, childId, grandchildId } = parentForGreatChild;
-      setSections((prev) => prev.map((p) => {
-        if (p.id !== parentId) return p;
-        return {
-          ...p,
-          children: (p.children || []).map((c) => {
-            if (c.id !== childId) return c;
-            return {
-              ...c,
-              grandchildren: (c.grandchildren || []).map((g) => {
-                if (g.id !== grandchildId) return g;
-                const greatchildren = Array.isArray(g.greatchildren) ? [...g.greatchildren] : [];
-                if (editingGreatchildId) {
-                  return { ...g, greatchildren: greatchildren.map(h => h.id === editingGreatchildId ? { ...h, name } : h) };
-                }
-                const greatchild = { id: uid(), name };
-                return { ...g, greatchildren: [...greatchildren, greatchild] };
-              })
-            };
-          }),
-        };
-      }));
-      // ensure grandchild is expanded to show newly added great-grandchild
-      setExpandedIds(prev => new Set(prev).add(parentForGreatChild.grandchildId));
-    } else if (parentForGrandChild) {
-      // adding or editing a grandchild (level 3)
-      const { parentId, childId } = parentForGrandChild;
-      setSections((prev) => prev.map((p) => {
-        if (p.id !== parentId) return p;
-        return {
-          ...p,
-          children: (p.children || []).map((c) => {
-            if (c.id !== childId) return c;
-            const grandchildren = Array.isArray(c.grandchildren) ? [...c.grandchildren] : [];
-            if (editingGrandchildId) {
-              return { ...c, grandchildren: grandchildren.map(g => g.id === editingGrandchildId ? { ...g, name, greatchildren: g.greatchildren || [] } : g) };
-            }
-            const grandchild = { id: uid(), name, greatchildren: [] };
-            return { ...c, grandchildren: [...grandchildren, grandchild] };
-          }),
-        };
-      }));
-      // ensure child is expanded to show newly added grandchild
-      setExpandedIds(prev => new Set(prev).add(parentForGrandChild.childId));
-    } else if (parentForAdd) {
-      // adding or editing a child (syllabus)
-      setSections((prev) => prev.map((p) => {
-        if (p.id !== parentForAdd) return p;
-        const children = Array.isArray(p.children) ? [...p.children] : [];
-        if (editingChildId) {
-          return { ...p, children: children.map(c => c.id === editingChildId ? { ...c, name } : c) };
-        }
-        const child = { id: uid(), name, grandchildren: [] };
-        return { ...p, children: [...children, child] };
-      }));
-    } else if (editingId) {
-      setSections((prev) => prev.map((s) => (s.id === editingId ? { ...s, name } : s)));
-    } else {
-      const newSection = { id: uid(), name, children: [] };
-      setSections((prev) => [newSection, ...prev]);
-    }
-
-    // reset inline form states
-    setInputValue("");
-    setEditingId(null);
-    setShowForm(false);
-    setParentForAdd(null);
-    setEditingChildId(null);
-    setParentForGrandChild(null);
-    setEditingGrandchildId(null);
-    setParentForGreatChild(null);
-    setEditingGreatchildId(null);
-    setMenuOpenId(null);
-  };
-
-  // ---------- other helpers (unchanged) ----------
-  const handleDeleteChild = (parentId, childId) => {
-    if (!window.confirm("Delete this syllabus item?")) return;
-    setSections((prev) => {
-      const next = prev.map((p) => p.id === parentId ? { ...p, children: (p.children || []).filter(c => c.id !== childId) } : p);
-      const parent = next.find(p => p.id === parentId);
-      if (!parent || !parent.children || parent.children.length === 0) {
-        setExpandedIds((prevSet) => {
-          const copy = new Set(prevSet);
-          copy.delete(parentId);
-          return copy;
-        });
+ 
+ import { useState } from 'react';
+import { DndProvider, useDrag, useDrop } from 'react-dnd';
+import { HTML5Backend } from 'react-dnd-html5-backend';
+import { FiMoreVertical } from "react-icons/fi";
+import { FaEyeSlash } from "react-icons/fa";
+import { FaGripVertical } from "react-icons/fa6";
+import { MdOutlineEditNote } from "react-icons/md";
+import { RiFileListLine, RiFileListFill } from "react-icons/ri";
+import { FaPlus } from "react-icons/fa6";
+import { 
+  FaVideo, 
+  FaCode, 
+  FaQuestionCircle, 
+  FaClock, 
+  FaUpload, 
+  FaBook, 
+  FaCube, 
+  FaExternalLinkAlt, 
+  FaFolder
+} from "react-icons/fa";
+
+import EditArticle from './EditArticle';
+import ContentTypeModal from './ContentTypeModal';
+
+// Constants for drag and drop
+const ItemTypes = {
+  SECTION: 'section',
+  COURSE_ITEM: 'course_item',
+};
+
+// Icon mapping for different content types
+const getContentIcon = (type, isPublished) => {
+  const baseProps = { className: `text-primary fs-5 ${isPublished ? '' : 'opacity-50'}` };
+  
+  switch (type.toLowerCase()) {
+    case 'article':
+      return isPublished ? 
+        <RiFileListFill {...baseProps} /> : 
+        <RiFileListLine {...baseProps} />;
+    
+    case 'recorded video':
+      return <FaVideo {...baseProps} />;
+    
+    case 'coding lab':
+      return <FaCode {...baseProps} />;
+    
+    case 'quiz':
+      return <FaQuestionCircle {...baseProps} />;
+    
+    case 'contest':
+      return <FaClock {...baseProps} />;
+    
+    case 'upload assignment':
+      return <FaUpload {...baseProps} />;
+    
+    case 'ebook':
+      return <FaBook {...baseProps} />;
+    
+    case 'scorm':
+      return <FaCube {...baseProps} />;
+    
+    case 'iframe embed':
+      return <FaExternalLinkAlt {...baseProps} />;
+    
+    case 'sub-section':
+      return <FaFolder {...baseProps} />;
+    
+    default:
+      return isPublished ? 
+        <RiFileListFill {...baseProps} /> : 
+        <RiFileListLine {...baseProps} />;
+  }
+};
+
+// Draggable Section Component
+const DraggableSection = ({
+  section,
+  index,
+  moveSection,
+  children
+}) => {
+  const [{ isDragging }, drag] = useDrag({
+    type: ItemTypes.SECTION,
+    item: { id: section.id, index },
+    collect: (monitor) => ({
+      isDragging: monitor.isDragging(),
+    }),
+  });
+
+  const [, drop] = useDrop({
+    accept: ItemTypes.SECTION,
+    hover: (draggedItem) => {
+      if (draggedItem.id !== section.id) {
+        moveSection(draggedItem.index, index);
+        draggedItem.index = index;
       }
-      return next;
-    });
-    setMenuOpenId(null);
-    console.debug(`Deleted child ${childId} from parent ${parentId}`);
-  };
+    },
+  });
 
-  const handleDeleteGrandChild = (parentId, childId, grandchildId) => {
-    if (!window.confirm("Delete this item?")) return;
-    setSections((prev) => {
-      const next = prev.map((p) => {
-        if (p.id !== parentId) return p;
-        return {
-          ...p,
-          children: (p.children || []).map((c) => {
-            if (c.id !== childId) return c;
-            return { ...c, grandchildren: (c.grandchildren || []).filter(g => g.id !== grandchildId) };
-          }),
-        };
-      });
-      const parent = next.find(p => p.id === parentId);
-      const child = parent && (parent.children || []).find(c => c.id === childId);
-      if (!child || !child.grandchildren || child.grandchildren.length === 0) {
-        setExpandedIds((prevSet) => {
-          const copy = new Set(prevSet);
-          copy.delete(childId);
-          return copy;
-        });
-      }
-      return next;
-    });
-    setMenuOpenId(null);
-    console.debug(`Deleted grandchild ${grandchildId} from child ${childId} of parent ${parentId}`);
-  };
-
-  const toggleExpand = (id) => {
-    setExpandedIds(prev => {
-      const copy = new Set(prev);
-      if (copy.has(id)) copy.delete(id); else copy.add(id);
-      return copy;
-    });
-  };
-
-  const handleDelete = (id) => {
-    if (!window.confirm("Delete this section?")) return;
-    setSections((prev) => {
-      const next = prev.filter((s) => s.id !== id);
-      return next;
-    });
-    setMenuOpenId(null);
-    setExpandedIds((prevSet) => {
-      const copy = new Set(prevSet);
-      copy.delete(id);
-      return copy;
-    });
-    if (editingId === id) {
-      setEditingId(null);
-      setShowForm(false);
-      setInputValue("");
-    }
-    console.debug(`Deleted parent section ${id}`);
-  };
-
-  const duplicateGreatChild = (parentId, childId, grandId, greatId) => {
-    setSections(prev => prev.map(p => {
-      if (p.id !== parentId) return p;
-      return {
-        ...p,
-        children: (p.children || []).map(c => {
-          if (c.id !== childId) return c;
-          return {
-            ...c,
-            grandchildren: (c.grandchildren || []).map(g => {
-              if (g.id !== grandId) return g;
-              const greatchildren = [...(g.greatchildren || [])];
-              const original = greatchildren.find(h => h.id === greatId);
-              if (!original) return g;
-              const copy = { id: uid(), name: original.name + ' (copy)' };
-              return { ...g, greatchildren: [...greatchildren, copy] };
-            })
-          };
-        })
-      };
-    }));
-    setMenuOpenId(null);
-  };
-
-  const handleDeleteGreatChild = (parentId, childId, grandchildId, greatId) => {
-    if (!window.confirm('Delete this item?')) return;
-    setSections(prev => {
-      const next = prev.map(p => {
-        if (p.id !== parentId) return p;
-        return {
-          ...p,
-          children: (p.children || []).map(c => {
-            if (c.id !== childId) return c;
-            return {
-              ...c,
-              grandchildren: (c.grandchildren || []).map(g => {
-                if (g.id !== grandchildId) return g;
-                return { ...g, greatchildren: (g.greatchildren || []).filter(h => h.id !== greatId) };
-              })
-            };
-          })
-        };
-      });
-      // collapse if none left
-      const parent = next.find(p => p.id === parentId);
-      const child = parent && (parent.children || []).find(c => c.id === childId);
-      const grand = child && (child.grandchildren || []).find(g => g.id === grandchildId);
-      if (!grand || !grand.greatchildren || grand.greatchildren.length === 0) {
-        setExpandedIds(prevSet => {
-          const copy = new Set(prevSet);
-          copy.delete(grandchildId);
-          return copy;
-        });
-      }
-      return next;
-    });
-    setMenuOpenId(null);
-  };
-
-  // Drag handlers for native drag-and-drop (typed ids)
-  const handleDragStart = (e, typedId) => {
-    setDraggingId(typedId);
-    e.dataTransfer.effectAllowed = "move";
-    try { e.dataTransfer.setData("text/plain", typedId); } catch (err) { /* IE fallback */ }
-  };
-
-  const handleDragOver = (e, typedId) => {
-    e.preventDefault();
-    setDragOverId(typedId);
-  };
-
-  const handleDrop = (e, typedTargetId) => {
-    e.preventDefault();
-    const fromTyped = draggingId || e.dataTransfer.getData("text/plain");
-    const toTyped = typedTargetId;
-    if (!fromTyped) return;
-    if (fromTyped === toTyped) {
-      setDraggingId(null);
-      setDragOverId(null);
-      return;
-    }
-
-    // parse typed ids
-    const parse = (t) => t.split(":");
-    const fromParts = parse(fromTyped);
-    const toParts = parse(toTyped);
-
-    // Parent reordering: fromParts[0] === 'p'
-    if (fromParts[0] === 'p' && toParts[0] === 'p') {
-      const fromId = fromParts[1];
-      const toId = toParts[1];
-      setSections((prev) => {
-        const copy = [...prev];
-        const fromIndex = copy.findIndex((s) => s.id === fromId);
-        const toIndex = copy.findIndex((s) => s.id === toId);
-        if (fromIndex === -1 || toIndex === -1) return prev;
-        const [moved] = copy.splice(fromIndex, 1);
-        copy.splice(toIndex, 0, moved);
-        return copy;
-      });
-    }
-
-    // Child moved to child position
-    if (fromParts[0] === 'c' && toParts[0] === 'c') {
-      const fromParent = fromParts[1];
-      const fromChild = fromParts[2];
-      const toParent = toParts[1];
-      const toChild = toParts[2];
-
-      setSections((prev) => {
-        const copy = prev.map(p => ({ ...p, children: p.children ? [...p.children] : [] }));
-        const fp = copy.find(p => p.id === fromParent);
-        const tp = copy.find(p => p.id === toParent);
-        if (!fp || !tp) return prev;
-        const fromIndex = fp.children.findIndex(c => c.id === fromChild);
-        const toIndex = tp.children.findIndex(c => c.id === toChild);
-        if (fromIndex === -1 || toIndex === -1) return prev;
-        const [moved] = fp.children.splice(fromIndex, 1);
-        // if same parent and removal shifted index, adjust
-        if (fp.id === tp.id && fromIndex < toIndex) {
-          tp.children.splice(toIndex, 0, moved);
-        } else {
-          tp.children.splice(toIndex, 0, moved);
-        }
-        return copy;
-      });
-    }
-
-    // Child -> Parent (append child to target parent's children)
-    if (fromParts[0] === 'c' && toParts[0] === 'p') {
-      const fromParent = fromParts[1];
-      const fromChild = fromParts[2];
-      const toParent = toParts[1];
-      setSections((prev) => {
-        const copy = prev.map(p => ({ ...p, children: p.children ? [...p.children] : [] }));
-        const fp = copy.find(p => p.id === fromParent);
-        const tp = copy.find(p => p.id === toParent);
-        if (!fp || !tp) return prev;
-        const fromIndex = fp.children.findIndex(c => c.id === fromChild);
-        if (fromIndex === -1) return prev;
-        const [moved] = fp.children.splice(fromIndex, 1);
-        tp.children.push(moved);
-        return copy;
-      });
-    }
-
-    // Grandchild moved to grandchild position
-    if (fromParts[0] === 'g' && toParts[0] === 'g') {
-      const fromParent = fromParts[1];
-      const fromChild = fromParts[2];
-      const fromGrand = fromParts[3];
-      const toParent = toParts[1];
-      const toChild = toParts[2];
-      const toGrand = toParts[3];
-
-      setSections((prev) => {
-        const copy = prev.map(p => ({
-          ...p,
-          children: (p.children || []).map(c => ({ ...c, grandchildren: c.grandchildren ? [...c.grandchildren] : [] }))
-        }));
-        const fp = copy.find(p => p.id === fromParent);
-        const fc = fp && (fp.children || []).find(c => c.id === fromChild);
-        const tp = copy.find(p => p.id === toParent);
-        const tc = tp && (tp.children || []).find(c => c.id === toChild);
-        if (!fp || !fc || !tp || !tc) return prev;
-        const fromIndex = fc.grandchildren.findIndex(g => g.id === fromGrand);
-        const toIndex = tc.grandchildren.findIndex(g => g.id === toGrand);
-        if (fromIndex === -1 || toIndex === -1) return prev;
-        const [moved] = fc.grandchildren.splice(fromIndex, 1);
-        if (fc.id === tc.id && fromIndex < toIndex) {
-          tc.grandchildren.splice(toIndex, 0, moved);
-        } else {
-          tc.grandchildren.splice(toIndex, 0, moved);
-        }
-        return copy;
-      });
-    }
-
-    // Grandchild -> Child (move grandchild to another child's grandchildren list)
-    if (fromParts[0] === 'g' && toParts[0] === 'c') {
-      const fromParent = fromParts[1];
-      const fromChild = fromParts[2];
-      const fromGrand = fromParts[3];
-      const toParent = toParts[1];
-      const toChild = toParts[2];
-
-      setSections((prev) => {
-        const copy = prev.map(p => ({
-          ...p,
-          children: (p.children || []).map(c => ({ ...c, grandchildren: c.grandchildren ? [...c.grandchildren] : [] }))
-        }));
-        const fp = copy.find(p => p.id === fromParent);
-        const fc = fp && (fp.children || []).find(c => c.id === fromChild);
-        const tp = copy.find(p => p.id === toParent);
-        const tc = tp && (tp.children || []).find(c => c.id === toChild);
-        if (!fp || !fc || !tp || !tc) return prev;
-        const fromIndex = fc.grandchildren.findIndex(g => g.id === fromGrand);
-        if (fromIndex === -1) return prev;
-        const [moved] = fc.grandchildren.splice(fromIndex, 1);
-        tc.grandchildren.push(moved);
-        return copy;
-      });
-    }
-
-    // Parent -> Child: ignore (not supported)
-
-    setDraggingId(null);
-    setDragOverId(null);
-  };
-
-  const handleDragEnd = () => {
-    setDraggingId(null);
-    setDragOverId(null);
-  };
-
-  // Close menu on outside click
-  useEffect(() => {
-    const onDocClick = (e) => {
-      if (!containerRef.current) return;
-      if (!containerRef.current.contains(e.target)) {
-        setMenuOpenId(null);
-      }
-    };
-    document.addEventListener("click", onDocClick);
-    return () => document.removeEventListener("click", onDocClick);
-  }, []);
-
-  // ---------- RENDER ----------
   return (
-    <div className="d-flex flex-column align-items-center justify-content-center vh-100 bg-light">
-      <div style={{ width: "520px" }} ref={containerRef}>
-        <div className="mt-4 mb-3 card shadow-sm">
-          <div className="card-body">
-            <div className="d-flex justify-content-between align-items-center mb-3">
-              <h6 className="mb-0 fw-bold">All Sections</h6>
-              <small className="text-muted">Manage syllabus structure</small>
-            </div>
-            {sections.length === 0 && <div className="text-muted mb-2 small">No sections yet. Click + to add one.</div>}
-            <ul className="list-group list-group-flush mt-1">
-              {sections.map((s) => (
-                <React.Fragment key={s.id}>
-                  {/* PARENT ROW */}
-                  <li
-                    className={`list-group-item d-flex justify-content-between align-items-center ${dragOverId === `p:${s.id}` ? 'bg-light' : ''}`}
-                    style={{ paddingLeft: '1rem' }}
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, `p:${s.id}`)}
-                    onDragOver={(e) => handleDragOver(e, `p:${s.id}`)}
-                    onDrop={(e) => handleDrop(e, `p:${s.id}`)}
-                    onDragEnd={handleDragEnd}
-                  >
-                    <div className="d-flex align-items-center gap-3">
-                      <FaGripVertical className="text-muted" />
-                      <span
-                        style={{ display: 'inline-block', cursor: 'pointer' }}
-                        onClick={(e) => { e.stopPropagation(); toggleExpand(s.id); setMenuOpenId(null); }}
-                        title={expandedIds.has(s.id) ? 'Hide syllabus' : 'Show syllabus'}
-                      >
-                        {s.name}
-                      </span>
-                    </div>
+    <div
+      ref={(node) => drag(drop(node))}
+      style={{
+        opacity: isDragging ? 0.5 : 1,
+        cursor: 'move'
+      }}
+    >
+      {children}
+    </div>
+  );
+};
 
-                    {/* Ellipsis menu button */}
-                    <div>
-                      <button
-                        className="btn btn-sm btn-light border rounded-circle"
-                        onClick={(e) => { e.stopPropagation(); setMenuOpenId(menuOpenId === `p:${s.id}` ? null : `p:${s.id}`); }}
-                        aria-haspopup="true"
-                        aria-expanded={menuOpenId === `p:${s.id}`}
-                      >
-                        <FaEllipsisV />
-                      </button>
+// Draggable Course Item Component
+const DraggableCourseItem = ({
+  item,
+  sectionId,
+  index,
+  moveItem,
+  isPublished,
+  onTogglePublish,
+  onToggleMenu,
+  onEdit,
+  onDelete,
+  openMenuId
+}) => {
+  const [{ isDragging }, drag] = useDrag({
+    type: ItemTypes.COURSE_ITEM,
+    item: {
+      id: item.id,
+      sectionId: sectionId,
+      index,
+      type: item.type,
+      title: item.title
+    },
+    collect: (monitor) => ({
+      isDragging: monitor.isDragging(),
+    }),
+  });
 
-                      {menuOpenId === `p:${s.id}` && (
-                        <div className="card position-absolute shadow-sm" style={{ right: 0, top: "120%", zIndex: 60, minWidth: 180 }}>
-                          <div className="card-body p-2">
-                            <button className="btn btn-sm btn-outline-info w-100 mb-2" onClick={() => { toggleExpand(s.id); setMenuOpenId(null); }}>{expandedIds.has(s.id) ? 'Hide Syllabus' : 'Show Syllabus'}</button>
-                            <button className="btn btn-sm btn-outline-primary w-100 mb-2" onClick={() => { openAddChild(s.id); setMenuOpenId(null); }}>Add Syllabus</button>
-                            <button className="btn btn-sm btn-outline-secondary w-100 mb-2" onClick={() => { handleEdit(s.id); setMenuOpenId(null); }}>Edit</button>
-                            <button className="btn btn-sm btn-outline-danger w-100" onClick={() => { handleDelete(s.id); setMenuOpenId(null); }}>Delete</button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </li>
+  const [, drop] = useDrop({
+    accept: ItemTypes.COURSE_ITEM,
+    hover: (draggedItem) => {
+      if (draggedItem.id !== item.id && draggedItem.sectionId === sectionId) {
+        moveItem(draggedItem.index, index, sectionId);
+        draggedItem.index = index;
+      }
+    },
+  });
 
-                  {/* INLINE FORM: parent edit OR add-child (renders inside the parent area) */}
-                  {showForm && (editingId === s.id || parentForAdd === s.id) && (
-                    <li className="list-group-item" style={{ paddingLeft: '1.5rem', background: '#fbfbfb' }}>
-                      <div className="d-flex flex-column w-100">
-                        <label className="form-label small mb-1">{editingId === s.id ? 'Edit Section' : 'Add Syllabus Item'}</label>
-                        <input
-                          type="text"
-                          className="form-control mb-2"
-                          value={inputValue}
-                          onChange={(e) => setInputValue(e.target.value)}
-                          placeholder={editingId === s.id ? 'Section name' : 'Syllabus item name'}
-                        />
-                        {error && <div className="text-danger small mb-2">{error}</div>}
-                        <div className="d-flex gap-2">
-                          <button className="btn btn-sm btn-primary" onClick={handleSave}>{editingId === s.id ? 'Update' : 'Create'}</button>
-                          <button className="btn btn-sm btn-outline-secondary" onClick={cancelInline}>Cancel</button>
-                        </div>
-                      </div>
-                    </li>
-                  )}
-
-                  {/* CHILDREN */}
-                  {expandedIds.has(s.id) && (s.children || []).map(c => (
-                    <React.Fragment key={c.id}>
-                      <li
-                        className={`list-group-item syllabus-item d-flex justify-content-between align-items-center mb-2 position-relative ${dragOverId === `c:${s.id}:${c.id}` ? 'bg-light' : ''}`}
-                        style={{ paddingLeft: '2.5rem', borderLeft: '2px solid rgba(0,0,0,0.04)' }}
-                        draggable
-                        onDragStart={(e) => handleDragStart(e, `c:${s.id}:${c.id}`)}
-                        onDragOver={(e) => handleDragOver(e, `c:${s.id}:${c.id}`)}
-                        onDrop={(e) => handleDrop(e, `c:${s.id}:${c.id}`)}
-                        onDragEnd={handleDragEnd}
-                      >
-                        <div
-                          className="d-flex align-items-center gap-3"
-                          onClick={(e) => { e.stopPropagation(); toggleExpand(c.id); setMenuOpenId(null); }}
-                          style={{ cursor: 'pointer' }}
-                          title={expandedIds.has(c.id) ? 'Hide subtopics' : 'Show subtopics'}
-                        >
-                          <FaGripVertical className="text-muted" />
-                          <span>{c.name}</span>
-                        </div>
-                        <div>
-                          <button
-                            className="btn btn-sm btn-light border rounded-circle"
-                            onClick={(e) => { e.stopPropagation(); setMenuOpenId(menuOpenId === `c:${s.id}:${c.id}` ? null : `c:${s.id}:${c.id}`); }}
-                            aria-haspopup="true"
-                            aria-expanded={menuOpenId === `c:${s.id}:${c.id}`}
-                          >
-                            <FaEllipsisV />
-                          </button>
-
-                          {menuOpenId === `c:${s.id}:${c.id}` && (
-                            <div className="card position-absolute shadow-sm" style={{ right: 0, top: "110%", zIndex: 60, minWidth: 180 }}>
-                              <div className="card-body p-2">
-                                <button className="btn btn-sm btn-outline-info w-100 mb-2" onClick={() => { toggleExpand(c.id); setMenuOpenId(null); }}>{expandedIds.has(c.id) ? 'Hide Subtopics' : 'Show Subtopics'}</button>
-                                <button className="btn btn-sm btn-outline-primary w-100 mb-2" onClick={() => { openAddGrandChild(s.id, c.id); setMenuOpenId(null); }}>Add Sub-Item</button>
-                                <button className="btn btn-sm btn-outline-secondary w-100 mb-2" onClick={() => { handleEditChild(s.id, c.id); setMenuOpenId(null); }}>Edit</button>
-                                <button className="btn btn-sm btn-outline-danger w-100" onClick={() => { handleDeleteChild(s.id, c.id); setMenuOpenId(null); }}>Delete</button>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </li>
-
-                      {/* INLINE FORM: child edit OR add-grandchild (renders inside the child area) */}
-                      {showForm && ((parentForGrandChild && parentForGrandChild.parentId === s.id && parentForGrandChild.childId === c.id) || (parentForAdd === s.id && editingChildId === c.id)) && (
-                        <li className="list-group-item" style={{ paddingLeft: '2.8rem', background: '#fbfbfb' }}>
-                          <div className="d-flex flex-column w-100">
-                            <label className="form-label small mb-1">{(parentForAdd === s.id && editingChildId === c.id) ? 'Edit Syllabus Item' : 'Add Subtopic'}</label>
-                            <input
-                              type="text"
-                              className="form-control mb-2"
-                              value={inputValue}
-                              onChange={(e) => setInputValue(e.target.value)}
-                              placeholder={(parentForAdd === s.id && editingChildId === c.id) ? 'Syllabus item name' : 'Subtopic name'}
-                            />
-                            {error && <div className="text-danger small mb-2">{error}</div>}
-                            <div className="d-flex gap-2">
-                              <button className="btn btn-sm btn-primary" onClick={handleSave}>{(parentForAdd === s.id && editingChildId === c.id) ? 'Update' : 'Create'}</button>
-                              <button className="btn btn-sm btn-outline-secondary" onClick={cancelInline}>Cancel</button>
-                            </div>
-                          </div>
-                        </li>
-                      )}
-
-                      {/* GRANDCHILDREN */}
-                      {expandedIds.has(c.id) && (c.grandchildren || []).map(g => (
-                        <React.Fragment key={g.id}>
-                          <li
-                            className={`list-group-item syllabus-item d-flex justify-content-between align-items-center mb-2 position-relative ${dragOverId === `g:${s.id}:${c.id}:${g.id}` ? 'bg-light' : ''}`}
-                            style={{ paddingLeft: '4.5rem', borderLeft: '2px dashed rgba(0,0,0,0.03)' }}
-                            draggable
-                            onDragStart={(e) => handleDragStart(e, `g:${s.id}:${c.id}:${g.id}`)}
-                            onDragOver={(e) => handleDragOver(e, `g:${s.id}:${c.id}:${g.id}`)}
-                            onDrop={(e) => handleDrop(e, `g:${s.id}:${c.id}:${g.id}`)}
-                            onDragEnd={handleDragEnd}
-                          >
-                            <div
-                              className="d-flex align-items-center gap-3"
-                              onClick={(e) => { e.stopPropagation(); toggleExpand(g.id); setMenuOpenId(null); }}
-                              style={{ cursor: 'pointer' }}
-                              title={expandedIds.has(g.id) ? 'Hide concepts' : 'Show concepts'}
-                            >
-                              <FaGripVertical className="text-muted" />
-                              <span>{g.name}</span>
-                            </div>
-                            <div>
-                              <button
-                                className="btn btn-sm btn-light border rounded-circle"
-                                onClick={(e) => { e.stopPropagation(); setMenuOpenId(menuOpenId === `g:${s.id}:${c.id}:${g.id}` ? null : `g:${s.id}:${c.id}:${g.id}`); }}
-                                aria-haspopup="true"
-                                aria-expanded={menuOpenId === `g:${s.id}:${c.id}:${g.id}`}
-                              >
-                                <FaEllipsisV />
-                              </button>
-
-                              {menuOpenId === `g:${s.id}:${c.id}:${g.id}` && (
-                                <div className="card position-absolute shadow-sm" style={{ right: 0, top: "110%", zIndex: 60, minWidth: 180 }}>
-                                  <div className="card-body p-2">
-                                    <button className="btn btn-sm btn-outline-info w-100 mb-2" onClick={() => { toggleExpand(g.id); setMenuOpenId(null); }}>{expandedIds.has(g.id) ? 'Hide Concepts' : 'Show Concepts'}</button>
-                                    <button className="btn btn-sm btn-outline-primary w-100 mb-2" onClick={() => { openAddGreatChild(s.id, c.id, g.id); setMenuOpenId(null); }}>Add Sub-Item</button>
-                                    <button className="btn btn-sm btn-outline-secondary w-100 mb-2" onClick={() => { openEditGrandChild(s.id, c.id, g.id); setMenuOpenId(null); }}>Edit</button>
-                                    <button className="btn btn-sm btn-outline-danger w-100" onClick={() => { handleDeleteGrandChild(s.id, c.id, g.id); setMenuOpenId(null); }}>Delete</button>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          </li>
-
-                          {/* INLINE FORM: grandchild edit OR add-greatchild (renders under grandchild) */}
-                          {showForm && ((parentForGreatChild && parentForGreatChild.parentId === s.id && parentForGreatChild.childId === c.id && parentForGreatChild.grandchildId === g.id) || (parentForGrandChild && parentForGrandChild.parentId === s.id && parentForGrandChild.childId === c.id && editingGrandchildId === g.id)) && (
-                            <li className="list-group-item" style={{ paddingLeft: '4.8rem', background: '#fbfbfb' }}>
-                              <div className="d-flex flex-column w-100">
-                                <label className="form-label small mb-1">{(parentForGrandChild && editingGrandchildId === g.id) ? 'Edit Subtopic' : 'Add Concept'}</label>
-                                <input
-                                  type="text"
-                                  className="form-control mb-2"
-                                  value={inputValue}
-                                  onChange={(e) => setInputValue(e.target.value)}
-                                  placeholder={(parentForGrandChild && editingGrandchildId === g.id) ? 'Subtopic name' : 'Concept name'}
-                                />
-                                {error && <div className="text-danger small mb-2">{error}</div>}
-                                <div className="d-flex gap-2">
-                                  <button className="btn btn-sm btn-primary" onClick={handleSave}>{(parentForGrandChild && editingGrandchildId === g.id) ? 'Update' : 'Create'}</button>
-                                  <button className="btn btn-sm btn-outline-secondary" onClick={cancelInline}>Cancel</button>
-                                </div>
-                              </div>
-                            </li>
-                          )}
-
-                          {/* GREAT-GRANDCHILDREN (level 4) */}
-                          {expandedIds.has(g.id) && (g.greatchildren || []).map(h => (
-                            <React.Fragment key={h.id}>
-                              <li
-                                key={h.id}
-                                className={`list-group-item d-flex justify-content-between align-items-center mb-2 position-relative`}
-                                style={{ paddingLeft: '6rem', borderLeft: '1px solid rgba(0,0,0,0.02)' }}
-                              >
-                                <div
-                                  className="d-flex align-items-center gap-3"
-                                  onClick={(e) => { e.stopPropagation(); /* leaf level - no expand */ setMenuOpenId(null); }}
-                                  style={{ cursor: 'pointer' }}
-                                  title="Concept"
-                                >
-                                  <FaGripVertical className="text-muted" />
-                                  <span>{h.name}</span>
-                                </div>
-                                <div>
-                                  <button
-                                    className="btn btn-sm btn-light border rounded-circle"
-                                    onClick={(e) => { e.stopPropagation(); setMenuOpenId(menuOpenId === `h:${s.id}:${c.id}:${g.id}:${h.id}` ? null : `h:${s.id}:${c.id}:${g.id}:${h.id}`); }}
-                                    aria-haspopup="true"
-                                    aria-expanded={menuOpenId === `h:${s.id}:${c.id}:${g.id}:${h.id}`}
-                                  >
-                                    <FaEllipsisV />
-                                  </button>
-
-                                  {menuOpenId === `h:${s.id}:${c.id}:${g.id}:${h.id}` && (
-                                    <div className="card position-absolute shadow-sm" style={{ right: 0, top: "110%", zIndex: 60, minWidth: 180 }}>
-                                      <div className="card-body p-2">
-                                        <button className="btn btn-sm btn-outline-primary w-100 mb-2" onClick={() => { duplicateGreatChild(s.id, c.id, g.id, h.id); }}>Duplicate</button>
-                                        <button className="btn btn-sm btn-outline-secondary w-100 mb-2" onClick={() => { openEditGreatChild(s.id, c.id, g.id, h.id); setMenuOpenId(null); }}>Edit</button>
-                                        <button className="btn btn-sm btn-outline-danger w-100" onClick={() => { handleDeleteGreatChild(s.id, c.id, g.id, h.id); setMenuOpenId(null); }}>Delete</button>
-                                      </div>
-                                    </div>
-                                  )}
-                                </div>
-                              </li>
-
-                              {/* INLINE FORM: edit great-child (renders under grandchild when editing a greatchild) */}
-                              {showForm && parentForGreatChild && parentForGreatChild.parentId === s.id && parentForGreatChild.childId === c.id && parentForGreatChild.grandchildId === g.id && editingGreatchildId === h.id && (
-                                <li className="list-group-item" style={{ paddingLeft: '6.2rem', background: '#fbfbfb' }}>
-                                  <div className="d-flex flex-column w-100">
-                                    <label className="form-label small mb-1">Edit Concept</label>
-                                    <input
-                                      type="text"
-                                      className="form-control mb-2"
-                                      value={inputValue}
-                                      onChange={(e) => setInputValue(e.target.value)}
-                                      placeholder="Concept name"
-                                    />
-                                    {error && <div className="text-danger small mb-2">{error}</div>}
-                                    <div className="d-flex gap-2">
-                                      <button className="btn btn-sm btn-primary" onClick={handleSave}>Update</button>
-                                      <button className="btn btn-sm btn-outline-secondary" onClick={cancelInline}>Cancel</button>
-                                    </div>
-                                  </div>
-                                </li>
-                              )}
-                            </React.Fragment>
-                          ))}
-                        </React.Fragment>
-                      ))}
-
-                    </React.Fragment>
-                  ))}
-
-                </React.Fragment>
-              ))}
-            </ul>
-          </div>
+  return (
+    <div
+      ref={(node) => drag(drop(node))}
+      style={{
+        opacity: isDragging ? 0.5 : 1,
+      }}
+      className="d-flex align-items-center justify-content-between p-3 position-relative"
+    >
+      <div className="d-flex align-items-center gap-3 ms-4 flex-grow-1">
+        <FaGripVertical className="text-muted fs-6 cursor-grab" style={{ cursor: 'grab' }} />
+        
+        {/* Dynamic icon based on content type */}
+        {getContentIcon(item.type, isPublished)}
+        
+        <div className="flex-grow-1">
+          <span className="text-muted small">{item.type}:</span>
+          <span className="ms-1 fw-medium">{item.title}</span>
         </div>
-
-        {/* Outer box (Add new section) */}
-        <div className="mt-4 d-flex justify-content-center">
-          <div className="d-flex flex-column align-items-center">
-            <div
-              onClick={openAdd}
-              role="button"
-              title="Add Section"
-              className="bg-primary rounded d-flex align-items-center justify-content-center"
-              style={{ width: '100px', height: '100px', cursor: 'pointer' }}
-            >
-              <FaPlus size={48} className="text-white" />
-            </div>
-            <div className="small text-muted mt-2">Add Section</div>
-          </div>
-        </div>
-
-        {/* Global Form shown below the box (used for top-level add/edit only) */}
-        {showForm && !parentForAdd && !parentForGrandChild && !parentForGreatChild && (
-          <div className="card p-3 mt-4 shadow" style={{ width: "420px" }}>
-            <div className="d-flex justify-content-between align-items-center mb-2">
-              <h6 className="mb-0">{editingId ? 'Edit Section' : 'Add Section'}</h6>
-              <div className="small-muted small">Click a label to open its items</div>
-            </div>
-
-            <label className="form-label mt-2">Name</label>
-            <input
-              type="text"
-              className="form-control mb-2"
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              placeholder="Enter section name"
-            />
-            {error && <div className="text-danger small mb-2">{error}</div>}
-
-            <div className="d-flex gap-2">
-              <button className="btn btn-primary flex-grow-1" onClick={handleSave}>{editingId ? 'Update' : 'Create'}</button>
-              <button className="btn btn-outline-secondary" onClick={cancelInline}>
-                Cancel
-              </button>
-            </div>
-          </div>
+      </div>
+      <div className="d-flex align-items-center gap-3">
+        {!isPublished && (
+          <FaEyeSlash className="text-muted fs-6" />
         )}
+        <button
+          className={`btn px-4 ${isPublished ? 'btn-outline-secondary' : 'btn-primary'}`}
+          onClick={() => onTogglePublish(item.id)}
+        >
+          {isPublished ? 'Unpublish' : 'Publish'}
+        </button>
+
+        {/* Three dots menu button */}
+        <div className="position-relative">
+          <button
+            className="btn btn-sm btn-outline-secondary border-0"
+            onClick={() => onToggleMenu(item.id)}
+          >
+            <FiMoreVertical className="text-muted fs-3" />
+          </button>
+
+          {/* Dropdown menu   */}
+          {openMenuId === item.id && (
+            <div className="card position-absolute shadow-sm border-0" style={{ right: 0, top: '100%', zIndex: 1000, minWidth: '220px' }}>
+              <div className="card-body p-0">
+                <table className="table table-borderless mb-0">
+                  <tbody>
+                    <tr>
+                      <td className="p-0 border-bottom">
+                        <button
+                          className="btn btn-sm w-100 text-start px-3 py-2 border-0 text-danger"
+                          onClick={() => onDelete(item.id, sectionId)}
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+
+                    <tr>
+                      <td className="p-0 border-bottom">
+                        <button
+                          className="btn btn-sm w-100 text-start px-3 py-2 border-0"
+                          onClick={() => onEdit(item, sectionId)}
+                        >
+                          Edit
+                        </button>
+                      </td>
+                    </tr>
+
+                    <tr>
+                      <td className="p-0 border-bottom">
+                        <button className="btn btn-sm w-100 text-start px-3 py-2 border-0">
+                          Modify availability
+                        </button>
+                      </td>
+                    </tr>
+
+                    <tr>
+                      <td className="p-0 border-bottom">
+                        <button className="btn btn-sm w-100 text-start px-3 py-2 border-0">
+                          Enable free preview
+                        </button>
+                      </td>
+                    </tr>
+
+                    <tr>
+                      <td className="p-0 border-bottom">
+                        <button className="btn btn-sm w-100 text-start px-3 py-2 border-0">
+                          Attach a resource
+                        </button>
+                      </td>
+                    </tr>
+
+                    <tr>
+                      <td className="p-0">
+                        <button className="btn btn-sm w-100 text-start px-3 py-2 border-0">
+                          Manage tags
+                        </button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
-}
+};
+
+// Add Item Component
+const AddItemButton = ({ onClick }) => {
+  return (
+    <div className="p-3 ms-4">
+      <button
+        className="btn btn-sm border-0 text-primary p-0 d-flex align-items-center gap-1"
+        onClick={onClick}
+      >
+        <FaPlus className="fs-6" />
+        Add in this section
+      </button>
+    </div>
+  );
+};
+
+const Syllabus = () => {
+  const [showModal, setShowModal] = useState(false);
+  const [sectionName, setSectionName] = useState('');
+  const [sections, setSections] = useState([]);
+  const [publishedItems, setPublishedItems] = useState(new Set());
+  const [openMenuId, setOpenMenuId] = useState(null);
+  const [editingSectionId, setEditingSectionId] = useState(null);
+  const [editingSectionName, setEditingSectionName] = useState('');
+  const [currentView, setCurrentView] = useState('syllabus');
+  const [editingItem, setEditingItem] = useState(null);
+  const [showContentTypeModal, setShowContentTypeModal] = useState(false);
+  const [selectedSectionId, setSelectedSectionId] = useState(null);
+
+  // Move section function for drag and drop
+  const moveSection = (fromIndex, toIndex) => {
+    setSections(prevSections => {
+      const updatedSections = [...prevSections];
+      const [movedSection] = updatedSections.splice(fromIndex, 1);
+      updatedSections.splice(toIndex, 0, movedSection);
+      return updatedSections;
+    });
+  };
+
+  // Move item within section function for drag and drop
+  const moveItem = (fromIndex, toIndex, sectionId) => {
+    setSections(prevSections => {
+      return prevSections.map(section => {
+        if (section.id === sectionId) {
+          const updatedItems = [...section.items];
+          const [movedItem] = updatedItems.splice(fromIndex, 1);
+          updatedItems.splice(toIndex, 0, movedItem);
+          return { ...section, items: updatedItems };
+        }
+        return section;
+      });
+    });
+  };
+
+  const handleSubmit = () => {
+    if (sectionName.trim()) {
+      const newSection = {
+        id: Date.now(),
+        name: sectionName,
+        items: [
+          {
+            id: Date.now() + 1,
+            type: 'Article',
+            title: 'Untitled article'
+          }
+        ]
+      };
+      setSections([...sections, newSection]);
+      setSectionName('');
+      setShowModal(false);
+    }
+  };
+
+  const addItemToSection = (sectionId) => {
+    setSelectedSectionId(sectionId);
+    setShowContentTypeModal(true);
+  };
+
+  const handleContentTypeSelect = (type) => {
+    if (selectedSectionId) {
+      setSections(sections.map(section =>
+        section.id === selectedSectionId
+          ? {
+            ...section,
+            items: [
+              ...section.items,
+              {
+                id: Date.now(),
+                type: type,
+                title: `Untitled ${type.toLowerCase()}`
+              }
+            ]
+          }
+          : section
+      ));
+    }
+    setSelectedSectionId(null);
+  };
+
+  const togglePublish = (itemId) => {
+    setPublishedItems(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(itemId)) {
+        newSet.delete(itemId);
+      } else {
+        newSet.add(itemId);
+      }
+      return newSet;
+    });
+  };
+
+  const toggleMenu = (itemId) => {
+    setOpenMenuId(openMenuId === itemId ? null : itemId);
+  };
+
+  const handleDelete = (itemId, sectionId) => {
+    if (window.confirm('Are you sure you want to delete this item?')) {
+      setSections(prevSections => {
+        // First, remove the item from the section
+        const updatedSections = prevSections.map(section =>
+          section.id === sectionId
+            ? {
+              ...section,
+              items: section.items.filter(item => item.id !== itemId)
+            }
+            : section
+        );
+
+        // Then, check if the section is empty and remove it if needed
+        const sectionToCheck = updatedSections.find(s => s.id === sectionId);
+        if (sectionToCheck && sectionToCheck.items.length === 0) {
+          // Remove the empty section
+          return updatedSections.filter(section => section.id !== sectionId);
+        }
+
+        return updatedSections;
+      });
+      setOpenMenuId(null);
+    }
+  };
+
+  const handleEdit = (item, sectionId) => {
+    setEditingItem({ ...item, sectionId });
+    setCurrentView('edit');
+    setOpenMenuId(null);
+  };
+
+  const handleSaveArticle = (updatedItem) => {
+    setSections(sections.map(section =>
+      section.id === updatedItem.sectionId
+        ? {
+          ...section,
+          items: section.items.map(item =>
+            item.id === updatedItem.id ? updatedItem : item
+          )
+        }
+        : section
+    ));
+    setCurrentView('syllabus');
+    setEditingItem(null);
+  };
+
+  const handleGoBack = () => {
+    setCurrentView('syllabus');
+    setEditingItem(null);
+  };
+
+  // Start editing section name
+  const startEditingSection = (sectionId, currentName) => {
+    setEditingSectionId(sectionId);
+    setEditingSectionName(currentName);
+  };
+
+  // Save edited section name
+  const saveSectionName = (sectionId) => {
+    if (editingSectionName.trim()) {
+      setSections(sections.map(section =>
+        section.id === sectionId
+          ? { ...section, name: editingSectionName.trim() }
+          : section
+      ));
+    }
+    setEditingSectionId(null);
+    setEditingSectionName('');
+  };
+
+  // Cancel editing
+  const cancelEditingSection = () => {
+    setEditingSectionId(null);
+    setEditingSectionName('');
+  };
+
+  // Handle Enter key press in edit input
+  const handleKeyPress = (e, sectionId) => {
+    if (e.key === 'Enter') {
+      saveSectionName(sectionId);
+    } else if (e.key === 'Escape') {
+      cancelEditingSection();
+    }
+  };
+
+  // Render the appropriate view
+  if (currentView === 'edit' && editingItem) {
+    return (
+      <EditArticle
+        item={editingItem}
+        onSave={handleSaveArticle}
+        onGoBack={handleGoBack}
+      />
+    );
+  }
+
+  return (
+    <DndProvider backend={HTML5Backend}>
+      <div className="container-fluid bg-light min-vh-100 p-4">
+        <div className="container">
+          {/* Header */}
+          <div className="mb-4">
+            <h1 className="h2 fw-bold text-dark">Manage your syllabus</h1>
+            <p className="text-muted mb-0">
+              Program your recorded schedule. Add live events, coding labs, video lessons, and more
+            </p>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="d-flex justify-content-end mb-5">
+            <div className="d-flex gap-2">
+              <button className="btn btn-outline-secondary">
+                Bulk import items from CSV
+              </button>
+              <button className="btn btn-outline-secondary">
+                Preview your course as student
+              </button>
+            </div>
+          </div>
+
+          {/* Sections */}
+          {sections.length > 0 ? (
+            <div className="sections-container">
+              {sections.map((section, index) => (
+                <DraggableSection
+                  key={section.id}
+                  section={section}
+                  index={index}
+                  moveSection={moveSection}
+                >
+                  <div className="mb-4">
+                    {/* Section Header */}
+                    <div className="d-flex align-items-center justify-content-between bg-white p-3 border rounded-top">
+                      <div className="d-flex align-items-center gap-3">
+                        <div className="d-flex align-items-center gap-2">
+                          <FaGripVertical className="text-muted fs-6 cursor-grab" style={{ cursor: 'grab' }} />
+                          <i className="bi bi-chevron-down text-muted"></i>
+
+                          {/* Section Name - Display or Edit Mode */}
+                          {editingSectionId === section.id ? (
+                            <div className="d-flex align-items-center gap-2">
+                              <input
+                                type="text"
+                                className="form-control form-control-sm"
+                                value={editingSectionName}
+                                onChange={(e) => setEditingSectionName(e.target.value)}
+                                onKeyPress={(e) => handleKeyPress(e, section.id)}
+                                onBlur={() => saveSectionName(section.id)}
+                                autoFocus
+                                style={{ width: '200px' }}
+                              />
+                              <button
+                                className="btn btn-success btn-sm"
+                                onClick={() => saveSectionName(section.id)}
+                              >
+                                Save
+                              </button>
+                              <button
+                                className="btn btn-outline-secondary btn-sm"
+                                onClick={cancelEditingSection}
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          ) : (
+                            <h5 className="mb-0 fw-bold">{section.name}</h5>
+                          )}
+
+                          {/* Edit Icon - Only show when not in edit mode */}
+                          {editingSectionId !== section.id && (
+                            <MdOutlineEditNote
+                              className="text-muted fs-3 cursor-pointer"
+                              style={{ cursor: 'pointer' }}
+                              onClick={() => startEditingSection(section.id, section.name)}
+                              title="Edit section name"
+                            />
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Section Items */}
+                    <div className="bg-white border border-top-0 rounded-bottom">
+                      {section.items.map((item, itemIndex) => {
+                        const isPublished = publishedItems.has(item.id);
+
+                        return (
+                          <DraggableCourseItem
+                            key={item.id}
+                            item={item}
+                            sectionId={section.id}
+                            index={itemIndex}
+                            moveItem={moveItem}
+                            isPublished={isPublished}
+                            onTogglePublish={togglePublish}
+                            onToggleMenu={toggleMenu}
+                            onEdit={handleEdit}
+                            onDelete={handleDelete}
+                            openMenuId={openMenuId}
+                          />
+                        );
+                      })}
+
+                      {/* Add Item Button */}
+                      <AddItemButton onClick={() => addItemToSection(section.id)} />
+                    </div>
+                  </div>
+                </DraggableSection>
+              ))}
+
+              {/* Add New Section Button */}
+              <div className="text-center mt-4">
+                <div
+                  className="bg-white border border-dashed rounded p-4"
+                  style={{ cursor: 'pointer' }}
+                  onClick={() => setShowModal(true)}
+                >
+                  <svg
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    className="text-muted mb-2"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="1"
+                      d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                    />
+                  </svg>
+                  <p className="text-muted mb-0 small">Add a new section here</p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            /* Empty State */
+            <div className="text-center py-5">
+              <div
+                className="bg-white border border-dashed rounded p-5"
+                style={{ cursor: 'pointer' }}
+                onClick={() => setShowModal(true)}
+              >
+                <svg
+                  width="48"
+                  height="48"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  className="text-muted mb-3"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="1"
+                    d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                  />
+                </svg>
+                <p className="text-muted mb-0">Your course has nothing. Add a course item to start.</p>
+              </div>
+            </div>
+          )}
+
+          {/* Modal for Adding Section */}
+          {showModal && (
+            <div className="modal show d-block" tabIndex="-1">
+              <div className="modal-dialog modal-dialog-centered">
+                <div className="modal-content">
+                  <div className="modal-body">
+                    <div className="mb-4">
+                      <h6 className="fw-bold">Enter section name</h6>
+                      <p className="text-muted small mb-2">
+                        Enter a name for your section. You can change it later
+                      </p>
+                      <input
+                        type="text"
+                        className="form-control"
+                        placeholder="Enter section name"
+                        value={sectionName}
+                        onChange={(e) => setSectionName(e.target.value)}
+                        onKeyPress={(e) => e.key === 'Enter' && handleSubmit()}
+                      />
+                    </div>
+
+                    <div className="d-flex justify-content-end gap-2 mt-4">
+                      <button
+                        className="btn btn-outline-secondary"
+                        onClick={() => {
+                          setShowModal(false);
+                          setSectionName('');
+                        }}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        className="btn btn-primary"
+                        onClick={handleSubmit}
+                        disabled={!sectionName.trim()}
+                      >
+                        Submit
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Content Type Selection Modal */}
+          <ContentTypeModal
+            show={showContentTypeModal}
+            onClose={() => setShowContentTypeModal(false)}
+            onSelectType={handleContentTypeSelect}
+          />
+
+          {/* Modal Backdrop for Section Modal */}
+          {showModal && <div className="modal-backdrop show"></div>}
+        </div>
+      </div>
+    </DndProvider>
+  );
+};
 
 export default Syllabus;

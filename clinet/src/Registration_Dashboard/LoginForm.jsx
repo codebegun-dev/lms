@@ -47,11 +47,9 @@ function LoginForm() {
 
       const roleName = user.role.trim().toUpperCase();
 
-      //  Save user to localStorage
-      localStorage.setItem("user", JSON.stringify(user));
+       localStorage.setItem("user", JSON.stringify(user));
 
-      //  If Master Admin, save masterAdminId separately
-      if (roleName === "MASTER_ADMIN") {
+       if (roleName === "MASTER_ADMIN") {
         localStorage.setItem("masterAdminId", user.userId);
       }
 
