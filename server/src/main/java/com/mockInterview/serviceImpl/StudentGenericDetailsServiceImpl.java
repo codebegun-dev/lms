@@ -3,6 +3,7 @@ package com.mockInterview.serviceImpl;
 import com.mockInterview.entity.StudentGenericDetails;
 import com.mockInterview.entity.User;
 import com.mockInterview.exception.ResourceNotFoundException;
+import com.mockInterview.exception.UnauthorizedActionException;
 import com.mockInterview.repository.StudentGenericDetailsRepository;
 import com.mockInterview.repository.UserRepository;
 import com.mockInterview.responseDtos.StudentGenericDetailsDto;
@@ -34,18 +35,24 @@ public class StudentGenericDetailsServiceImpl implements StudentGenericDetailsSe
     @Override
     public StudentGenericDetailsDto updateGenericDetails(StudentGenericDetailsDto dto) {
 
-        User user = userRepo.findById(dto.getUserId())
+        User currentUser = userRepo.findById(dto.getUserId())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + dto.getUserId()));
 
-        // ⭐ ROLE VALIDATION: allow STUDENT or MASTER_ADMIN
-        RoleValidator.validateStudentOrMasterAdmin(user);
+        // Prevent MASTER_ADMIN from creating/updating their own generic details
+        RoleValidator.preventMasterAdminGenericUpdate(currentUser);
+
+        // STUDENT can update their own details, MASTER_ADMIN can update any student
+        if (!"MASTER_ADMIN".equalsIgnoreCase(currentUser.getRole().getName())) {
+            RoleValidator.validateStudentAccess(currentUser);
+        }
 
         StudentGenericDetails details = genericRepo.findByUser_UserId(dto.getUserId());
         if (details == null) {
             details = new StudentGenericDetails();
-            details.setUser(user);
+            details.setUser(currentUser);
         }
 
+        // Update all fields
         details.setWorkExperience(dto.getWorkExperience());
         details.setCareerGap(dto.getCareerGap());
         details.setCurrentState(dto.getCurrentState());
@@ -68,7 +75,7 @@ public class StudentGenericDetailsServiceImpl implements StudentGenericDetailsSe
     }
 
     @Override
-    public StudentGenericDetailsDto uploadDocument(Long userId, String documentType, MultipartFile file) {
+    public StudentGenericDetailsDto uploadDocument(Long userId, MultipartFile file) {
 
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("File cannot be empty");
@@ -77,30 +84,33 @@ public class StudentGenericDetailsServiceImpl implements StudentGenericDetailsSe
         User user = userRepo.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + userId));
 
-        // ⭐ ROLE VALIDATION
-        RoleValidator.validateStudentOrMasterAdmin(user);
+        // MASTER_ADMIN can upload only for students
+        if ("MASTER_ADMIN".equalsIgnoreCase(user.getRole().getName())) {
+            User targetUser = userRepo.findById(userId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Target student not found"));
+            if (!"STUDENT".equalsIgnoreCase(targetUser.getRole().getName())) {
+                throw new UnauthorizedActionException("MASTER_ADMIN can only update student documents");
+            }
+            user = targetUser; // save for the student
+        } else {
+            // STUDENT can upload only their own files
+            RoleValidator.validateStudentAccess(user);
+        }
 
-        StudentGenericDetails details = genericRepo.findByUser_UserId(userId);
+        StudentGenericDetails details = genericRepo.findByUser_UserId(user.getUserId());
         if (details == null) {
             details = new StudentGenericDetails();
             details.setUser(user);
         }
 
         try {
-            String savedPath = FileStorageUtil.saveStudentDocument(file, userId);
+            String savedPath = FileStorageUtil.saveStudentDocument(file, user.getUserId());
 
-            if ("adhaar".equalsIgnoreCase(documentType)) {
-                if (details.getAdhaarFilePath() != null)
-                    FileStorageUtil.deleteFile(details.getAdhaarFilePath());
-
+            // Decide which field to use
+            if (details.getAdhaarFilePath() == null || details.getAdhaarFilePath().isEmpty()) {
                 details.setAdhaarFilePath(savedPath);
-            } else if ("resume".equalsIgnoreCase(documentType)) {
-                if (details.getResumeFilePath() != null)
-                    FileStorageUtil.deleteFile(details.getResumeFilePath());
-
-                details.setResumeFilePath(savedPath);
             } else {
-                throw new IllegalArgumentException("Invalid document type (allowed: adhaar, resume)");
+                details.setResumeFilePath(savedPath);
             }
 
             genericRepo.save(details);
@@ -111,6 +121,8 @@ public class StudentGenericDetailsServiceImpl implements StudentGenericDetailsSe
 
         return mapToDto(details);
     }
+
+
 
     @Override
     public StudentGenericDetailsDto getGenericDetails(Long userId) {
@@ -131,7 +143,7 @@ public class StudentGenericDetailsServiceImpl implements StudentGenericDetailsSe
     }
 
     @Override
-    public Resource viewDocument(Long userId, String documentType) {
+    public Resource viewDocument(Long userId) {
 
         User user = userRepo.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + userId));
@@ -144,17 +156,17 @@ public class StudentGenericDetailsServiceImpl implements StudentGenericDetailsSe
             throw new ResourceNotFoundException("Student details not found for user ID: " + userId);
         }
 
-        String relativePath;
-        if ("adhaar".equalsIgnoreCase(documentType)) {
+        String relativePath = null;
+
+        // Prefer adhaarFilePath if exists, else resumeFilePath
+        if (details.getAdhaarFilePath() != null && !details.getAdhaarFilePath().isEmpty()) {
             relativePath = details.getAdhaarFilePath();
-        } else if ("resume".equalsIgnoreCase(documentType)) {
+        } else if (details.getResumeFilePath() != null && !details.getResumeFilePath().isEmpty()) {
             relativePath = details.getResumeFilePath();
-        } else {
-            throw new IllegalArgumentException("Invalid document type (allowed: adhaar, resume)");
         }
 
         if (relativePath == null) {
-            throw new ResourceNotFoundException(documentType + " document not found for user ID: " + userId);
+            throw new ResourceNotFoundException("No uploaded document found for user ID: " + userId);
         }
 
         try {

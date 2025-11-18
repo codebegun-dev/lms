@@ -9,8 +9,7 @@ public interface StudentGenericDetailsService {
 
     StudentGenericDetailsDto updateGenericDetails(StudentGenericDetailsDto dto);
 
-    StudentGenericDetailsDto uploadDocument(Long userId, String documentType, MultipartFile file);
-
+    public StudentGenericDetailsDto uploadDocument(Long userId, MultipartFile file);
     StudentGenericDetailsDto getGenericDetails(Long userId);
-    public Resource viewDocument(Long userId, String documentType);
+    public Resource viewDocument(Long userId);
 }

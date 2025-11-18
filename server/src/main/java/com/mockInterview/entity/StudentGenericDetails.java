@@ -1,7 +1,7 @@
 package com.mockInterview.entity;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.*;
+import jakarta.validation.constraints.Pattern;
 import lombok.*;
 
 @Entity
@@ -18,7 +18,7 @@ public class StudentGenericDetails {
     private String workExperience;
     private String careerGap;
 
-    // ✅ Current Address
+    // Current Address
     private String currentState;
     private String currentDistrict;
     private String currentSubDistrict;
@@ -28,7 +28,7 @@ public class StudentGenericDetails {
     @Pattern(regexp = "^[0-9]{6}$", message = "Current pincode must be 6 digits")
     private String currentPincode;
 
-    // ✅ Permanent Address
+    // Permanent Address
     private String permanentState;
     private String permanentDistrict;
     private String permanentSubDistrict;
@@ -38,24 +38,14 @@ public class StudentGenericDetails {
     @Pattern(regexp = "^[0-9]{6}$", message = "Permanent pincode must be 6 digits")
     private String permanentPincode;
 
-    // ✅ Social Links
-    @Pattern(regexp = "^(https?://)?(www\\.)?[a-zA-Z0-9._-]+\\.[a-z]{2,}(/.*)?$", 
-             message = "Invalid GitHub URL", 
-             groups = UrlChecks.class)
     private String githubProfile;
-
-    @Pattern(regexp = "^(https?://)?(www\\.)?[a-zA-Z0-9._-]+\\.[a-z]{2,}(/.*)?$", 
-             message = "Invalid LinkedIn URL", 
-             groups = UrlChecks.class)
     private String linkedinProfile;
 
+    
     private String adhaarFilePath;
     private String resumeFilePath;
 
     @OneToOne
     @JoinColumn(name = "user_id", referencedColumnName = "userId", nullable = false)
     private User user;
-
-    // Marker interface for custom validation group
-    public interface UrlChecks {}
 }
