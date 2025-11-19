@@ -122,4 +122,12 @@ public class UserController {
         userService.syncPasswordsWithMasterAdmin();
         return "✅ All non-student users' passwords synced with Master Admin password successfully.";
     }
+    
+    
+    @GetMapping("/assignable-users")
+    public List<UserResponseDto> getAssignableUsers() {
+        return userService.getAssignableUsers();
+    }
+
+
 }

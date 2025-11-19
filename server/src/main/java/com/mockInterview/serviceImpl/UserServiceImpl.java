@@ -426,4 +426,18 @@ public class UserServiceImpl implements UserService {
             );
         }
     }
+    
+    
+    @Override
+    public List<UserResponseDto> getAssignableUsers() {
+
+        List<User> users = userRepository
+                .findByRole_NameStartingWithAndStatus("SA_", "ACTIVE");
+
+        return users.stream()
+                .map(userMapper::toResponse)
+                .toList();
+    }
+
+
 }

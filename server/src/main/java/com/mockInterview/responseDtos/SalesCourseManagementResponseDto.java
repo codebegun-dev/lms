@@ -23,7 +23,6 @@ public class SalesCourseManagementResponseDto {
 
     private String status;
 
-    
     private String college;
 
     private String city;
@@ -31,4 +30,7 @@ public class SalesCourseManagementResponseDto {
     private String source;
 
     private String campaign;
+
+    
+    private String assignedTo;
 }

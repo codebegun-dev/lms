@@ -7,7 +7,7 @@ import com.mockInterview.responseDtos.SalesCourseManagementResponseDto;
 
 public class SalesCourseManagementMapper {
 
-    
+    // ------------------- TO ENTITY -------------------
     public static SalesCourseManagement toEntity(SalesCourseManagementRequestDto dto, CourseManagement course) {
         SalesCourseManagement sc = new SalesCourseManagement();
 
@@ -19,21 +19,23 @@ public class SalesCourseManagementMapper {
         sc.setQualification(dto.getQualification());
         sc.setCourseManagement(course);
 
-        
         if (dto.getStatus() != null) {
             sc.setStatus(dto.getStatus());
         }
 
-        
         sc.setCollege(dto.getCollege());
         sc.setCity(dto.getCity());
         sc.setSource(dto.getSource());
         sc.setCampaign(dto.getCampaign());
 
+        // ❗ Default: always Unassigned → so assignedTo = null
+        sc.setAssignedTo(null);
+
         return sc;
     }
 
-    
+
+    // ------------------- TO RESPONSE DTO -------------------
     public static SalesCourseManagementResponseDto toResponseDto(SalesCourseManagement sc) {
         SalesCourseManagementResponseDto dto = new SalesCourseManagementResponseDto();
 
@@ -50,12 +52,17 @@ public class SalesCourseManagementMapper {
         }
 
         dto.setStatus(sc.getStatus());
-
-        
         dto.setCollege(sc.getCollege());
         dto.setCity(sc.getCity());
         dto.setSource(sc.getSource());
         dto.setCampaign(sc.getCampaign());
+
+        // Convert assigned User → dto String
+        if (sc.getAssignedTo() == null) {
+            dto.setAssignedTo("Unassigned");
+        } else {
+            dto.setAssignedTo(String.valueOf(sc.getAssignedTo().getUserId()));
+        }
 
         return dto;
     }

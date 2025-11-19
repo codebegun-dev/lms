@@ -36,4 +36,6 @@ public void syncPasswordsWithMasterAdmin();
 public void bulkChangeUsersRoleByAdmin(Long adminId, Long fromRoleId, Long toRoleId);
 
 public Map<String, Object> getDashboardCounts();
+
+public List<UserResponseDto> getAssignableUsers();
 }
