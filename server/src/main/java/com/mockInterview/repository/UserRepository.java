@@ -40,4 +40,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
 		long count();
 		long countByStatus(String status);
 
+		List<User> findByRole_NameStartingWithAndStatus(String prefix, String status);
+
 }

@@ -16,6 +16,7 @@ import lombok.Data;
 @Data
 @Entity
 public class SalesCourseManagement {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long studentId;
@@ -30,26 +31,24 @@ public class SalesCourseManagement {
     private String email;
 
     private String gender;
-
     private String passedOutYear;
-
     private String qualification;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id", nullable = true)
     private CourseManagement courseManagement;
 
-    
-    
-
-    
-     private String college;
-
-     private String city;
-
+    private String college;
+    private String city;
     private String source;
+    private String campaign;
 
-     private String campaign;
-    
     private String status = "NEW";
+
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "assigned_to", nullable = true)
+    private User assignedTo;
+
+
 }

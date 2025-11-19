@@ -37,4 +37,6 @@ public class SalesCourseManagementRequestDto {
 	private String source;
 
 	private String campaign;
+	
+	private Long assignedUserId;
 }

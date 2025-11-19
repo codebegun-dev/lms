@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.mockInterview.requestDtos.BulkAssignRequest;
 import com.mockInterview.requestDtos.SalesCourseManagementRequestDto;
 import com.mockInterview.responseDtos.SalesCourseManagementResponseDto;
 import com.mockInterview.service.SalesCourseService;
@@ -15,7 +16,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/saleCourse/student")
 @CrossOrigin(origins = "*")
-public class SalesCourseController {
+public class SalesCourseController { 
     
     @Autowired
     private SalesCourseService salesCourseService;
@@ -51,6 +52,15 @@ public class SalesCourseController {
             @Valid @RequestBody SalesCourseManagementRequestDto dto) {
         return salesCourseService.updateStudentDetails(id, dto);
     }
+    
+    @PostMapping("/assign/bulk")
+    public String bulkAssign(@RequestBody BulkAssignRequest request) {
+        return salesCourseService.bulkAssignStudentsToUser(
+                request.getStudentIds(),
+                request.getAssignedUserId()
+        );
+    }
+
 
     // DELETE
     @DeleteMapping("/{id}")

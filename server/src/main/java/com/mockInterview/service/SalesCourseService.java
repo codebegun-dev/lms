@@ -30,5 +30,7 @@ public interface SalesCourseService {
 
     
     List<SalesCourseManagementResponseDto> getStudentsByStatus(String status);
+    
+    public String bulkAssignStudentsToUser(List<Long> studentIds, Long assignedUserId);
 
 }
