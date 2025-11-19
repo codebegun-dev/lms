@@ -74,34 +74,34 @@ public class SalesCourseServiceImpl implements SalesCourseService {
             }
         }
 
-        // --------------------- CREATE ENTITY ---------------------
-        SalesCourseManagement entity = new SalesCourseManagement();
-        entity.setStudentName(dto.getStudentName());
-        entity.setPhone(phone);
-
-        if (email != null && !email.isEmpty()) entity.setEmail(email);
-        if (dto.getGender() != null) entity.setGender(dto.getGender());
-        if (dto.getPassedOutYear() != null) entity.setPassedOutYear(dto.getPassedOutYear());
-        if (dto.getQualification() != null) entity.setQualification(dto.getQualification());
-
+        // --------------------- FETCH COURSE ---------------------
+        CourseManagement course = null;
         if (dto.getCourseId() != null && dto.getCourseId() > 0) {
-            CourseManagement course = courseManagementRepository.findById(dto.getCourseId())
+            course = courseManagementRepository.findById(dto.getCourseId())
                     .orElseThrow(() -> new ResourceNotFoundException("Course not found!"));
-            entity.setCourseManagement(course);
         }
 
-        if (dto.getStatus() != null && !dto.getStatus().trim().isEmpty()) {
-            entity.setStatus(dto.getStatus().trim());
+        // --------------------- CREATE ENTITY ---------------------
+        SalesCourseManagement entity = SalesCourseManagementMapper.toEntity(dto, course);
+
+        // Ensure phone and email trimming
+        entity.setPhone(phone);
+        if (email != null && !email.isEmpty()) {
+            entity.setEmail(email);
         }
 
+        // Save entity
         SalesCourseManagement saved = salesCourseManagementRepository.save(entity);
+
+        // Convert to Response DTO
         return SalesCourseManagementMapper.toResponseDto(saved);
     }
-    
+
     
 
     @Override
     public Map<String, Object> uploadStudentsFromExcel(MultipartFile file) {
+        // Parse Excel into DTOs
         List<SalesCourseManagementRequestDto> dtos = ExcelHelper.parseExcelFile(file);
 
         int successCount = 0;
@@ -112,16 +112,20 @@ public class SalesCourseServiceImpl implements SalesCourseService {
             SalesCourseManagementRequestDto dto = dtos.get(i);
 
             // ------------------- CLEAN DATA -------------------
-            // Trim email
             if (dto.getEmail() != null) dto.setEmail(dto.getEmail().trim());
 
-            // Clean phone: remove spaces, dashes, parentheses, etc.
             if (dto.getPhone() != null) {
-                dto.setPhone(dto.getPhone().replaceAll("\\D", ""));
+                dto.setPhone(dto.getPhone().replaceAll("\\D", "")); // Remove non-digit characters
             }
 
+            // Optional fields: trim if present
+            if (dto.getCollege() != null) dto.setCollege(dto.getCollege().trim());
+            if (dto.getCity() != null) dto.setCity(dto.getCity().trim());
+            if (dto.getSource() != null) dto.setSource(dto.getSource().trim());
+            if (dto.getCampaign() != null) dto.setCampaign(dto.getCampaign().trim());
+
             try {
-                // Reuse existing createStudent method for validation & saving
+                // Reuse createStudent method to handle validation and saving
                 createStudent(dto);
                 successCount++;
             } catch (ConstraintViolationException cve) {
@@ -224,7 +228,15 @@ public class SalesCourseServiceImpl implements SalesCourseService {
         if (dto.getQualification() != null) student.setQualification(dto.getQualification());
         if (dto.getStatus() != null && !dto.getStatus().trim().isEmpty()) student.setStatus(dto.getStatus().trim());
 
+        // ---------------- UPDATE NEW OPTIONAL FIELDS ----------------
+        if (dto.getCollege() != null) student.setCollege(dto.getCollege().trim());
+        if (dto.getCity() != null) student.setCity(dto.getCity().trim());
+        if (dto.getSource() != null) student.setSource(dto.getSource().trim());
+        if (dto.getCampaign() != null) student.setCampaign(dto.getCampaign().trim());
+
+        // Save updated entity
         SalesCourseManagement updated = salesCourseManagementRepository.save(student);
+
         return SalesCourseManagementMapper.toResponseDto(updated);
     }
 
