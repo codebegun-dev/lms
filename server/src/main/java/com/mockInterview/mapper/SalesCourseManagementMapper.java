@@ -7,7 +7,7 @@ import com.mockInterview.responseDtos.SalesCourseManagementResponseDto;
 
 public class SalesCourseManagementMapper {
 
-    // Convert Request DTO → Entity
+    
     public static SalesCourseManagement toEntity(SalesCourseManagementRequestDto dto, CourseManagement course) {
         SalesCourseManagement sc = new SalesCourseManagement();
 
@@ -18,13 +18,22 @@ public class SalesCourseManagementMapper {
         sc.setPassedOutYear(dto.getPassedOutYear());
         sc.setQualification(dto.getQualification());
         sc.setCourseManagement(course);
-       
 
         
+        if (dto.getStatus() != null) {
+            sc.setStatus(dto.getStatus());
+        }
+
+        
+        sc.setCollege(dto.getCollege());
+        sc.setCity(dto.getCity());
+        sc.setSource(dto.getSource());
+        sc.setCampaign(dto.getCampaign());
+
         return sc;
     }
 
-    // Convert Entity → Response DTO
+    
     public static SalesCourseManagementResponseDto toResponseDto(SalesCourseManagement sc) {
         SalesCourseManagementResponseDto dto = new SalesCourseManagementResponseDto();
 
@@ -40,7 +49,13 @@ public class SalesCourseManagementMapper {
             dto.setCourseId(sc.getCourseManagement().getCourseId());
         }
 
-        dto.setStatus(sc.getStatus()); 
+        dto.setStatus(sc.getStatus());
+
+        
+        dto.setCollege(sc.getCollege());
+        dto.setCity(sc.getCity());
+        dto.setSource(sc.getSource());
+        dto.setCampaign(sc.getCampaign());
 
         return dto;
     }

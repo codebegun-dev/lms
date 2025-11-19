@@ -25,7 +25,7 @@ public class SalesCourseController {
     public SalesCourseManagementResponseDto createStudent(
             @Valid @RequestBody SalesCourseManagementRequestDto dto) {
         return salesCourseService.createStudent(dto);
-    }
+    } 
     
     @PostMapping("/bulk-upload")
     public Map<String, Object> uploadStudents(@RequestParam("file") MultipartFile file) {

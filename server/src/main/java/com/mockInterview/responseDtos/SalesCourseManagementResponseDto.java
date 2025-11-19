@@ -22,4 +22,13 @@ public class SalesCourseManagementResponseDto {
     private Long courseId;
 
     private String status;
+
+    
+    private String college;
+
+    private String city;
+
+    private String source;
+
+    private String campaign;
 }
