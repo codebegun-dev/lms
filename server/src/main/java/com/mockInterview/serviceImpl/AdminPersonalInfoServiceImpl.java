@@ -3,9 +3,8 @@ package com.mockInterview.serviceImpl;
 import com.mockInterview.entity.AdminPersonalInfo;
 import com.mockInterview.entity.User;
 import com.mockInterview.exception.ResourceNotFoundException;
+import com.mockInterview.exception.UnauthorizedActionException;
 import com.mockInterview.repository.AdminPersonalInfoRepository;
-import com.mockInterview.repository.SalesCourseManagementRepository;
-import com.mockInterview.repository.StudentPersonalInfoRepository;
 import com.mockInterview.repository.UserRepository;
 import com.mockInterview.requestDtos.AdminPersonalInfoUpdateRequestDto;
 import com.mockInterview.responseDtos.AdminPersonalInfoResponseDto;
@@ -27,118 +26,91 @@ public class AdminPersonalInfoServiceImpl implements AdminPersonalInfoService {
 
     @Autowired
     private UserRepository userRepository;
-    
-    @Autowired
-    private StudentPersonalInfoRepository studentPersonalInfoRepository;
-    
-    @Autowired
-     private SalesCourseManagementRepository  salesCourseManagementRepository;
-    // ---------------------------------------------------------------------
-    // 🔥 GET BY USER ID → ONLY NON-STUDENTS CAN VIEW
-    // ---------------------------------------------------------------------
-    @Override
-    public AdminPersonalInfoResponseDto getByUserId(Long requestedUserId) {
 
-        User requestedUser = userRepository.findById(requestedUserId)
+    // ==========================
+    // GET ADMIN INFO BY USER ID
+    // ==========================
+    @Override
+    public AdminPersonalInfoResponseDto getByUserId(Long userId) {
+
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        // ❌ BLOCK STUDENTS
-        if (requestedUser.getRole().getName().equalsIgnoreCase("STUDENT")) {
-            throw new RuntimeException("Students cannot access admin personal information!");
+        // Block STUDENT role
+        RoleValidator.validateNonStudentAccess(user);
+
+        // MASTER_ADMIN cannot access their own admin info
+        if ("MASTER_ADMIN".equalsIgnoreCase(user.getRole().getName())) {
+            throw new UnauthorizedActionException("MASTER_ADMIN cannot access their own admin info!");
         }
 
-        // Allow master admin or self access
-        RoleValidator.validateNonStudentOwnOrMaster(requestedUser, requestedUserId);
-
-        AdminPersonalInfo info = infoRepository.findByUser_UserId(requestedUserId);
-
-        // If record not exists → create template
+        AdminPersonalInfo info = infoRepository.findByUser_UserId(userId);
         if (info == null) {
             info = new AdminPersonalInfo();
-            info.setUser(requestedUser);
+            info.setUser(user);
         }
 
         return mapToDto(info);
     }
 
-    // ---------------------------------------------------------------------
-    // 🔥 UPDATE FULL PROFILE → ONLY NON-STUDENTS CAN UPDATE
-    // ---------------------------------------------------------------------
+    // ==========================
+    // UPDATE ADMIN INFO
+    // ==========================
     @Override
     public AdminPersonalInfoResponseDto updateFullProfile(AdminPersonalInfoUpdateRequestDto request,
                                                           MultipartFile file) {
 
-        User requestedUser = userRepository.findById(request.getUserId())
+        User user = userRepository.findById(request.getUserId())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        // ❌ Block STUDENTS from updating admin info
-        if (requestedUser.getRole().getName().equalsIgnoreCase("STUDENT")) {
-            throw new RuntimeException("Students are not allowed to update admin personal information!");
+        // Block STUDENT role
+        RoleValidator.validateNonStudentAccess(user);
+
+        // MASTER_ADMIN cannot update their own admin info
+        if ("MASTER_ADMIN".equalsIgnoreCase(user.getRole().getName())) {
+            throw new UnauthorizedActionException("MASTER_ADMIN cannot update their own admin info!");
         }
 
-        // Allow Master Admin or Self-Update
-        RoleValidator.validateNonStudentOwnOrMaster(requestedUser, request.getUserId());
-
-        // ============================
-        // 🔍 VALIDATE MOBILE NUMBER
-        // ============================
-
-        if (request.getMobileNumber() != null && !request.getMobileNumber().isEmpty()) {
-
-            // 1️⃣ Check in USER table (avoid conflict with other users)
-            User mobileUser = userRepository.findByPhone(request.getMobileNumber());
-            if (mobileUser != null && mobileUser.getUserId() != request.getUserId()) {
-                throw new RuntimeException("Mobile number already exists in User table!");
-            }
-
-
-
-            // 2️⃣ Check in StudentPersonalInfo parent mobile
-            if (studentPersonalInfoRepository.findByParentMobileNumber(request.getMobileNumber()) != null) {
-                throw new RuntimeException("Mobile number already exists as Parent Mobile!");
-            }
-
-            // 3️⃣ Check in SalesCourseManagement table
-            if (salesCourseManagementRepository.findByPhone(request.getMobileNumber()) != null) {
-                throw new RuntimeException("Mobile number already exists in Sales table!");
+        // Non-student users can update their own info
+        // MASTER_ADMIN can update other non-student users
+        if (!"MASTER_ADMIN".equalsIgnoreCase(user.getRole().getName())) {
+            if (user.getUserId()!=(request.getUserId())) {
+                throw new UnauthorizedActionException("You can only update your own admin info!");
             }
         }
 
-        // ============================
-        // Get or create AdminPersonalInfo
-        // ============================
-        AdminPersonalInfo info = infoRepository.findByUser_UserId(request.getUserId());
+        // -----------------------
+        // Update User table
+        // -----------------------
+        if (request.getFirstName() != null) user.setFirstName(request.getFirstName());
+        if (request.getLastName() != null) user.setLastName(request.getLastName());
+        if (request.getMobileNumber() != null) user.setPhone(request.getMobileNumber());
+        userRepository.save(user);
+
+        // -----------------------
+        // Update AdminPersonalInfo table
+        // -----------------------
+        AdminPersonalInfo info = infoRepository.findByUser_UserId(user.getUserId());
         if (info == null) {
             info = new AdminPersonalInfo();
-            info.setUser(requestedUser);
+            info.setUser(user);
         }
 
-        // ============================
-        // UPDATE USER TABLE FIELDS
-        // ============================
-        requestedUser.setFirstName(request.getFirstName());
-        requestedUser.setLastName(request.getLastName());
-        requestedUser.setPhone(request.getMobileNumber());
-        userRepository.save(requestedUser);
-
-        // ============================
-        // UPDATE ADMIN PERSONAL INFO
-        // ============================
         info.setGender(request.getGender());
         info.setDateOfBirth(request.getDateOfBirth());
         info.setBloodGroup(request.getBloodGroup());
         info.setJobtitle(request.getJobTitle());
 
-        // ============================
-        // UPDATE PROFILE PICTURE
-        // ============================
+        // -----------------------
+        // Upload profile picture
+        // -----------------------
         if (file != null && !file.isEmpty()) {
             FileStorageUtil.deleteFile(info.getProfilePicturePath());
             try {
-                String relativePath = FileStorageUtil.saveFile(file, requestedUser.getUserId(), "images");
+                String relativePath = FileStorageUtil.saveFile(file, user.getUserId(), "images");
                 info.setProfilePicturePath(relativePath);
             } catch (IOException e) {
-                throw new RuntimeException("Failed to upload profile image: " + e.getMessage());
+                throw new RuntimeException("Failed to upload profile picture: " + e.getMessage());
             }
         }
 
@@ -146,13 +118,13 @@ public class AdminPersonalInfoServiceImpl implements AdminPersonalInfoService {
         return mapToDto(info);
     }
 
-
-    // ---------------------------------------------------------------------
-    // 🔥 DTO MAPPER
-    // ---------------------------------------------------------------------
+    // ==========================
+    // DTO Mapper
+    // ==========================
     private AdminPersonalInfoResponseDto mapToDto(AdminPersonalInfo info) {
 
         AdminPersonalInfoResponseDto dto = new AdminPersonalInfoResponseDto();
+
         dto.setUserId(info.getUser().getUserId());
         dto.setFirstName(info.getUser().getFirstName());
         dto.setLastName(info.getUser().getLastName());
@@ -164,15 +136,13 @@ public class AdminPersonalInfoServiceImpl implements AdminPersonalInfoService {
         dto.setBloodGroup(info.getBloodGroup());
         dto.setJobTitle(info.getJobtitle());
 
-        String baseUrl = ServletUriComponentsBuilder.fromCurrentContextPath().toUriString();
-
+        String baseUrl = ServletUriComponentsBuilder.fromCurrentContextPath().build().toUriString();
         if (info.getProfilePicturePath() != null) {
             dto.setProfilePicturePath(baseUrl + "/uploads/" + info.getProfilePicturePath());
         } else {
-            String initials = (dto.getFirstName() != null && !dto.getFirstName().isEmpty())
-                    ? dto.getFirstName().substring(0, 1).toUpperCase()
+            String initials = (info.getUser().getFirstName() != null && !info.getUser().getFirstName().isEmpty())
+                    ? info.getUser().getFirstName().substring(0, 1).toUpperCase()
                     : "A";
-
             dto.setProfilePicturePath("https://ui-avatars.com/api/?name=" + initials + "&background=random");
         }
 
