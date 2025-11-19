@@ -87,7 +87,7 @@ function App() {
 
         {/* Sales Dashboard */}
         <Route path="/sales-dashboard" element={<SalesDashboard />}>
-          <Route index element={<h2>Sales Home</h2>} />
+          <Route index element={<Dashboard />} />
           <Route path="add-enquiry" element={<SalesForm />} />
           <Route path="leads" element={<LeadsList />} />
           <Route path="myprofile" element={<SalesProfile />} />
