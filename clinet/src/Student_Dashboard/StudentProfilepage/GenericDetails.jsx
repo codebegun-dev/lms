@@ -44,16 +44,16 @@ const GenericDetails = ({ onCompletionChange = () => {} }) => {
   const [resumeFileName, setResumeFileName] = useState("");
   const [originalData, setOriginalData] = useState(initialForm);
 
-  // Validation state
   const [errors, setErrors] = useState({});
 
-  // Fetch existing details
+  // ================= GET DETAILS =================
   useEffect(() => {
     const fetchData = async () => {
       try {
         const resp = await axios.get(
           `http://localhost:8080/api/student-generic-details/${userId}`
         );
+
         if (resp.data) {
           const mapped = {
             workExperience: resp.data.workExperience || "",
@@ -75,6 +75,7 @@ const GenericDetails = ({ onCompletionChange = () => {} }) => {
             adhaarFilePath: resp.data.adhaarFilePath || "",
             resumeFilePath: resp.data.resumeFilePath || "",
           };
+
           setFormData(mapped);
           setEditingData(mapped);
           setOriginalData(mapped);
@@ -82,12 +83,14 @@ const GenericDetails = ({ onCompletionChange = () => {} }) => {
         }
       } catch (err) {
         console.error("Error fetching generic details:", err);
+        alert("Failed to load your details.");
       }
     };
+
     fetchData();
   }, [userId]);
 
-  // Update completion percentage whenever formData changes
+  // Update completion percentage
   useEffect(() => {
     calculateCompletion(formData);
   }, [formData]);
@@ -103,7 +106,10 @@ const GenericDetails = ({ onCompletionChange = () => {} }) => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    if ((name === "currentPincode" || name === "permanentPincode") && value.length > 6) return;
+
+    if ((name === "currentPincode" || name === "permanentPincode") && value.length > 6)
+      return;
+
     setEditingData((prev) => ({ ...prev, [name]: value }));
     setErrors((prev) => ({ ...prev, [name]: "" }));
   };
@@ -122,22 +128,30 @@ const GenericDetails = ({ onCompletionChange = () => {} }) => {
     setErrors({});
   };
 
-  // Validation function
+  // ================= VALIDATION =================
   const validateForm = () => {
     const githubRegex = /^(https?:\/\/)?(www\.)?github\.com\/[A-Za-z0-9_-]+\/?$/;
-    const linkedinRegex = /^(https?:\/\/)?(www\.)?linkedin\.com\/(in|pub)\/[A-Za-z0-9_-]+\/?$/;
+    const linkedinRegex =
+      /^(https?:\/\/)?(www\.)?linkedin\.com\/(in|pub)\/[A-Za-z0-9_-]+\/?$/;
     const pincodeRegex = /^[1-9][0-9]{5}$/;
 
     const newErrors = {};
 
-    if (!editingData.adhaarFilePath) newErrors.adhaarFilePath = "Please upload Aadhaar card.";
-    if (!editingData.resumeFilePath) newErrors.resumeFilePath = "Please upload Resume.";
+    if (!editingData.adhaarFilePath)
+      newErrors.adhaarFilePath = "Please upload Aadhaar card.";
+
+    if (!editingData.resumeFilePath)
+      newErrors.resumeFilePath = "Please upload Resume.";
+
     if (editingData.githubProfile && !githubRegex.test(editingData.githubProfile.trim()))
       newErrors.githubProfile = "Invalid GitHub URL.";
+
     if (editingData.linkedinProfile && !linkedinRegex.test(editingData.linkedinProfile.trim()))
       newErrors.linkedinProfile = "Invalid LinkedIn URL.";
+
     if (editingData.currentPincode && !pincodeRegex.test(editingData.currentPincode))
       newErrors.currentPincode = "Enter a valid 6-digit pincode.";
+
     if (editingData.permanentPincode && !pincodeRegex.test(editingData.permanentPincode))
       newErrors.permanentPincode = "Enter a valid 6-digit pincode.";
 
@@ -146,11 +160,13 @@ const GenericDetails = ({ onCompletionChange = () => {} }) => {
     return Object.keys(newErrors).length === 0;
   };
 
+  // ================= SAVE DETAILS (PUT) =================
   const handleSave = async () => {
     if (!validateForm()) return;
 
     try {
       const payload = { ...editingData, userId };
+
       const resp = await axios.put(
         `http://localhost:8080/api/student-generic-details/update`,
         payload
@@ -158,24 +174,9 @@ const GenericDetails = ({ onCompletionChange = () => {} }) => {
 
       if (resp.data) {
         const mapped = {
-          workExperience: resp.data.workExperience || "",
-          careerGap: resp.data.careerGap || "",
-          currentState: resp.data.currentState || "",
-          currentDistrict: resp.data.currentDistrict || "",
-          currentSubDistrict: resp.data.currentSubDistrict || "",
-          currentVillage: resp.data.currentVillage || "",
-          currentStreet: resp.data.currentStreet || "",
-          currentPincode: resp.data.currentPincode || "",
-          permanentState: resp.data.permanentState || "",
-          permanentDistrict: resp.data.permanentDistrict || "",
-          permanentSubDistrict: resp.data.permanentSubDistrict || "",
-          permanentVillage: resp.data.permanentVillage || "",
-          permanentStreet: resp.data.permanentStreet || "",
-          permanentPincode: resp.data.permanentPincode || "",
-          githubProfile: resp.data.githubProfile || "",
-          linkedinProfile: resp.data.linkedinProfile || "",
-          adhaarFilePath: resp.data.adhaarFilePath || "",
-          resumeFilePath: resp.data.resumeFilePath || "",
+          ...editingData,
+          adhaarFilePath: resp.data.adhaarFilePath || editingData.adhaarFilePath,
+          resumeFilePath: resp.data.resumeFilePath || editingData.resumeFilePath,
         };
 
         setFormData(mapped);
@@ -183,8 +184,6 @@ const GenericDetails = ({ onCompletionChange = () => {} }) => {
         setOriginalData(mapped);
         setIsEditing(false);
         alert("Saved successfully.");
-      } else {
-        alert("Saved (no response body).");
       }
     } catch (err) {
       console.error("Error saving details:", err);
@@ -192,9 +191,11 @@ const GenericDetails = ({ onCompletionChange = () => {} }) => {
     }
   };
 
+  // ================= FILE UPLOAD =================
   const handleFileUpload = async (e, type) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
     if (type === "adhaar") setAdhaarFileName(file.name);
     else setResumeFileName(file.name);
 
@@ -211,14 +212,20 @@ const GenericDetails = ({ onCompletionChange = () => {} }) => {
       if (resp.data) {
         const updated = {
           ...editingData,
-          adhaarFilePath: type === "adhaar" ? resp.data.adhaarFilePath : editingData.adhaarFilePath,
-          resumeFilePath: type === "resume" ? resp.data.resumeFilePath : editingData.resumeFilePath,
+          adhaarFilePath:
+            type === "adhaar" ? resp.data.adhaarFilePath : editingData.adhaarFilePath,
+          resumeFilePath:
+            type === "resume" ? resp.data.resumeFilePath : editingData.resumeFilePath,
         };
+
         setEditingData(updated);
         setFormData(updated);
         setOriginalData(updated);
         setErrors((prev) => ({ ...prev, [`${type}FilePath`]: "" }));
-        alert(`${type === "adhaar" ? "Aadhaar" : "Resume"} uploaded successfully.`);
+
+        alert(
+          `${type === "adhaar" ? "Aadhaar" : "Resume"} uploaded successfully.`
+        );
       }
     } catch (err) {
       console.error("File upload failed:", err);
@@ -226,16 +233,11 @@ const GenericDetails = ({ onCompletionChange = () => {} }) => {
     }
   };
 
+  // ================= VIEW DOCUMENT =================
   const viewDocument = (type) => {
-    const path = type === "adhaar" ? formData.adhaarFilePath : formData.resumeFilePath;
-    if (!path) {
-      alert(`${type === "adhaar" ? "Aadhaar" : "Resume"} not uploaded`);
-      return;
-    }
-    const win = window.open();
-    win.document.write(
-      `<div style="height:100vh;margin:0;padding:0"><iframe src="${path}" style="width:100%;height:100%;border:none"></iframe></div>`
-    );
+    const corrected = type.toLowerCase(); // IMPORTANT FIX
+    const url = `http://localhost:8080/api/student-generic-details/${userId}/document/${corrected}`;
+    window.open(url, "_blank");
   };
 
   const renderInput = (label, name, placeholder = "", props = {}) => (
@@ -254,16 +256,15 @@ const GenericDetails = ({ onCompletionChange = () => {} }) => {
     </div>
   );
 
+  // ========================== UI ==========================
   return (
     <div className="card mb-4 shadow-sm">
       <div className="card-header d-flex justify-content-between align-items-center bg-light">
         <h5 className="mb-0">Generic Details</h5>
         {!isEditing ? (
-          <div>
-            <button className="btn btn-outline-primary btn-sm me-2" onClick={startEdit}>
-              Edit
-            </button>
-          </div>
+          <button className="btn btn-outline-primary btn-sm me-2" onClick={startEdit}>
+            Edit
+          </button>
         ) : (
           <div>
             <button className="btn btn-secondary btn-sm me-2" onClick={handleCancel}>
@@ -278,7 +279,8 @@ const GenericDetails = ({ onCompletionChange = () => {} }) => {
 
       <div className="card-body">
         <div className="row g-3">
-          {/* Work Experience & Career Gap */}
+
+          {/* Work Experience */}
           <div className="col-md-6">
             <label className="form-label fw-semibold">Work Experience *</label>
             <select
@@ -298,6 +300,7 @@ const GenericDetails = ({ onCompletionChange = () => {} }) => {
             </select>
           </div>
 
+          {/* Career Gap */}
           <div className="col-md-6">
             <label className="form-label fw-semibold">Career Gap</label>
             <select
@@ -318,6 +321,7 @@ const GenericDetails = ({ onCompletionChange = () => {} }) => {
 
           {/* Current Address */}
           <div className="col-12 mt-3 border-bottom pb-2 fw-bold">Current Address</div>
+
           <div className="col-md-4">
             <label className="form-label">State *</label>
             <select
@@ -333,14 +337,16 @@ const GenericDetails = ({ onCompletionChange = () => {} }) => {
               ))}
             </select>
           </div>
-          {renderInput("District *", "currentDistrict", "Enter district")}
-          {renderInput("Sub District", "currentSubDistrict", "Enter sub district")}
-          {renderInput("Village/Town *", "currentVillage", "Enter village/town")}
-          {renderInput("Street/Building No/Floor", "currentStreet", "Enter street/building no/floor")}
-          {renderInput("Pincode *", "currentPincode", "Enter 6-digit pincode")}
+
+          {renderInput("District *", "currentDistrict")}
+          {renderInput("Sub District", "currentSubDistrict")}
+          {renderInput("Village/Town *", "currentVillage")}
+          {renderInput("Street/Building No/Floor", "currentStreet")}
+          {renderInput("Pincode *", "currentPincode", "", { maxLength: 6 })}
 
           {/* Permanent Address */}
           <div className="col-12 mt-3 border-bottom pb-2 fw-bold">Permanent Address</div>
+
           <div className="col-md-4">
             <label className="form-label">State *</label>
             <select
@@ -356,28 +362,34 @@ const GenericDetails = ({ onCompletionChange = () => {} }) => {
               ))}
             </select>
           </div>
-          {renderInput("District *", "permanentDistrict", "Enter district")}
-          {renderInput("Sub District", "permanentSubDistrict", "Enter sub district")}
-          {renderInput("Village/Town *", "permanentVillage", "Enter village/town")}
-          {renderInput("Street/Building No/Floor", "permanentStreet", "Enter street/building no/floor")}
-          {renderInput("Pincode *", "permanentPincode", "Enter 6-digit pincode")}
+
+          {renderInput("District *", "permanentDistrict")}
+          {renderInput("Sub District", "permanentSubDistrict")}
+          {renderInput("Village/Town *", "permanentVillage")}
+          {renderInput("Street/Building No/Floor", "permanentStreet")}
+          {renderInput("Pincode *", "permanentPincode", "", { maxLength: 6 })}
 
           {/* Social Links */}
           {renderInput("GitHub Profile", "githubProfile", "https://github.com/username")}
           {renderInput("LinkedIn Profile", "linkedinProfile", "https://linkedin.com/in/username")}
 
-          {/* Aadhaar */}
+          {/* Aadhaar Upload */}
           <div className="col-md-6">
             <label className="form-label">Aadhaar Card *</label>
+
             {!isEditing ? (
               formData.adhaarFilePath ? (
                 <div className="d-flex align-items-center">
-                  <button className="btn btn-info btn-sm me-2" onClick={() => viewDocument("adhaar")}>
+                  <button className="btn btn-info btn-sm me-2"
+                    onClick={() => viewDocument("AADHAAR")}
+                  >
                     View Aadhaar
                   </button>
                   <small className="text-muted">{formData.adhaarFilePath}</small>
                 </div>
-              ) : <p className="text-muted fst-italic">No document uploaded</p>
+              ) : (
+                <p className="text-muted fst-italic">No document uploaded</p>
+              )
             ) : (
               <div>
                 <input
@@ -392,18 +404,23 @@ const GenericDetails = ({ onCompletionChange = () => {} }) => {
             )}
           </div>
 
-          {/* Resume */}
+          {/* Resume Upload */}
           <div className="col-md-6">
             <label className="form-label">Resume *</label>
+
             {!isEditing ? (
               formData.resumeFilePath ? (
                 <div className="d-flex align-items-center">
-                  <button className="btn btn-info btn-sm me-2" onClick={() => viewDocument("resume")}>
+                  <button className="btn btn-info btn-sm me-2"
+                    onClick={() => viewDocument("RESUME")}
+                  >
                     View Resume
                   </button>
                   <small className="text-muted">{formData.resumeFilePath}</small>
                 </div>
-              ) : <p className="text-muted fst-italic">No document uploaded</p>
+              ) : (
+                <p className="text-muted fst-italic">No document uploaded</p>
+              )
             ) : (
               <div>
                 <input
@@ -417,6 +434,7 @@ const GenericDetails = ({ onCompletionChange = () => {} }) => {
               </div>
             )}
           </div>
+
         </div>
       </div>
     </div>
