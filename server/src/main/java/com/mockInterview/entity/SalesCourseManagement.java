@@ -43,17 +43,13 @@ public class SalesCourseManagement {
     
 
     
-    @Size(min = 2, max = 50, message = "College name must be between 2 and 50 characters")
-    private String college;
+     private String college;
 
-    @Size(min = 2, max = 50, message = "City name must be between 2 and 50 characters")
-    private String city;
+     private String city;
 
-    @Size(max = 50, message = "Source can be max 50 characters")
     private String source;
 
-    @Size(max = 50, message = "Campaign can be max 50 characters")
-    private String campaign;
+     private String campaign;
     
     private String status = "NEW";
 }
