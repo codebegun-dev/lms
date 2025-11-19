@@ -26,22 +26,43 @@ const StudentNavbar = () => {
 
   const userInfo = JSON.parse(localStorage.getItem("user")) || { firstName: "Student" };
 
+  // Check if profile picture should be shown or letter avatar
+  const showLetterAvatar =
+    !profilePic ||
+    profilePic.includes("ui-avatars.com") ||
+    profilePic.includes("/uploads/") === false;
+
   return (
     <>
       <nav className="navbar navbar-expand-lg navbar-light bg-white shadow-sm sticky-top border-bottom">
         <div className="container-fluid px-4">
           <div className="d-flex justify-content-between align-items-center w-100">
-            {/* Logo */}
-            <h3 className="text-primary fw-bold mb-0">CodeBeGun</h3>
+
+            {/* ---------------- UPDATED LOGO SECTION ---------------- */}
+            <div className="d-flex align-items-center">
+              <span
+                className="fs-2 fw-bold"
+                style={{
+                  background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  backgroundClip: "text",
+                  letterSpacing: "-0.5px",
+                }}
+              >
+                CodeBeGun
+              </span>
+            </div>
+            {/* ------------------------------------------------------ */}
 
             {/* Profile Dropdown */}
             <div className="position-relative">
               <button
                 className="btn p-0 d-flex align-items-center gap-2 px-3 py-2 rounded-3"
-                style={{ 
-                  border: "none", 
+                style={{
+                  border: "none",
                   backgroundColor: showProfileMenu ? "#f8f9fa" : "transparent",
-                  transition: "background-color 0.2s ease"
+                  transition: "background-color 0.2s ease",
                 }}
                 onClick={() => setShowProfileMenu(!showProfileMenu)}
                 onMouseEnter={(e) => {
@@ -52,22 +73,22 @@ const StudentNavbar = () => {
                 }}
               >
                 <div className="position-relative">
-                  {profilePic ? (
-                    <img
-                      src={`${profilePic}?t=${Date.now()}`}
-                      alt="profile"
-                      className="rounded-circle border border-2 border-primary"
-                      style={{ width: "40px", height: "40px", objectFit: "cover" }}
-                    />
-                  ) : (
+                  {showLetterAvatar ? (
                     <div
                       className="rounded-circle bg-primary d-flex justify-content-center align-items-center fw-bold text-white border border-2 border-white shadow-sm"
                       style={{ width: "40px", height: "40px" }}
                     >
                       {userInfo.firstName?.[0]?.toUpperCase() || "S"}
                     </div>
+                  ) : (
+                    <img
+                      src={`${profilePic}?t=${Date.now()}`}
+                      alt="profile"
+                      className="rounded-circle border border-2 border-primary"
+                      style={{ width: "40px", height: "40px", objectFit: "cover" }}
+                    />
                   )}
-                  
+
                   <span
                     className="position-absolute top-0 start-100 translate-middle bg-success border border-2 border-white rounded-circle"
                     style={{ width: "12px", height: "12px" }}
@@ -78,22 +99,22 @@ const StudentNavbar = () => {
                   {userInfo.firstName}
                 </span>
 
-                <svg 
-                  width="16" 
-                  height="16" 
-                  viewBox="0 0 16 16" 
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 16 16"
                   fill="none"
                   className="d-none d-md-block"
                   style={{
                     transform: showProfileMenu ? "rotate(180deg)" : "rotate(0deg)",
-                    transition: "transform 0.2s ease"
+                    transition: "transform 0.2s ease",
                   }}
                 >
-                  <path 
-                    d="M4 6L8 10L12 6" 
-                    stroke="#6c757d" 
-                    strokeWidth="2" 
-                    strokeLinecap="round" 
+                  <path
+                    d="M4 6L8 10L12 6"
+                    stroke="#6c757d"
+                    strokeWidth="2"
+                    strokeLinecap="round"
                     strokeLinejoin="round"
                   />
                 </svg>
@@ -104,7 +125,7 @@ const StudentNavbar = () => {
                   className="dropdown-menu dropdown-menu-end show mt-2 shadow border rounded-3 overflow-hidden"
                   style={{
                     minWidth: "200px",
-                    animation: "slideDown 0.2s ease"
+                    animation: "slideDown 0.2s ease",
                   }}
                 >
                   <style>
@@ -138,8 +159,22 @@ const StudentNavbar = () => {
                   >
                     <div className="d-flex align-items-center gap-2">
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                        <circle cx="12" cy="7" r="4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        <path
+                          d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                        <circle
+                          cx="12"
+                          cy="7"
+                          r="4"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
                       </svg>
                       My Profile
                     </div>
@@ -147,15 +182,36 @@ const StudentNavbar = () => {
 
                   <hr className="dropdown-divider my-0" />
 
-                  <button 
-                    className="dropdown-item dropdown-item-custom fw-semibold text-danger py-3" 
+                  <button
+                    className="dropdown-item dropdown-item-custom fw-semibold text-danger py-3"
                     onClick={handleLogout}
                   >
                     <div className="d-flex align-items-center gap-2">
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                        <polyline points="16 17 21 12 16 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                        <line x1="21" y1="12" x2="9" y2="12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        <path
+                          d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                        <polyline
+                          points="16 17 21 12 16 7"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                        <line
+                          x1="21"
+                          y1="12"
+                          x2="9"
+                          y2="12"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
                       </svg>
                       Logout
                     </div>
@@ -169,13 +225,13 @@ const StudentNavbar = () => {
 
       {/* Logout Confirmation Modal */}
       {showLogoutConfirm && (
-        <div 
-          className="modal fade show d-block" 
+        <div
+          className="modal fade show d-block"
           tabIndex="-1"
           style={{
             backgroundColor: "rgba(0, 0, 0, 0.5)",
             backdropFilter: "blur(4px)",
-            animation: "fadeIn 0.2s ease"
+            animation: "fadeIn 0.2s ease",
           }}
         >
           <style>
@@ -198,27 +254,51 @@ const StudentNavbar = () => {
           </style>
 
           <div className="modal-dialog modal-dialog-centered">
-            <div 
+            <div
               className="modal-content border-0 shadow-lg rounded-4"
               style={{ animation: "slideUp 0.3s ease" }}
             >
               <div className="modal-header border-0 pb-0">
                 <div className="d-flex align-items-center gap-3">
-                  <div 
+                  <div
                     className="d-flex align-items-center justify-content-center rounded-circle bg-danger bg-opacity-10"
                     style={{ width: "48px", height: "48px" }}
                   >
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" stroke="#dc3545" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      <line x1="12" y1="9" x2="12" y2="13" stroke="#dc3545" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      <line x1="12" y1="17" x2="12.01" y2="17" stroke="#dc3545" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path
+                        d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"
+                        stroke="#dc3545"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                      <line
+                        x1="12"
+                        y1="9"
+                        x2="12"
+                        y2="13"
+                        stroke="#dc3545"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                      <line
+                        x1="12"
+                        y1="17"
+                        x2="12.01"
+                        y2="17"
+                        stroke="#dc3545"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
                     </svg>
                   </div>
                   <h5 className="modal-title fw-bold mb-0">Confirm Logout</h5>
                 </div>
-                <button 
-                  type="button" 
-                  className="btn-close" 
+                <button
+                  type="button"
+                  className="btn-close"
                   onClick={() => setShowLogoutConfirm(false)}
                 ></button>
               </div>
@@ -236,10 +316,7 @@ const StudentNavbar = () => {
                 >
                   Cancel
                 </button>
-                <button 
-                  className="btn btn-danger px-4" 
-                  onClick={confirmLogout}
-                >
+                <button className="btn btn-danger px-4" onClick={confirmLogout}>
                   Logout
                 </button>
               </div>

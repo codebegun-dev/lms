@@ -21,6 +21,7 @@ const PersonalInformation = () => {
     dateOfBirth: "",
     parentMobileNumber: "",
     bloodGroup: "",
+    file: null
   });
 
   const originalForm = useRef(null);
@@ -28,12 +29,11 @@ const PersonalInformation = () => {
   useEffect(() => {
     const fetchInfo = async () => {
       try {
-        const res = await axios.get(`http://localhost:8080/api/student/personal-info/${userId}`);
+        const res = await axios.get(
+          `http://localhost:8080/api/student/personal-info/${userId}`
+        );
         setFormData(res.data);
-
-        // Use backend image if exists, else first letter avatar
         setImagePreview(res.data.profilePicturePath);
-
         originalForm.current = res.data;
       } catch (err) {
         console.log("Error loading student info", err);
@@ -46,13 +46,19 @@ const PersonalInformation = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-    setErrors(prev => ({ ...prev, [name]: "" }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    setErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
   const validateImage = (file) => {
-    const validImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-    const maxSize = 5 * 1024 * 1024; // 5MB
+    const validImageTypes = [
+      "image/jpeg",
+      "image/jpg",
+      "image/png",
+      "image/gif",
+      "image/webp",
+    ];
+    const maxSize = 5 * 1024 * 1024;
 
     if (!validImageTypes.includes(file.type)) {
       return "Please select a valid image file (JPEG, JPG, PNG, GIF, WEBP)";
@@ -65,59 +71,25 @@ const PersonalInformation = () => {
     return null;
   };
 
-  const handleImageUpload = async (e) => {
+  // ⛔ NO UPLOAD API HERE — only store file for save()
+  const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    // Validate image
     const validationError = validateImage(file);
     if (validationError) {
       alert(validationError);
-      e.target.value = ""; // Clear the file input
+      e.target.value = "";
       return;
     }
 
-    setUploading(true);
-    
-    // Create preview
     setImagePreview(URL.createObjectURL(file));
 
-    const formDataImg = new FormData();
-    formDataImg.append("file", file);
-
-    try {
-      const res = await axios.post(
-        `http://localhost:8080/api/student/personal-info/upload-image/${userId}`,
-        formDataImg,
-        { 
-          headers: { 
-            "Content-Type": "multipart/form-data" 
-          },
-          onUploadProgress: (progressEvent) => {
-            const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-            console.log(`Upload progress: ${progress}%`);
-          }
-        }
-      );
-
-      setFormData(prev => ({ ...prev, profilePicturePath: res.data.profilePicturePath }));
-
-      const updatedUser = { ...user, profilePicturePath: res.data.profilePicturePath };
-      localStorage.setItem("user", JSON.stringify(updatedUser));
-      window.dispatchEvent(new Event("user-updated"));
-
-      alert("Profile picture updated successfully!");
-    } catch (err) {
-      console.error("Upload error:", err);
-      alert(err.response?.data?.message || "Image upload failed. Please try again.");
-      // Revert to original image on error
-      setImagePreview(originalForm.current?.profilePicturePath);
-    } finally {
-      setUploading(false);
-      e.target.value = ""; // Clear the file input after upload
-    }
+    setFormData((prev) => ({ ...prev, file }));
+    e.target.value = "";
   };
 
+  // ✅ Unified PUT update with multipart
   const handleSave = async () => {
     const newErrors = {};
     if (!formData.parentMobileNumber) newErrors.parentMobileNumber = "Parent mobile is required";
@@ -131,6 +103,8 @@ const PersonalInformation = () => {
     }
 
     try {
+      const multipart = new FormData();
+
       const payload = {
         userId,
         gender: formData.gender,
@@ -138,11 +112,30 @@ const PersonalInformation = () => {
         parentMobileNumber: formData.parentMobileNumber,
         bloodGroup: formData.bloodGroup,
       };
-      await axios.put("http://localhost:8080/api/student/personal-info/update", payload);
+
+      multipart.append(
+        "info",
+        new Blob([JSON.stringify(payload)], { type: "application/json" })
+      );
+
+      // attach image only if selected
+      if (formData.file) {
+        multipart.append("file", formData.file);
+      }
+
+      const res = await axios.put(
+        "http://localhost:8080/api/student/personal-info/update",
+        multipart,
+        { headers: { "Content-Type": "multipart/form-data" } }
+      );
 
       alert("Profile updated successfully");
+
       setIsEditing(false);
-      originalForm.current = formData;
+      setFormData(res.data);
+      setImagePreview(res.data.profilePicturePath);
+      originalForm.current = res.data;
+
     } catch (err) {
       const message = err.response?.data?.message;
       if (message) setErrors({ parentMobileNumber: message });
@@ -157,41 +150,63 @@ const PersonalInformation = () => {
   };
 
   const removeProfilePicture = async () => {
-    if (!window.confirm("Are you sure you want to remove your profile picture?")) {
-      return;
-    }
+    if (!window.confirm("Are you sure you want to remove your profile picture?")) return;
 
-    try {
-      await axios.delete(`http://localhost:8080/api/student/personal-info/remove-image/${userId}`);
-      
-      setFormData(prev => ({ ...prev, profilePicturePath: "" }));
-      setImagePreview(null);
+    const multipart = new FormData();
 
-      const updatedUser = { ...user, profilePicturePath: "" };
-      localStorage.setItem("user", JSON.stringify(updatedUser));
-      window.dispatchEvent(new Event("user-updated"));
+    const payload = {
+      userId,
+      gender: formData.gender,
+      dateOfBirth: formData.dateOfBirth,
+      parentMobileNumber: formData.parentMobileNumber,
+      bloodGroup: formData.bloodGroup,
+    };
 
-      alert("Profile picture removed successfully!");
-    } catch (err) {
-      alert(err.response?.data?.message || "Failed to remove profile picture");
-    }
+    multipart.append(
+      "info",
+      new Blob([JSON.stringify(payload)], { type: "application/json" })
+    );
+
+    axios
+      .put("http://localhost:8080/api/student/personal-info/update", multipart, {
+        headers: { "Content-Type": "multipart/form-data" },
+      })
+      .then((res) => {
+        setFormData(res.data);
+        setImagePreview(null);
+        alert("Profile picture removed successfully!");
+      })
+      .catch((err) => {
+        alert(err.response?.data?.message || "Failed to remove profile picture");
+      });
   };
 
   if (loading) return <div>Loading Personal Info...</div>;
 
-  // Determine whether to show image or letter avatar
-  const showLetterAvatar = !imagePreview || imagePreview.includes("ui-avatars.com") || imagePreview.includes("/uploads/") === false;
+  const showLetterAvatar =
+    !imagePreview ||
+    imagePreview.includes("ui-avatars.com") ||
+    imagePreview.includes("/uploads/") === false;
 
   return (
     <div className="card mb-4 shadow-sm border-0">
       <div className="card-header bg-light d-flex justify-content-between align-items-center">
         <h5 className="mb-0">Section 1: Personal Information</h5>
         {!isEditing ? (
-          <button className="btn btn-primary btn-sm" onClick={() => setIsEditing(true)}>Edit</button>
+          <button
+            className="btn btn-primary btn-sm"
+            onClick={() => setIsEditing(true)}
+          >
+            Edit
+          </button>
         ) : (
           <div>
-            <button className="btn btn-secondary btn-sm me-2" onClick={handleCancel}>Cancel</button>
-            <button className="btn btn-success btn-sm" onClick={handleSave}>Save</button>
+            <button className="btn btn-secondary btn-sm me-2" onClick={handleCancel}>
+              Cancel
+            </button>
+            <button className="btn btn-success btn-sm" onClick={handleSave}>
+              Save
+            </button>
           </div>
         )}
       </div>
@@ -228,21 +243,20 @@ const PersonalInformation = () => {
 
           {isEditing && (
             <div className="mt-2">
-              <input 
-                type="file" 
-                className="form-control form-control-sm" 
-                accept=".jpg,.jpeg,.png,.gif,.webp" 
+              <input
+                type="file"
+                className="form-control form-control-sm"
+                accept=".jpg,.jpeg,.png,.gif,.webp"
                 onChange={handleImageUpload}
-                disabled={uploading}
               />
               <small className="text-muted">
-                {uploading ? "Uploading..." : "Supported formats: JPG, JPEG, PNG, GIF, WEBP (Max 5MB)"}
+                Supported formats: JPG, JPEG, PNG, GIF, WEBP (Max 5MB)
               </small>
             </div>
           )}
         </div>
 
-        {/* Form fields */}
+        {/* FORM */}
         <div className="row g-3">
           <div className="col-md-4">
             <label className="form-label">First Name *</label>
@@ -275,7 +289,9 @@ const PersonalInformation = () => {
               onChange={handleChange}
               className={`form-control ${errors.parentMobileNumber && "is-invalid"}`}
             />
-            {errors.parentMobileNumber && <div className="invalid-feedback">{errors.parentMobileNumber}</div>}
+            {errors.parentMobileNumber && (
+              <div className="invalid-feedback">{errors.parentMobileNumber}</div>
+            )}
           </div>
 
           <div className="col-md-4">
@@ -288,7 +304,9 @@ const PersonalInformation = () => {
               onChange={handleChange}
               className={`form-control ${errors.dateOfBirth && "is-invalid"}`}
             />
-            {errors.dateOfBirth && <div className="invalid-feedback">{errors.dateOfBirth}</div>}
+            {errors.dateOfBirth && (
+              <div className="invalid-feedback">{errors.dateOfBirth}</div>
+            )}
           </div>
 
           <div className="col-md-4">
@@ -301,9 +319,18 @@ const PersonalInformation = () => {
               className={`form-select ${errors.bloodGroup && "is-invalid"}`}
             >
               <option value="">Select</option>
-              <option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>O+</option><option>O-</option><option>AB+</option><option>AB-</option>
+              <option>A+</option>
+              <option>A-</option>
+              <option>B+</option>
+              <option>B-</option>
+              <option>O+</option>
+              <option>O-</option>
+              <option>AB+</option>
+              <option>AB-</option>
             </select>
-            {errors.bloodGroup && <div className="invalid-feedback">{errors.bloodGroup}</div>}
+            {errors.bloodGroup && (
+              <div className="invalid-feedback">{errors.bloodGroup}</div>
+            )}
           </div>
 
           <div className="col-md-4">
@@ -315,9 +342,14 @@ const PersonalInformation = () => {
               onChange={handleChange}
               className={`form-select ${errors.gender && "is-invalid"}`}
             >
-              <option value="">Select</option><option>Male</option><option>Female</option><option>Other</option>
+              <option value="">Select</option>
+              <option>Male</option>
+              <option>Female</option>
+              <option>Other</option>
             </select>
-            {errors.gender && <div className="invalid-feedback">{errors.gender}</div>}
+            {errors.gender && (
+              <div className="invalid-feedback">{errors.gender}</div>
+            )}
           </div>
         </div>
       </div>

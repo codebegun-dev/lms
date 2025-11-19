@@ -1,27 +1,17 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 
-/**
- * LeadsList.jsx
- * - Uses backend pagination via: GET /api/saleCourse/student/students?page=#
- * - Also fetches full list (GET /api/saleCourse/student) to compute overall counts for the cards.
- * - If any filter/search is active, shows client-side filtered results (no pagination).
- * - Edit / Update / Delete logic retained as-is.
- */
-
 function LeadsList() {
-  const [paginatedLeads, setPaginatedLeads] = useState([]); // data from current page
-  const [allLeads, setAllLeads] = useState([]); // used for counts and client-side filtering
+  const [paginatedLeads, setPaginatedLeads] = useState([]);
+  const [allLeads, setAllLeads] = useState([]);
   const [loading, setLoading] = useState(true);
   const [apiError, setApiError] = useState("");
   const [courses, setCourses] = useState([]);
 
-  // Filters / search
   const [searchEmail, setSearchEmail] = useState("");
   const [filterYear, setFilterYear] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
 
-  // Edit modal
   const [selectedLead, setSelectedLead] = useState(null);
   const [formData, setFormData] = useState({
     studentName: "",
@@ -34,32 +24,26 @@ function LeadsList() {
     status: "",
   });
 
-  // Pagination state
   const [page, setPage] = useState(0);
-  const [pageSize] = useState(30); // same default used on backend
+  const [pageSize] = useState(30);
   const [totalElements, setTotalElements] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [loadingPage, setLoadingPage] = useState(false);
 
   const BASE_URL = "http://localhost:8080/api/saleCourse/student";
 
-  // on mount: fetch first page, all leads (for counts/filters), and courses
   useEffect(() => {
     fetchPage(page);
     fetchAllLeadsForCounts();
     fetchCourses();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Re-fetch page when page changes (only when no filters active)
   useEffect(() => {
     if (!isFilteringActive()) {
       fetchPage(page);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page]);
 
-  // Helper: are any filters/search active?
   const isFilteringActive = () => {
     return (
       (searchEmail && searchEmail.trim() !== "") ||
@@ -68,17 +52,13 @@ function LeadsList() {
     );
   };
 
-  // Fetch paginated page from backend. Robust parsing of response map.
   const fetchPage = async (pageNumber = 0) => {
     try {
       setLoadingPage(true);
       setApiError("");
       const res = await axios.get(`${BASE_URL}/students?page=${pageNumber}`);
-
-      // backend may return a Map with keys like: content, students, items, data, totalElements, totalPages
       const body = res.data || {};
 
-      // try several possible shapes
       const content =
         body.content ||
         body.students ||
@@ -89,7 +69,6 @@ function LeadsList() {
         body.result ||
         [];
 
-      // If API returned the full array directly (some versions), handle that
       const leadsArray = Array.isArray(content) && content.length > 0 ? content :
         Array.isArray(body) ? body : content;
 
@@ -122,7 +101,6 @@ function LeadsList() {
     }
   };
 
-  // Fetch all leads (non-paginated) to compute counts and to allow client-side filtering.
   const fetchAllLeadsForCounts = async () => {
     try {
       setLoading(true);
@@ -139,7 +117,6 @@ function LeadsList() {
     }
   };
 
-  // GET courses for dropdowns (unchanged)
   const fetchCourses = async () => {
     try {
       const res = await axios.get("http://localhost:8080/api/courses/all");
@@ -149,12 +126,10 @@ function LeadsList() {
     }
   };
 
-  // Handle input change in modal
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // Open modal and populate fields
   const handleEdit = (lead) => {
     setSelectedLead(lead);
     setFormData({
@@ -169,14 +144,12 @@ function LeadsList() {
     });
   };
 
-  // PUT update (unchanged)
   const handleUpdate = async () => {
     if (!selectedLead) return;
     try {
       await axios.put(`${BASE_URL}/${selectedLead.studentId}`, formData);
       alert("Lead updated successfully!");
       setSelectedLead(null);
-      // refresh both page and all-leads
       if (isFilteringActive()) {
         await fetchAllLeadsForCounts();
       } else {
@@ -188,13 +161,11 @@ function LeadsList() {
     }
   };
 
-  // DELETE lead (unchanged)
   const deleteLead = async (id) => {
     if (!window.confirm("Are you sure you want to delete this lead?")) return;
     try {
       await axios.delete(`${BASE_URL}/${id}`);
       alert("Lead deleted successfully!");
-      // refresh both
       if (isFilteringActive()) {
         await fetchAllLeadsForCounts();
       } else {
@@ -206,7 +177,6 @@ function LeadsList() {
     }
   };
 
-  // Status badge classes (unchanged)
   const getStatusBadgeClass = (status) => {
     switch (status) {
       case "New":
@@ -224,7 +194,6 @@ function LeadsList() {
     }
   };
 
-  // Compute counts (from allLeads). If allLeads empty, fallback to totals from paginated response
   const totalLeadsCount = allLeads.length || totalElements;
   const countByStatus = (status) =>
     allLeads.filter((l) => (l.status || "").toString() === status).length;
@@ -234,7 +203,6 @@ function LeadsList() {
   const interestedCount = countByStatus("Interested");
   const notInterestedCount = countByStatus("Not Interested");
 
-  // Filtering logic: When filters/search present, filter allLeads and display those. Otherwise display paginatedLeads.
   const filteredLeads = (isFilteringActive()
     ? allLeads.filter((lead) => {
         const matchesEmail =
@@ -253,62 +221,99 @@ function LeadsList() {
     : paginatedLeads
   ) || [];
 
-  // Unique years from allLeads for filter dropdown
   const uniqueYears = [...new Set(allLeads.map((lead) => lead.passedOutYear).filter(Boolean))].sort();
 
-  // Clear filters
   const clearFilters = () => {
     setSearchEmail("");
     setFilterYear("");
     setFilterStatus("");
-    // when cleared, re-load first page
     setPage(0);
     fetchPage(0);
   };
 
-  // Pagination controls (robust)
   const goToPage = (p) => {
     if (p < 0) p = 0;
     if (totalPages && p >= totalPages) p = totalPages - 1;
     setPage(p);
   };
 
-  // Render
+  const statsCards = [
+    { 
+      title: "Total Leads", 
+      value: totalLeadsCount, 
+      icon: "📊",
+      bgGradient: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+    },
+    { 
+      title: "Initial", 
+      value: initialCount, 
+      icon: "🆕",
+      bgGradient: "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)"
+    },
+    { 
+      title: "Contacted", 
+      value: contactedCount, 
+      icon: "📞",
+      bgGradient: "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)"
+    },
+    { 
+      title: "Interested", 
+      value: interestedCount, 
+      icon: "⭐",
+      bgGradient: "linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)"
+    },
+    { 
+      title: "Not Interested", 
+      value: notInterestedCount, 
+      icon: "❌",
+      bgGradient: "linear-gradient(135deg, #fa709a 0%, #fee140 100%)"
+    }
+  ];
+
   return (
-    <div className="container-fluid mt-4">
-      {/* Header + Cards */}
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <div>
-          <h3 className="fw-bold text-dark mb-1">Leads Management</h3>
-          <p className="text-muted mb-0 small">Manage and track all your student leads</p>
-        </div>
-
-        <div className="d-flex gap-3 align-items-center">
-          {/* Cards */}
-          <div className="card shadow-sm text-center p-3">
-            <div className="small text-muted">Total Leads</div>
-            <div className="h5 fw-bold mb-0">{totalLeadsCount}</div>
-          </div>
-
-          <div className="card shadow-sm text-center p-3">
-            <div className="small text-muted">INITIAL</div>
-            <div className="h5 fw-bold mb-0">{initialCount}</div>
-          </div>
-
-          <div className="card shadow-sm text-center p-3">
-            <div className="small text-muted">Contacted</div>
-            <div className="h5 fw-bold mb-0">{contactedCount}</div>
-          </div>
-
-          <div className="card shadow-sm text-center p-3">
-            <div className="small text-muted">Interested</div>
-            <div className="h5 fw-bold mb-0">{interestedCount}</div>
-          </div>
-
-          <div className="card shadow-sm text-center p-3">
-            <div className="small text-muted">Not Interested</div>
-            <div className="h5 fw-bold mb-0">{notInterestedCount}</div>
-          </div>
+    <div className="container-fluid p-4" style={{ background: "linear-gradient(180deg, #f8f9fc 0%, #eef2f7 100%)", minHeight: "100vh" }}>
+      
+      {/* Stats Cards Row */}
+      <div className="mb-4">
+        <div className="row g-3">
+          {statsCards.map((card, index) => (
+            <div key={index} className="col">
+              <div 
+                className="card border-0 shadow-sm h-100"
+                style={{
+                  background: card.bgGradient,
+                  transition: "transform 0.3s ease, box-shadow 0.3s ease"
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = "translateY(-5px)";
+                  e.currentTarget.style.boxShadow = "0 12px 24px rgba(0,0,0,0.15)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "translateY(0)";
+                  e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.1)";
+                }}
+              >
+                <div className="card-body p-3">
+                  <div className="d-flex justify-content-between align-items-start">
+                    <div>
+                      <h6 className="text-uppercase mb-2 fw-semibold" style={{ color: "#fff", opacity: 0.9, fontSize: "0.75rem", letterSpacing: "0.5px" }}>
+                        {card.title}
+                      </h6>
+                      <h3 className="fw-bold mb-1" style={{ color: "#fff", fontSize: "2rem" }}>
+                        {card.value}
+                      </h3>
+                      <p className="mb-0 fw-semibold" style={{ color: "#fff", opacity: 0.9, fontSize: "0.75rem" }}>
+                        {totalLeadsCount > 0 ? ((card.value / totalLeadsCount) * 100).toFixed(1) : 0}%
+                      </p>
+                    </div>
+                    <div style={{ fontSize: "2rem", opacity: 0.8 }}>
+                      {card.icon}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
@@ -316,10 +321,10 @@ function LeadsList() {
       <div className="card shadow-sm mb-4 border-0">
         <div className="card-body">
           <div className="d-flex justify-content-between align-items-center mb-3">
-            <h6 className="fw-bold mb-0">Filters</h6>
+            <h5 className="fw-bold mb-0 text-dark">🔍 Filters</h5>
             {isFilteringActive() && (
-              <button className="btn btn-sm btn-outline-danger" onClick={clearFilters}>
-                Clear Filters
+              <button className="btn btn-sm btn-danger" onClick={clearFilters}>
+                ✕ Clear Filters
               </button>
             )}
           </div>
@@ -368,7 +373,7 @@ function LeadsList() {
         </div>
       </div>
 
-      {/* Loading / Error states */}
+      {/* Loading State */}
       {(loading || loadingPage) && (
         <div className="card shadow-sm border-0 mb-3">
           <div className="card-body text-center py-5">
@@ -380,17 +385,19 @@ function LeadsList() {
         </div>
       )}
 
+      {/* Error State */}
       {apiError && (
         <div className="alert alert-danger shadow-sm mb-3" role="alert">
-          <strong>Error:</strong> {apiError}
+          <strong>⚠️ Error:</strong> {apiError}
         </div>
       )}
 
-      {/* No results */}
+      {/* No Results */}
       {!loading && filteredLeads.length === 0 && (
         <div className="card shadow-sm border-0 mb-3">
           <div className="card-body text-center py-5">
-            <h5 className="fw-semibold mb-2">No leads found</h5>
+            <div style={{ fontSize: "4rem", opacity: 0.3 }}>📭</div>
+            <h5 className="fw-semibold mb-2 mt-3">No leads found</h5>
             <p className="text-muted mb-0">
               {isFilteringActive() ? "Try adjusting your filters" : "Start by adding new leads"}
             </p>
@@ -401,9 +408,12 @@ function LeadsList() {
       {/* Table */}
       {!loading && filteredLeads.length > 0 && (
         <div className="card shadow-sm border-0 mb-3">
+          <div className="card-header bg-white border-bottom py-3">
+            <h5 className="mb-0 fw-bold text-dark">📋 Leads List</h5>
+          </div>
           <div className="table-responsive">
-            <table className="table table-hover table-striped mb-0 align-middle">
-              <thead className="table-light">
+            <table className="table table-hover mb-0 align-middle">
+              <thead style={{ background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)", color: "#fff" }}>
                 <tr>
                   <th className="fw-semibold">ID</th>
                   <th className="fw-semibold">Name</th>
@@ -419,10 +429,10 @@ function LeadsList() {
               </thead>
 
               <tbody>
-                {filteredLeads.map((lead) => (
-                  <tr key={lead.studentId}>
+                {filteredLeads.map((lead, idx) => (
+                  <tr key={lead.studentId} style={{ background: idx % 2 === 0 ? "#fff" : "#f8f9fa" }}>
                     <td className="fw-medium">{lead.studentId}</td>
-                    <td className="fw-semibold">{lead.studentName}</td>
+                    <td className="fw-semibold text-dark">{lead.studentName}</td>
                     <td>{lead.phone}</td>
                     <td>{lead.email || <span className="text-muted">-</span>}</td>
                     <td>{lead.gender || <span className="text-muted">-</span>}</td>
@@ -436,8 +446,8 @@ function LeadsList() {
                     </td>
                     <td>
                       <div className="d-flex gap-2 justify-content-center">
-                        <button className="btn btn-sm btn-warning" onClick={() => handleEdit(lead)}>Edit</button>
-                        <button className="btn btn-sm btn-danger" onClick={() => deleteLead(lead.studentId)}>Delete</button>
+                        <button className="btn btn-sm btn-warning" onClick={() => handleEdit(lead)}>✏️ Edit</button>
+                        <button className="btn btn-sm btn-danger" onClick={() => deleteLead(lead.studentId)}>🗑️ Delete</button>
                       </div>
                     </td>
                   </tr>
@@ -448,12 +458,12 @@ function LeadsList() {
         </div>
       )}
 
-      {/* Pagination controls - only show when not filtering */}
+      {/* Pagination */}
       {!isFilteringActive() && totalPages > 0 && (
         <div className="d-flex justify-content-between align-items-center mt-3">
           <div className="text-muted">
-            Showing page <strong>{page + 1}</strong> of <strong>{totalPages}</strong>
-            {" · "}Total records: <strong>{totalElements}</strong>
+            Showing page <strong className="text-dark">{page + 1}</strong> of <strong className="text-dark">{totalPages}</strong>
+            {" · "}Total records: <strong className="text-dark">{totalElements}</strong>
           </div>
 
           <nav>
@@ -462,9 +472,7 @@ function LeadsList() {
                 <button className="page-link" onClick={() => goToPage(page - 1)}>Previous</button>
               </li>
 
-              {/* show limited page numbers (for big totals) */}
               {Array.from({ length: totalPages }).map((_, idx) => {
-                // show first, last, current +/- 2
                 if (
                   idx === 0 ||
                   idx === totalPages - 1 ||
@@ -476,7 +484,6 @@ function LeadsList() {
                     </li>
                   );
                 }
-                // show ellipsis placeholder once where needed
                 const shouldShowLeftEllipsis = idx === 1 && page > 3;
                 const shouldShowRightEllipsis = idx === totalPages - 2 && page < totalPages - 4;
                 if (shouldShowLeftEllipsis || shouldShowRightEllipsis) {
@@ -497,20 +504,20 @@ function LeadsList() {
         </div>
       )}
 
-      {/* Edit modal */}
+      {/* Edit Modal */}
       {selectedLead && (
         <div className="modal show fade" style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}>
           <div className="modal-dialog modal-dialog-centered modal-lg">
-            <div className="modal-content shadow-lg">
-              <div className="modal-header bg-primary text-white">
+            <div className="modal-content shadow-lg border-0">
+              <div className="modal-header" style={{ background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)", color: "#fff" }}>
                 <div>
-                  <h5 className="modal-title fw-bold mb-0">Edit Lead Information</h5>
+                  <h5 className="modal-title fw-bold mb-0">✏️ Edit Lead Information</h5>
                   <small className="opacity-75">Update lead details and status</small>
                 </div>
                 <button type="button" className="btn-close btn-close-white" onClick={() => setSelectedLead(null)}></button>
               </div>
 
-              <div className="modal-body">
+              <div className="modal-body p-4">
                 <div className="row g-3">
                   <div className="col-md-6">
                     <label className="form-label fw-semibold">Full Name</label>
@@ -572,7 +579,7 @@ function LeadsList() {
 
               <div className="modal-footer">
                 <button type="button" className="btn btn-secondary" onClick={() => setSelectedLead(null)}>Cancel</button>
-                <button type="button" className="btn btn-primary" onClick={handleUpdate}>Save Changes</button>
+                <button type="button" className="btn btn-primary" onClick={handleUpdate}>💾 Save Changes</button>
               </div>
             </div>
           </div>
