@@ -28,7 +28,7 @@ import QuestionBank from './Admin_Dashboard/QuestionBank';
 import Category from './Admin_Dashboard/CreateCategory';
 import CreateTopic from './Admin_Dashboard/CreateTopic';
 import CreateSubTopic from './Admin_Dashboard/CreateSubTopic';
-import UserManagement from './Admin_Dashboard/UserManagement';
+import UserManagement from "./Admin_Dashboard/UserManagement/UserManagement.jsx";
 import ManageRoles from './Admin_Dashboard/ManageRoles'; 
 import Syllabus from './Admin_Dashboard/Syllabus';
 import EditArticle from './Admin_Dashboard/EditArticle';
