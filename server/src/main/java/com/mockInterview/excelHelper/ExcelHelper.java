@@ -50,10 +50,10 @@ public class ExcelHelper {
                 if (status != null && !status.isEmpty()) {
                     dto.setStatus(status);
                 } else {
-                    dto.setStatus("INITIAL"); // default value
+                    dto.setStatus("NEW"); // default value
                 }
 
-                studentList.add(dto);
+                studentList.add(dto); 
             }
 
         } catch (Exception e) {

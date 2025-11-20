@@ -63,7 +63,10 @@ public class SalesCourseManagementMapper {
         } else {
             dto.setAssignedTo(String.valueOf(sc.getAssignedTo().getUserId()));
         }
+        
+        dto.setLoggedInUserId(sc.getAssignedBy() != null ? sc.getAssignedBy().getUserId() : null);
+
 
         return dto;
-    }
+    } 
 }
