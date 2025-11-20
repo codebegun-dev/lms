@@ -33,4 +33,6 @@ public class SalesCourseManagementResponseDto {
 
     
     private String assignedTo;
+    
+    private Long loggedInUserId;
 }

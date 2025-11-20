@@ -5,14 +5,16 @@ import java.util.Map;
 
 import org.springframework.web.multipart.MultipartFile;
 
+
 import com.mockInterview.requestDtos.SalesCourseManagementRequestDto;
+import com.mockInterview.responseDtos.AssignedCountResponseDto;
 import com.mockInterview.responseDtos.SalesCourseManagementResponseDto;
 
 public interface SalesCourseService {
 
     
     SalesCourseManagementResponseDto createStudent(SalesCourseManagementRequestDto dto);
-    public Map<String, Object> uploadStudentsFromExcel(MultipartFile file);
+    public Map<String, Object> uploadStudentsFromExcel(MultipartFile file, Long loggedInUserId);
 
     
     SalesCourseManagementResponseDto getStudentsById(Long id);
@@ -31,6 +33,13 @@ public interface SalesCourseService {
     
     List<SalesCourseManagementResponseDto> getStudentsByStatus(String status);
     
-    public String bulkAssignStudentsToUser(List<Long> studentIds, Long assignedUserId);
+    public String bulkUpdateStatus(List<Long> studentIds, String status, Long loggedInUserId);
+
+   public String bulkAssignStudentsToUser(List<Long> studentIds, Long assignedUserId, Long loggedInUserId);
+    public String rebalanceAssignments(Long loggedInUserId);
+    
+    public List<AssignedCountResponseDto> getAssignedCountsForCounsellors();
+    
+    
 
 }

@@ -1,6 +1,8 @@
 package com.mockInterview.entity;
 
 
+import java.time.LocalDateTime;
+
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -49,6 +51,12 @@ public class SalesCourseManagement {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "assigned_to", nullable = true)
     private User assignedTo;
+
+    private LocalDateTime assignedAt;
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "assigned_by", nullable = true) // set nullable true; will enforce in service
+    private User assignedBy;
 
 
 }
