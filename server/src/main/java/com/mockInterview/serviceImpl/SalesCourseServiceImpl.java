@@ -53,7 +53,7 @@ public class SalesCourseServiceImpl implements SalesCourseService {
 	// ---------------- CREATE STUDENT ----------------
 	@Override
 	public SalesCourseManagementResponseDto createStudent(SalesCourseManagementRequestDto dto) {
-
+		validateUserRole(dto.getLoggedInUserId());
 	    // --------------------- CLEAN INPUTS ---------------------
 	    String email = dto.getEmail() != null ? dto.getEmail().trim() : null;
 	    String phone = dto.getPhone() != null ? dto.getPhone().trim() : null;
@@ -126,7 +126,7 @@ public class SalesCourseServiceImpl implements SalesCourseService {
 	@Override
 	public Map<String, Object> uploadStudentsFromExcel(MultipartFile file, Long loggedInUserId)
  {
-
+		validateUserRole(loggedInUserId);
 		List<SalesCourseManagementRequestDto> dtos = ExcelHelper.parseExcelFile(file);
 
 		int successCount = 0;
@@ -214,7 +214,7 @@ public class SalesCourseServiceImpl implements SalesCourseService {
 	// ---------------- UPDATE STUDENT ----------------
 	@Override
 	public SalesCourseManagementResponseDto updateStudentDetails(Long id, SalesCourseManagementRequestDto dto) {
-
+		validateUserRole(dto.getLoggedInUserId());
 	    SalesCourseManagement student = salesCourseManagementRepository.findById(id)
 	            .orElseThrow(() -> new ResourceNotFoundException("Student not found with ID: " + id));
 
@@ -328,7 +328,7 @@ public class SalesCourseServiceImpl implements SalesCourseService {
 	@Override
 	 @Transactional
 	public String bulkUpdateStatus(List<Long> studentIds, String status, Long loggedInUserId) {
-
+		validateUserRole(loggedInUserId);
 	    if (studentIds == null || studentIds.isEmpty()) {
 	        throw new IllegalArgumentException("Student IDs cannot be empty");
 	    }
@@ -374,7 +374,7 @@ public class SalesCourseServiceImpl implements SalesCourseService {
 	@Override
 	@Transactional
 	public String bulkAssignStudentsToUser(List<Long> studentIds, Long assignedUserId, Long loggedInUserId) {
-
+		validateUserRole(loggedInUserId);
 	    if (assignedUserId == null || studentIds == null || studentIds.isEmpty()) {
 	        throw new IllegalArgumentException("Student IDs and Assigned User ID cannot be empty");
 	    }
@@ -602,6 +602,34 @@ public class SalesCourseServiceImpl implements SalesCourseService {
 	    }
 
 	    return response;
+	}
+	
+	@Override
+	public List<SalesCourseManagementResponseDto> getStudentsAssignedToUser(Long userId) {
+	    List<SalesCourseManagement> students = salesCourseManagementRepository.findByAssignedTo_UserId(userId);
+	    List<SalesCourseManagementResponseDto> dtoList = new ArrayList<>();
+	    for (SalesCourseManagement s : students) {
+	        dtoList.add(SalesCourseManagementMapper.toResponseDto(s));
+	    }
+	    return dtoList;
+	}
+
+	private void validateUserRole(Long loggedInUserId) {
+	    if (loggedInUserId == null) {
+	        throw new UnauthorizedActionException("Logged-in user ID is required");
+	    }
+
+	    User loggedInUser = userRepository.findById(loggedInUserId)
+	            .orElseThrow(() -> new ResourceNotFoundException("Logged-in user not found"));
+
+	    String roleName = loggedInUser.getRole() != null ? loggedInUser.getRole().getName() : null;
+
+	    if (roleName == null || 
+	        (!roleName.startsWith("SA_") && !"MASTER_ADMIN".equals(roleName))) {
+	        throw new UnauthorizedActionException(
+	            "User (" + loggedInUser.getFirstName() + ") is not authorized to perform this action"
+	        );
+	    }
 	}
 
 

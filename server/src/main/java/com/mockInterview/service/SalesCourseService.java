@@ -40,6 +40,9 @@ public interface SalesCourseService {
     
     public List<AssignedCountResponseDto> getAssignedCountsForCounsellors();
     
+    public List<SalesCourseManagementResponseDto> getStudentsAssignedToUser(Long userId);
+    	
+    
     
 
 }

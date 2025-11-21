@@ -114,4 +114,10 @@ public class SalesCourseController {
     public List<AssignedCountResponseDto> getAssignedCounts() {
         return salesCourseService.getAssignedCountsForCounsellors();
     }
+    
+    @GetMapping("/assigned-to/{userId}")
+    public List<SalesCourseManagementResponseDto> getAssignedStudents(@PathVariable Long userId) {
+        return salesCourseService.getStudentsAssignedToUser(userId);
+    }
+
 }
