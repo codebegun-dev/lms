@@ -24,6 +24,7 @@ function LeadsList() {
   const [selectedLeads, setSelectedLeads] = useState(new Set());
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [selectedCounselor, setSelectedCounselor] = useState("");
+  const [assigning, setAssigning] = useState(false);
   
   const [formData, setFormData] = useState({
     studentName: "",
@@ -48,7 +49,7 @@ function LeadsList() {
   const [loadingPage, setLoadingPage] = useState(false);
 
   const BASE_URL = "http://localhost:8080/api/saleCourse/student";
-  const COUNSELOR_URL = "http://localhost:8080/api/counselors";
+  const COUNSELOR_URL = "http://localhost:8080/api/user/assignable-users";
 
   useEffect(() => {
     fetchPage(page);
@@ -98,10 +99,10 @@ function LeadsList() {
       const leadsArray = Array.isArray(content) && content.length > 0 ? content :
         Array.isArray(body) ? body : content;
 
-      // Add assignedTo field with default "Un-Assigned" for all leads and convert INITIAL to NEW
+      // FIXED: Only modify status, don't touch assignedTo field
       const leadsWithAssigned = leadsArray.map(lead => ({
         ...lead,
-        assignedTo: lead.assignedTo || "Un-Assigned",
+        // ONLY update status, keep assignedTo exactly as it comes from API
         status: lead.status === "INITIAL" ? "NEW" : lead.status
       }));
 
@@ -141,11 +142,11 @@ function LeadsList() {
       const res = await axios.get(BASE_URL);
       const data = res.data || [];
       
-      // Add assignedTo field with default "Un-Assigned" for all leads and convert INITIAL to NEW
+      // FIXED: Only modify status, don't touch assignedTo field
       const leadsWithAssigned = Array.isArray(data) 
         ? data.map(lead => ({
             ...lead,
-            assignedTo: lead.assignedTo || "Un-Assigned",
+            // ONLY update status, keep assignedTo exactly as it comes from API
             status: lead.status === "INITIAL" ? "NEW" : lead.status
           }))
         : [];
@@ -172,10 +173,60 @@ function LeadsList() {
   const fetchCounselors = async () => {
     try {
       const res = await axios.get(COUNSELOR_URL);
-      setCounselors(res.data || []);
+      console.log("Counselors API Response:", res.data);
+      
+      const transformedCounselors = (res.data || []).map(user => {
+        let name = 'Unknown User';
+        if (user.name) name = user.name;
+        else if (user.username) name = user.username;
+        else if (user.firstName || user.lastName) {
+          name = `${user.firstName || ''} ${user.lastName || ''}`.trim();
+        }
+        
+        return {
+          id: user.userId || user.id,
+          name: name,
+          email: user.email || 'No email',
+          phone: user.phone || user.mobile || 'No phone',
+          status: user.active !== false ? "Active" : "Inactive"
+        };
+      });
+      
+      console.log("Transformed Counselors:", transformedCounselors);
+      setCounselors(transformedCounselors);
     } catch (err) {
-      console.error("Failed to load counselors");
+      console.error("Failed to load counselors", err);
+      setCounselors([]);
     }
+  };
+
+  // Function to get counselor name from ID
+  const getCounselorNameById = (counselorId) => {
+    if (!counselorId) return "";
+    const counselor = counselors.find(c => c.id === counselorId);
+    return counselor ? counselor.name : counselorId; // Return ID if name not found
+  };
+
+  // Function to get counselor name from assignedTo field (could be ID or name)
+  const getAssignedCounselorName = (lead) => {
+    if (!lead.assignedTo || lead.assignedTo.trim() === "") {
+      return "";
+    }
+    
+    // Check if assignedTo is already a name (from existing data)
+    const counselorByName = counselors.find(c => c.name === lead.assignedTo);
+    if (counselorByName) {
+      return counselorByName.name;
+    }
+    
+    // Check if assignedTo is an ID (from new bulk assignment)
+    const counselorById = counselors.find(c => c.id.toString() === lead.assignedTo.toString());
+    if (counselorById) {
+      return counselorById.name;
+    }
+    
+    // If not found in counselors list, return as is (could be ID or name)
+    return lead.assignedTo;
   };
 
   const handleChange = (e) => {
@@ -197,28 +248,59 @@ function LeadsList() {
       city: lead.city || "",
       source: lead.source || "",
       campaign: lead.campaign || "",
-      assignedTo: lead.assignedTo || "Un-Assigned"
+      assignedTo: getAssignedCounselorName(lead) || "" // Get counselor name for display
     });
   };
 
   const handleUpdate = async () => {
     if (!selectedLead) return;
     try {
-      // Convert NEW back to INITIAL for API if needed
+      // Find counselor ID from selected name
+      let assignedUserId = "";
+      if (formData.assignedTo && formData.assignedTo.trim() !== "") {
+        const counselor = counselors.find(c => c.name === formData.assignedTo);
+        if (counselor) {
+          assignedUserId = counselor.id;
+        }
+      }
+
       const updateData = {
         ...formData,
-        status: formData.status === "NEW" ? "INITIAL" : formData.status
+        status: formData.status === "NEW" ? "INITIAL" : formData.status,
+        assignedTo: assignedUserId // Send counselor ID to backend
       };
       
       await axios.put(`${BASE_URL}/${selectedLead.studentId}`, updateData);
+      
       alert("Lead updated successfully!");
       setSelectedLead(null);
-      if (isFilteringActive()) {
-        await fetchAllLeadsForCounts();
-      } else {
-        await fetchPage(page);
-      }
-      await fetchAllLeadsForCounts();
+      
+      // Update local state immediately for better UX
+      const updatedLead = {
+        ...selectedLead,
+        ...formData,
+        assignedTo: formData.assignedTo, // Store counselor name in local state
+        status: formData.status === "NEW" ? "INITIAL" : formData.status,
+      };
+      
+      // Update in paginatedLeads
+      setPaginatedLeads(prevLeads => 
+        prevLeads.map(lead => 
+          lead.studentId === selectedLead.studentId 
+            ? { ...lead, ...updatedLead }
+            : lead
+        )
+      );
+      
+      // Update in allLeads
+      setAllLeads(prevLeads => 
+        prevLeads.map(lead => 
+          lead.studentId === selectedLead.studentId 
+            ? { ...lead, ...updatedLead }
+            : lead
+        )
+      );
+      
     } catch (err) {
       alert(err.response?.data?.message || "Failed to update lead");
     }
@@ -240,7 +322,6 @@ function LeadsList() {
     }
   };
 
-  // Lead Selection Functions
   const toggleLeadSelection = (leadId) => {
     const newSelected = new Set(selectedLeads);
     if (newSelected.has(leadId)) {
@@ -265,7 +346,6 @@ function LeadsList() {
     return selectedLeads.has(leadId);
   };
 
-  // Assignment Functions
   const handleAssignLeads = async () => {
     if (selectedLeads.size === 0) {
       alert("Please select at least one lead to assign.");
@@ -277,7 +357,6 @@ function LeadsList() {
       return;
     }
 
-    // Check if selected counselor is active
     const counselor = counselors.find(c => c.name === selectedCounselor);
     if (counselor && counselor.status === "Inactive") {
       alert("Cannot assign leads to an inactive counselor. Please select an active counselor.");
@@ -289,26 +368,76 @@ function LeadsList() {
     }
 
     try {
-      const assignmentPromises = Array.from(selectedLeads).map(leadId =>
-        axios.put(`${BASE_URL}/${leadId}/assign`, { assignedTo: selectedCounselor })
+      setAssigning(true);
+      
+      const selectedLeadIds = Array.from(selectedLeads);
+      
+      // Get the counselor ID from the selected counselor name
+      const selectedCounselorObj = counselors.find(c => c.name === selectedCounselor);
+      if (!selectedCounselorObj) {
+        throw new Error("Selected counselor not found");
+      }
+
+      const previousPaginatedLeads = [...paginatedLeads];
+      const previousAllLeads = [...allLeads];
+      
+      // Update local state immediately for better UX - store counselor name
+      setPaginatedLeads(prevLeads => 
+        prevLeads.map(lead => 
+          selectedLeadIds.includes(lead.studentId) 
+            ? { ...lead, assignedTo: selectedCounselor } // Store counselor name
+            : lead
+        )
+      );
+      
+      setAllLeads(prevLeads => 
+        prevLeads.map(lead => 
+          selectedLeadIds.includes(lead.studentId) 
+            ? { ...lead, assignedTo: selectedCounselor } // Store counselor name
+            : lead
+        )
       );
 
-      await Promise.all(assignmentPromises);
+      console.log(`Assigning ${selectedLeadIds.length} leads to ${selectedCounselor} (ID: ${selectedCounselorObj.id})`);
+      
+      // Use the new bulk assign endpoint
+      const bulkAssignRequest = {
+        studentIds: selectedLeadIds,
+        assignedUserId: selectedCounselorObj.id
+      };
+
+      const response = await axios.post(`${BASE_URL}/assign/bulk`, bulkAssignRequest);
+      
+      console.log("Bulk assign response:", response.data);
       
       alert(`Successfully assigned ${selectedLeads.size} lead(s) to ${selectedCounselor}!`);
       
-      // Refresh data
       setSelectedLeads(new Set());
       setShowAssignModal(false);
       setSelectedCounselor("");
       
-      if (isFilteringActive()) {
-        await fetchAllLeadsForCounts();
-      } else {
-        await fetchPage(page);
-      }
+      // Refresh data to ensure consistency with backend
+      setTimeout(async () => {
+        try {
+          await Promise.all([
+            fetchAllLeadsForCounts(),
+            fetchPage(page)
+          ]);
+        } catch (refreshError) {
+          console.error('Error refreshing data:', refreshError);
+        }
+      }, 500);
+      
     } catch (err) {
-      alert("Failed to assign leads: " + (err.response?.data?.message || err.message));
+      console.error("Bulk assignment error:", err);
+      
+      // Revert local state on error
+      setPaginatedLeads(previousPaginatedLeads);
+      setAllLeads(previousAllLeads);
+      
+      alert("Failed to assign leads: " + (err.response?.data?.message || err.message || "Unknown error"));
+    } finally {
+      setAssigning(false);
     }
   };
 
@@ -330,7 +459,18 @@ function LeadsList() {
   };
 
   const getAssignedBadgeClass = (assignedTo) => {
-    return assignedTo === "Un-Assigned" ? "bg-warning text-dark" : "bg-success";
+    if (!assignedTo || assignedTo.trim() === "" || assignedTo === "Un-Assigned") {
+      return "bg-warning text-dark";
+    }
+    return "bg-success";
+  };
+
+  const getAssignedDisplayText = (lead) => {
+    const assignedName = getAssignedCounselorName(lead);
+    if (!assignedName || assignedName.trim() === "") {
+      return "Un-Assigned";
+    }
+    return assignedName;
   };
 
   const getCounselorStatusBadge = (counselor) => {
@@ -349,12 +489,10 @@ function LeadsList() {
   const notInterestedCount = countByStatus("Not Interested");
   const enrolledCount = countByStatus("Enrolled");
 
-  // Helper function to get course name from lead
   const getLeadCourseName = (lead) => {
     if (lead.courseManagement?.courseName) {
       return lead.courseManagement.courseName;
     }
-    // If courseManagement doesn't exist, try to find course name from courses list
     if (lead.courseId && courses.length > 0) {
       const course = courses.find(c => c.courseId === lead.courseId);
       return course ? course.courseName : "N/A";
@@ -364,6 +502,8 @@ function LeadsList() {
 
   const filteredLeads = (isFilteringActive()
     ? allLeads.filter((lead) => {
+        const assignedName = getAssignedCounselorName(lead);
+        
         const matchesEmail =
           searchEmail.trim() === "" ||
           (lead.email && lead.email.toLowerCase().includes(searchEmail.toLowerCase().trim()));
@@ -385,9 +525,9 @@ function LeadsList() {
 
         const matchesAssignedTo =
           filterAssignedTo === "" || 
-          (filterAssignedTo === "Assigned" && lead.assignedTo !== "Un-Assigned") ||
-          (filterAssignedTo === "Un-Assigned" && lead.assignedTo === "Un-Assigned") ||
-          (lead.assignedTo && lead.assignedTo === filterAssignedTo);
+          (filterAssignedTo === "Assigned" && assignedName && assignedName.trim() !== "") ||
+          (filterAssignedTo === "Un-Assigned" && (!assignedName || assignedName.trim() === "")) ||
+          (assignedName && assignedName === filterAssignedTo);
 
         const matchesGender =
           filterGender === "" || (lead.gender && lead.gender === filterGender);
@@ -416,10 +556,11 @@ function LeadsList() {
   const uniqueQualifications = [...new Set(allLeads.map((lead) => lead.qualification).filter(Boolean))].sort();
   const uniqueCities = [...new Set(allLeads.map((lead) => lead.city).filter(Boolean))].sort();
   
-  // Get unique course names for filter dropdown
   const uniqueCourses = [...new Set(allLeads.map(lead => getLeadCourseName(lead)).filter(name => name !== "N/A"))].sort();
   
-  const uniqueAssignedTo = [...new Set(allLeads.map((lead) => lead.assignedTo).filter(Boolean))].sort();
+  const uniqueAssignedTo = [...new Set(allLeads
+    .map((lead) => getAssignedDisplayText(lead))
+    .filter(Boolean))].sort();
 
   const clearFilters = () => {
     setSearchEmail("");
@@ -584,9 +725,11 @@ function LeadsList() {
                 <option value="">All Assignments</option>
                 <option value="Un-Assigned">Un-Assigned</option>
                 <option value="Assigned">Assigned</option>
-                {uniqueAssignedTo.filter(assigned => assigned !== "Un-Assigned").map((assigned) => (
-                  <option key={assigned} value={assigned}>{assigned}</option>
-                ))}
+                {uniqueAssignedTo
+                  .filter(assigned => assigned !== "Un-Assigned")
+                  .map((assigned) => (
+                    <option key={assigned} value={assigned}>{assigned}</option>
+                  ))}
               </select>
             </div>
 
@@ -679,7 +822,7 @@ function LeadsList() {
         </div>
       </div>
 
-      {/* Selected Leads Card - POSITIONED BETWEEN FILTERS AND TABLE */}
+      {/* Selected Leads Card */}
       {selectedLeads.size > 0 && (
         <div className="card shadow-sm mb-3 border-warning">
           <div className="card-body py-2">
@@ -693,12 +836,21 @@ function LeadsList() {
                 <button 
                   className="btn btn-sm btn-success"
                   onClick={() => setShowAssignModal(true)}
+                  disabled={assigning}
                 >
-                  👥 Assign to Counselor
+                  {assigning ? (
+                    <>
+                      <span className="spinner-border spinner-border-sm me-2" role="status"></span>
+                      Assigning...
+                    </>
+                  ) : (
+                    "👥 Assign to Counselor"
+                  )}
                 </button>
                 <button 
                   className="btn btn-sm btn-secondary"
                   onClick={() => setSelectedLeads(new Set())}
+                  disabled={assigning}
                 >
                   ❌ Clear Selection
                 </button>
@@ -740,7 +892,7 @@ function LeadsList() {
         </div>
       )}
 
-      {/* Table - ONLY SHOWING SPECIFIED COLUMNS */}
+      {/* Table */}
       {!loading && filteredLeads.length > 0 && (
         <div className="card shadow-sm border-0 mb-3">
           <div className="card-header bg-white border-bottom py-3">
@@ -753,6 +905,7 @@ function LeadsList() {
                   checked={selectedLeads.size === filteredLeads.length && filteredLeads.length > 0}
                   onChange={toggleSelectAll}
                   id="selectAll"
+                  disabled={assigning}
                 />
                 <label className="form-check-label small fw-semibold" htmlFor="selectAll">
                   Select All
@@ -785,6 +938,7 @@ function LeadsList() {
                         className="form-check-input"
                         checked={isLeadSelected(lead.studentId)}
                         onChange={() => toggleLeadSelection(lead.studentId)}
+                        disabled={assigning}
                       />
                     </td>
                     <td className="fw-medium">{lead.studentId}</td>
@@ -798,14 +952,14 @@ function LeadsList() {
                       </span>
                     </td>
                     <td>
-                      <span className={`badge ${getAssignedBadgeClass(lead.assignedTo)} rounded-pill px-3 py-2`}>
-                        {lead.assignedTo}
+                      <span className={`badge ${getAssignedBadgeClass(getAssignedDisplayText(lead))} rounded-pill px-3 py-2`}>
+                        {getAssignedDisplayText(lead)}
                       </span>
                     </td>
                     <td>
                       <div className="d-flex gap-2 justify-content-center">
-                        <button className="btn btn-sm btn-warning" onClick={() => handleEdit(lead)}>✏️ Edit</button>
-                        <button className="btn btn-sm btn-danger" onClick={() => deleteLead(lead.studentId)}>🗑️ Delete</button>
+                        <button className="btn btn-sm btn-warning" onClick={() => handleEdit(lead)} disabled={assigning}>✏️ Edit</button>
+                        <button className="btn btn-sm btn-danger" onClick={() => deleteLead(lead.studentId)} disabled={assigning}>🗑️ Delete</button>
                       </div>
                     </td>
                   </tr>
@@ -827,7 +981,7 @@ function LeadsList() {
           <nav>
             <ul className="pagination mb-0">
               <li className={`page-item ${page === 0 ? "disabled" : ""}`}>
-                <button className="page-link" onClick={() => goToPage(page - 1)}>Previous</button>
+                <button className="page-link" onClick={() => goToPage(page - 1)} disabled={assigning}>Previous</button>
               </li>
 
               {Array.from({ length: totalPages }).map((_, idx) => {
@@ -838,7 +992,7 @@ function LeadsList() {
                 ) {
                   return (
                     <li key={idx} className={`page-item ${idx === page ? "active" : ""}`}>
-                      <button className="page-link" onClick={() => goToPage(idx)}>{idx + 1}</button>
+                      <button className="page-link" onClick={() => goToPage(idx)} disabled={assigning}>{idx + 1}</button>
                     </li>
                   );
                 }
@@ -855,7 +1009,7 @@ function LeadsList() {
               })}
 
               <li className={`page-item ${page >= totalPages - 1 ? "disabled" : ""}`}>
-                <button className="page-link" onClick={() => goToPage(page + 1)}>Next</button>
+                <button className="page-link" onClick={() => goToPage(page + 1)} disabled={assigning}>Next</button>
               </li>
             </ul>
           </nav>
@@ -868,11 +1022,13 @@ function LeadsList() {
           <div className="modal-dialog modal-dialog-centered">
             <div className="modal-content shadow-lg border-0">
               <div className="modal-header" style={{ background: "linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)", color: "#fff" }}>
-                <h5 className="modal-title fw-bold mb-0">👥 Assign Leads to Counselor</h5>
+                <h5 className="modal-title fw-bold mb-0">
+                  {assigning ? "🔄 Assigning Leads..." : "👥 Assign Leads to Counselor"}
+                </h5>
                 <button type="button" className="btn-close btn-close-white" onClick={() => {
                   setShowAssignModal(false);
                   setSelectedCounselor("");
-                }}></button>
+                }} disabled={assigning}></button>
               </div>
 
               <div className="modal-body p-4">
@@ -888,13 +1044,14 @@ function LeadsList() {
                     className="form-select"
                     value={selectedCounselor}
                     onChange={(e) => setSelectedCounselor(e.target.value)}
+                    disabled={assigning}
                   >
                     <option value="">-- Choose a Counselor --</option>
                     {counselors
                       .filter(counselor => counselor.status === "Active")
                       .map((counselor) => (
                         <option key={counselor.id} value={counselor.name}>
-                          {counselor.name} ({counselor.email}) - 📞 {counselor.phone}
+                          {counselor.name} {counselor.email && `(${counselor.email})`} {counselor.phone && `- 📞 ${counselor.phone}`}
                         </option>
                       ))}
                   </select>
@@ -942,6 +1099,7 @@ function LeadsList() {
                     setShowAssignModal(false);
                     setSelectedCounselor("");
                   }}
+                  disabled={assigning}
                 >
                   Cancel
                 </button>
@@ -949,9 +1107,16 @@ function LeadsList() {
                   type="button" 
                   className="btn btn-success" 
                   onClick={handleAssignLeads}
-                  disabled={!selectedCounselor || counselors.filter(c => c.status === "Active").length === 0}
+                  disabled={!selectedCounselor || counselors.filter(c => c.status === "Active").length === 0 || assigning}
                 >
-                  ✅ Assign Leads
+                  {assigning ? (
+                    <>
+                      <span className="spinner-border spinner-border-sm me-2" role="status"></span>
+                      Assigning...
+                    </>
+                  ) : (
+                    "✅ Assign Leads"
+                  )}
                 </button>
               </div>
             </div>
@@ -1070,7 +1235,7 @@ function LeadsList() {
                       value={formData.assignedTo} 
                       onChange={handleChange}
                     >
-                      <option value="Un-Assigned">Un-Assigned</option>
+                      <option value="">Un-Assigned</option>
                       {counselors
                         .filter(counselor => counselor.status === "Active")
                         .map((counselor) => (
