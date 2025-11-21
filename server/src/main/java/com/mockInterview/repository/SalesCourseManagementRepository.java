@@ -23,6 +23,12 @@ public interface SalesCourseManagementRepository extends JpaRepository<SalesCour
 		       GROUP BY s.assignedTo.userId
 		       """)
 		List<Object[]> getNewStudentCounts();
+		
+		List<SalesCourseManagement> findByAssignedTo_UserId(Long userId);
+
+	    
+	    List<SalesCourseManagement> findByAssignedTo_UserIdAndStatus(Long userId, String status);
+
 
 
 
