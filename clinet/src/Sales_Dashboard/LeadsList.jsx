@@ -51,6 +51,35 @@ function LeadsList() {
   const BASE_URL = "http://localhost:8080/api/saleCourse/student";
   const COUNSELOR_URL = "http://localhost:8080/api/user/assignable-users";
 
+  // Function to get logged-in user from localStorage
+  const getLoggedInUser = () => {
+    try {
+      const userData = localStorage.getItem('user');
+      if (userData) {
+        return JSON.parse(userData);
+      }
+    } catch (error) {
+      console.error("Error parsing user data from localStorage:", error);
+    }
+    return null;
+  };
+
+  // Function to get logged-in user ID
+  const getLoggedInUserId = () => {
+    const user = getLoggedInUser();
+    return user ? user.userId : null;
+  };
+
+  // Function to get current user's name for display
+  const getCurrentUserName = () => {
+    const user = getLoggedInUser();
+    if (user) {
+      // Try different possible name fields
+      return user.firstName || user.name || user.username || 'Current User';
+    }
+    return 'Current User';
+  };
+
   useEffect(() => {
     fetchPage(page);
     fetchAllLeadsForCounts();
@@ -102,8 +131,8 @@ function LeadsList() {
       // FIXED: Only modify status, don't touch assignedTo field
       const leadsWithAssigned = leadsArray.map(lead => ({
         ...lead,
-        // ONLY update status, keep assignedTo exactly as it comes from API
-        status: lead.status === "INITIAL" ? "NEW" : lead.status
+        // Remove INITIAL status conversion - keep status as it comes from API
+        status: lead.status
       }));
 
       const total =
@@ -146,8 +175,8 @@ function LeadsList() {
       const leadsWithAssigned = Array.isArray(data) 
         ? data.map(lead => ({
             ...lead,
-            // ONLY update status, keep assignedTo exactly as it comes from API
-            status: lead.status === "INITIAL" ? "NEW" : lead.status
+            // Remove INITIAL status conversion - keep status as it comes from API
+            status: lead.status
           }))
         : [];
       
@@ -229,6 +258,17 @@ function LeadsList() {
     return lead.assignedTo;
   };
 
+  // Function to get assigned by name - this is the key function you need
+  const getAssignedByName = (lead) => {
+    // For newly assigned leads, show current user's name
+    const currentUserName = getCurrentUserName();
+    
+    // If the lead has an assignedBy field from backend, you might want to handle it differently
+    // But since your backend logic uses the current logged-in user for assignment,
+    // we'll show the current user's name for all assignments
+    return currentUserName;
+  };
+
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
@@ -243,7 +283,7 @@ function LeadsList() {
       passedOutYear: lead.passedOutYear || "",
       qualification: lead.qualification || "",
       courseId: lead.courseManagement?.courseId || lead.courseId || "",
-      status: lead.status === "INITIAL" ? "NEW" : lead.status || "NEW",
+      status: lead.status || "NEW", // Remove INITIAL conversion
       college: lead.college || "",
       city: lead.city || "",
       source: lead.source || "",
@@ -255,6 +295,13 @@ function LeadsList() {
   const handleUpdate = async () => {
     if (!selectedLead) return;
     try {
+      // Get logged-in user ID
+      const loggedInUserId = getLoggedInUserId();
+      if (!loggedInUserId) {
+        alert("User not logged in. Please login again.");
+        return;
+      }
+
       // Find counselor ID from selected name
       let assignedUserId = "";
       if (formData.assignedTo && formData.assignedTo.trim() !== "") {
@@ -266,8 +313,9 @@ function LeadsList() {
 
       const updateData = {
         ...formData,
-        status: formData.status === "NEW" ? "INITIAL" : formData.status,
-        assignedTo: assignedUserId // Send counselor ID to backend
+        status: formData.status, // Remove INITIAL conversion
+        assignedTo: assignedUserId, // Send counselor ID to backend
+        loggedInUserId: loggedInUserId // Add logged-in user ID
       };
       
       await axios.put(`${BASE_URL}/${selectedLead.studentId}`, updateData);
@@ -280,7 +328,7 @@ function LeadsList() {
         ...selectedLead,
         ...formData,
         assignedTo: formData.assignedTo, // Store counselor name in local state
-        status: formData.status === "NEW" ? "INITIAL" : formData.status,
+        status: formData.status, // Remove INITIAL conversion
       };
       
       // Update in paginatedLeads
@@ -378,14 +426,25 @@ function LeadsList() {
         throw new Error("Selected counselor not found");
       }
 
+      // Get logged-in user ID
+      const loggedInUserId = getLoggedInUserId();
+      if (!loggedInUserId) {
+        throw new Error("User not logged in. Please login again.");
+      }
+
       const previousPaginatedLeads = [...paginatedLeads];
       const previousAllLeads = [...allLeads];
       
-      // Update local state immediately for better UX - store counselor name
+      // Update local state immediately for better UX - store counselor name and assigned by name
+      const currentUserName = getCurrentUserName();
       setPaginatedLeads(prevLeads => 
         prevLeads.map(lead => 
           selectedLeadIds.includes(lead.studentId) 
-            ? { ...lead, assignedTo: selectedCounselor } // Store counselor name
+            ? { 
+                ...lead, 
+                assignedTo: selectedCounselor, // Store counselor name
+                assignedBy: currentUserName // Store assigned by name for display
+              } 
             : lead
         )
       );
@@ -393,20 +452,24 @@ function LeadsList() {
       setAllLeads(prevLeads => 
         prevLeads.map(lead => 
           selectedLeadIds.includes(lead.studentId) 
-            ? { ...lead, assignedTo: selectedCounselor } // Store counselor name
+            ? { 
+                ...lead, 
+                assignedTo: selectedCounselor, // Store counselor name
+                assignedBy: currentUserName // Store assigned by name for display
+              } 
             : lead
         )
       );
 
-      console.log(`Assigning ${selectedLeadIds.length} leads to ${selectedCounselor} (ID: ${selectedCounselorObj.id})`);
+      console.log(`Assigning ${selectedLeadIds.length} leads to ${selectedCounselor} (ID: ${selectedCounselorObj.id}) by user ${loggedInUserId}`);
       
-      // Use the new bulk assign endpoint
+      // Use the new bulk assign endpoint with loggedInUserId as query parameter
       const bulkAssignRequest = {
         studentIds: selectedLeadIds,
         assignedUserId: selectedCounselorObj.id
       };
 
-      const response = await axios.post(`${BASE_URL}/assign/bulk`, bulkAssignRequest);
+      const response = await axios.post(`${BASE_URL}/assign/bulk?loggedInUserId=${loggedInUserId}`, bulkAssignRequest);
       
       console.log("Bulk assign response:", response.data);
       
@@ -622,8 +685,22 @@ function LeadsList() {
     }
   ];
 
+  // Get current user info for display
+  const currentUser = getLoggedInUser();
+  const currentUserName = getCurrentUserName();
+
   return (
     <div className="container-fluid p-4" style={{ background: "linear-gradient(180deg, #f8f9fc 0%, #eef2f7 100%)", minHeight: "100vh" }}>
+      
+      {/* User Info Header */}
+      <div className="d-flex justify-content-between align-items-center mb-3">
+        <h2 className="fw-bold text-dark mb-0">🎯 Leads Management</h2>
+        <div className="text-end">
+          <small className="text-muted">Logged in as: <strong>{currentUserName}</strong></small>
+          <br />
+          <small className="text-muted">User ID: <strong>{getLoggedInUserId() || 'Not found'}</strong></small>
+        </div>
+      </div>
       
       {/* Stats Cards Row */}
       <div className="mb-4">
@@ -922,9 +999,9 @@ function LeadsList() {
                   <th className="fw-semibold">Name</th>
                   <th className="fw-semibold">Phone</th>
                   <th className="fw-semibold">Email</th>
-                  <th className="fw-semibold">Course</th>
                   <th className="fw-semibold">Status</th>
                   <th className="fw-semibold">Assigned To</th>
+                  <th className="fw-semibold">Assigned By</th>
                   <th className="fw-semibold text-center">Actions</th>
                 </tr>
               </thead>
@@ -945,7 +1022,6 @@ function LeadsList() {
                     <td className="fw-semibold text-dark">{lead.studentName}</td>
                     <td>{lead.phone}</td>
                     <td>{lead.email || <span className="text-muted">-</span>}</td>
-                    <td>{getLeadCourseName(lead)}</td>
                     <td>
                       <span className={`badge ${getStatusBadgeClass(lead.status)} rounded-pill px-3 py-2`}>
                         {lead.status}
@@ -957,9 +1033,28 @@ function LeadsList() {
                       </span>
                     </td>
                     <td>
+                      <span className="text-muted">
+                        {lead.assignedBy || getAssignedByName(lead)}
+                      </span>
+                    </td>
+                    <td>
                       <div className="d-flex gap-2 justify-content-center">
-                        <button className="btn btn-sm btn-warning" onClick={() => handleEdit(lead)} disabled={assigning}>✏️ Edit</button>
-                        <button className="btn btn-sm btn-danger" onClick={() => deleteLead(lead.studentId)} disabled={assigning}>🗑️ Delete</button>
+                        <button 
+                          className="btn btn-sm btn-outline-primary" 
+                          onClick={() => handleEdit(lead)} 
+                          disabled={assigning}
+                          title="Edit Lead"
+                        >
+                          ✏️
+                        </button>
+                        <button 
+                          className="btn btn-sm btn-outline-danger" 
+                          onClick={() => deleteLead(lead.studentId)} 
+                          disabled={assigning}
+                          title="Delete Lead"
+                        >
+                          🗑️
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -1035,6 +1130,9 @@ function LeadsList() {
                 <div className="mb-4">
                   <p className="fw-semibold">
                     Assigning <span className="text-primary">{selectedLeads.size}</span> selected lead(s) to:
+                  </p>
+                  <p className="text-muted small">
+                    Current User: <strong>{currentUserName}</strong> (ID: {getLoggedInUserId()})
                   </p>
                 </div>
 
@@ -1199,9 +1297,9 @@ function LeadsList() {
                     <label className="form-label fw-semibold">Campaign</label>
                     <select name="campaign" className="form-select" value={formData.campaign} onChange={handleChange}>
                       <option value="">Select Campaign</option>
-                      <option value="Campaign 1">Campaign 1</option>
-                      <option value="Campaign 2">Campaign 2</option>
-                      <option value="Campaign 3">Campaign 3</option>
+                      <option value="Campaign 1">General</option>
+                      <option value="Campaign 2">Campaign-1</option>
+                      <option value="Campaign 3">Campaign-2</option>
                     </select>
                   </div>
 

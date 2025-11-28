@@ -60,6 +60,8 @@ function LoginForm() {
       if (roleName === "STUDENT") navigate("/student-dashboard");
       else if (roleName === "ADMIN" || roleName === "MASTER_ADMIN") navigate("/admin-dashboard");
       else if (roleName === "INTERVIEWER") navigate("/interviewer-dashboard");
+      else if (roleName === "SA_SALES MANAGER") navigate("/sales-dashboard");
+      else if (roleName === "SA_SALES") navigate("/sales-counselor");
 else setGeneralError(`Unknown role: ${roleName}`);
 
     } catch (error) {
