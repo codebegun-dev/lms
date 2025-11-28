@@ -20,7 +20,7 @@ public interface SalesCourseService {
     SalesCourseManagementResponseDto getLeadsById(Long id);
 
     
-    List<SalesCourseManagementResponseDto> getAllLeads();
+   
 
     
     SalesCourseManagementResponseDto updateLeadDetails(Long id, SalesCourseManagementRequestDto dto);
@@ -28,7 +28,10 @@ public interface SalesCourseService {
    
     void deleteLead(Long id);
     
-    public Map<String, Object> getLeadsWithPagination(int page, int size);
+    
+    
+    public Map<String, Object> getLeadsByRoleWithPagination(Long loggedInUserId, Integer page, Integer size);
+    	
 
     
     List<SalesCourseManagementResponseDto> getLeadsByStatus(String status);
@@ -40,7 +43,7 @@ public interface SalesCourseService {
     
     public List<AssignedCountResponseDto> getAssignedCountsForCounsellors();
     
-    public List<SalesCourseManagementResponseDto> getLeadsAssignedToUser(Long userId);
+   
     	
     
     

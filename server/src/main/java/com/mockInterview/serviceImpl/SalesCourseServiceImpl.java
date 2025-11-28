@@ -61,7 +61,7 @@ public class SalesCourseServiceImpl implements SalesCourseService {
 	    // --------------------- VALIDATION ---------------------
 	    if (phone == null || phone.isEmpty()) {
 	        throw new DuplicateFieldException("Phone is required!");
-	    }
+	    }  
 
 	    if (phone != null && (userRepository.findByPhone(phone) != null
 	            || studentPersonalInfoRepository.findByParentMobileNumber(phone) != null
@@ -200,23 +200,23 @@ public class SalesCourseServiceImpl implements SalesCourseService {
 		return SalesCourseManagementMapper.toResponseDto(lead);
 	}
 
-	// ---------------- GET ALL LEADS ----------------
-	@Override
-	public List<SalesCourseManagementResponseDto> getAllLeads() {
-		List<SalesCourseManagement> leads = salesCourseManagementRepository.findAll();
-		List<SalesCourseManagementResponseDto> dtoList = new ArrayList<>();
-		for (SalesCourseManagement lead : leads) {
-			dtoList.add(SalesCourseManagementMapper.toResponseDto(lead));
-		}
-		return dtoList;
-	}
-
+	
 	// ---------------- UPDATE LEAD ----------------
 	@Override
+	@Transactional
 	public SalesCourseManagementResponseDto updateLeadDetails(Long id, SalesCourseManagementRequestDto dto) {
-		validateUserRole(dto.getLoggedInUserId());
+
+	    User loggedInUser = userRepository.findById(dto.getLoggedInUserId())
+	            .orElseThrow(() -> new ResourceNotFoundException("Logged-in user not found"));
+
+	    String loggedInRole = loggedInUser.getRole() != null ?
+	            loggedInUser.getRole().getName() : null;
+
+	    boolean isMasterAdmin = "MASTER_ADMIN".equalsIgnoreCase(loggedInRole);
+	    boolean isSalesManager = "SALES_MANAGER".equalsIgnoreCase(loggedInRole);
+
 	    SalesCourseManagement lead = salesCourseManagementRepository.findById(id)
-	            .orElseThrow(() -> new ResourceNotFoundException("lead not found with ID: " + id));
+	            .orElseThrow(() -> new ResourceNotFoundException("Lead not found with ID: " + id));
 
 	    String email = dto.getEmail() != null ? dto.getEmail().trim() : null;
 	    String phone = dto.getPhone() != null ? dto.getPhone().trim() : null;
@@ -243,86 +243,67 @@ public class SalesCourseServiceImpl implements SalesCourseService {
 	        }
 	    }
 
-	    // ---------------- COURSE UPDATE ----------------
-	    if (dto.getCourseId() != null && dto.getCourseId() > 0) {
-	        CourseManagement course = courseManagementRepository.findById(dto.getCourseId())
-	                .orElseThrow(() -> new ResourceNotFoundException("Course not found!"));
-	        lead.setCourseManagement(course);
-	    }
-
-	    // ---------------- MAIN FIELDS ----------------
+	    // ---------------- UPDATE OPEN FIELDS ----------------
 	    if (dto.getLeadName() != null) lead.setLeadName(dto.getLeadName());
-	    if (phone != null && !phone.isEmpty()) lead.setPhone(phone);
-	    if (email != null && !email.isEmpty()) lead.setEmail(email);
+	    if (phone != null) lead.setPhone(phone);
+	    if (email != null) lead.setEmail(email);
 	    if (dto.getGender() != null) lead.setGender(dto.getGender());
 	    if (dto.getPassedOutYear() != null) lead.setPassedOutYear(dto.getPassedOutYear());
 	    if (dto.getQualification() != null) lead.setQualification(dto.getQualification());
-
-	    // Capture OLD status before updating
-	    String oldStatus = lead.getStatus();
-
-	    if (dto.getStatus() != null && !dto.getStatus().trim().isEmpty())
-	    	lead.setStatus(dto.getStatus().trim());
-
-	    // ---------------- OPTIONAL FIELDS ----------------
+	    if (dto.getStatus() != null) lead.setStatus(dto.getStatus().trim());
 	    if (dto.getCollege() != null) lead.setCollege(dto.getCollege().trim());
 	    if (dto.getCity() != null) lead.setCity(dto.getCity().trim());
 	    if (dto.getSource() != null) lead.setSource(dto.getSource().trim());
 	    if (dto.getCampaign() != null) lead.setCampaign(dto.getCampaign().trim());
 
-	    // ===========================================================
-	    //        🔥 USER ASSIGNMENT RESTRICTION (Manual Assignment)
-	    // ===========================================================
-	    if (dto.getLoggedInUserId() != null) {
+	    if (dto.getCourseId() != null && dto.getCourseId() > 0) {
+	        CourseManagement course = courseManagementRepository.findById(dto.getCourseId())
+	                .orElseThrow(() -> new ResourceNotFoundException("Course not found"));
+	        lead.setCourseManagement(course);
+	    }
 
-	        User assignedUser = userRepository.findById(dto.getLoggedInUserId())
-	                .orElseThrow(() -> new ResourceNotFoundException("Assigned User not found"));
+	    // ======================================================
+	    //       ASSIGNMENT — FIXED (declared outside IF)
+	    // ======================================================
 
-	        String roleName = assignedUser.getRole() != null ? assignedUser.getRole().getName() : null;
+	    User assignedUser = null; // 👈 declared here
 
-	        boolean isSalesRole = roleName != null && roleName.startsWith("SA_");
-	        boolean isMasterAdmin = "MASTER_ADMIN".equals(roleName);
+	    if (dto.getAssignedTo() != null) {
 
-	        if (!isSalesRole && !isMasterAdmin) {
+	        // Only Manager + Admin allowed to update assignedTo
+	        if (!isMasterAdmin && !isSalesManager) {
 	            throw new UnauthorizedActionException(
-	                    "This user (" + assignedUser.getFirstName() + ") cannot be assigned to a lead");
+	                    "Only MasterAdmin or SalesManager can update assignedTo"
+	            );
 	        }
 
-	        // Valid manual assignment
+	        assignedUser = userRepository.findById(dto.getAssignedTo())
+	                .orElseThrow(() -> new ResourceNotFoundException("Assigned user not found"));
+
+	        String assRole = assignedUser.getRole().getName();
+
+	        boolean allowedTarget =
+	                assRole.startsWith("SA_") ||
+	                        "MASTER_ADMIN".equalsIgnoreCase(assRole) ||
+	                        "SALES_MANAGER".equalsIgnoreCase(assRole);
+
+	        if (!allowedTarget) {
+	            throw new UnauthorizedActionException("This user cannot be assigned to a lead");
+	        }
+
 	        lead.setAssignedTo(assignedUser);
-	     // Suppose frontend sends the logged-in user's ID in DTO
-	        Long loggedInUserId = dto.getLoggedInUserId();
-
-	        User loggedInUser = userRepository.findById(loggedInUserId)
-	                .orElseThrow(() -> new ResourceNotFoundException("Logged-in user not found"));
-
-	        // Assign to lead
-	        lead.setAssignedBy(loggedInUser);  // ✅ stores the User entity
-	        lead.setAssignedAt(LocalDateTime.now());
-
-	        
-
-	    } else {
-	    	lead.setAssignedTo(null);
-	        lead.setAssignedBy(null);
-	        lead.setAssignedAt(null);
 	    }
 
-	    // Save update
+	    // ---------------- ALWAYS SET UPDATED META ----------------
+	    lead.setAssignedBy(loggedInUser);
+	    lead.setAssignedAt(LocalDateTime.now());
+
 	    SalesCourseManagement updated = salesCourseManagementRepository.save(lead);
-
-	    // ===========================================================
-	    //      🔥 AUTO-ASSIGN WHEN STATUS CHANGES → NEW
-	    // ===========================================================
-	    if (!oldStatus.equalsIgnoreCase(updated.getStatus())
-	            && "NEW".equalsIgnoreCase(updated.getStatus())) {
-
-	    	autoAssignOnStatusChange(updated, dto.getLoggedInUserId());
-
-	    }
 
 	    return SalesCourseManagementMapper.toResponseDto(updated);
 	}
+
+
 	
 	
 	@Override
@@ -374,8 +355,8 @@ public class SalesCourseServiceImpl implements SalesCourseService {
 	@Override
 	@Transactional
 	public String bulkAssignLeadsToUser(List<Long> leadIds, Long assignedUserId, Long loggedInUserId) {
-		validateUserRole(loggedInUserId);
-	    if (assignedUserId == null || leadIds == null ||leadIds.isEmpty()) {
+
+	    if (assignedUserId == null || leadIds == null || leadIds.isEmpty()) {
 	        throw new IllegalArgumentException("Lead IDs and Assigned User ID cannot be empty");
 	    }
 
@@ -383,36 +364,50 @@ public class SalesCourseServiceImpl implements SalesCourseService {
 	        throw new IllegalArgumentException("Logged-in user ID is required for assignment");
 	    }
 
-	    User assignedUser = userRepository.findById(assignedUserId)
-	            .orElseThrow(() -> new ResourceNotFoundException("Assigned User not found"));
+	    // Logged-in user who is performing the assignment
+	    User loggedInUser = userRepository.findById(loggedInUserId)
+	            .orElseThrow(() -> new ResourceNotFoundException("Logged-in user not found"));
 
-	    // ROLE VALIDATION
-	    String roleName = assignedUser.getRole() != null ? assignedUser.getRole().getName() : null;
-	    boolean isSalesRole = roleName != null && roleName.startsWith("SA_");
-	    boolean isMasterAdmin = "MASTER_ADMIN".equals(roleName);
+	    String loggedInRole = loggedInUser.getRole() != null ? loggedInUser.getRole().getName() : null;
 
-	    if (!isSalesRole && !isMasterAdmin) {
+	    boolean isMasterAdmin = "MASTER_ADMIN".equalsIgnoreCase(loggedInRole);
+	    boolean isSalesManager = "SALES_MANAGER".equalsIgnoreCase(loggedInRole);
+
+	    // ❌ Counsellors (SA_*) not allowed to assign
+	    if (!isMasterAdmin && !isSalesManager) {
 	        throw new UnauthorizedActionException(
-	                "This user (" + assignedUser.getFirstName() + ") cannot be assigned to leads"
+	                "Only MasterAdmin or SalesManager can assign leads"
 	        );
 	    }
 
-	    // FETCH LEADS
+	    // Fetch the user to whom leads will be assigned
+	    User assignedUser = userRepository.findById(assignedUserId)
+	            .orElseThrow(() -> new ResourceNotFoundException("Assigned User not found"));
+
+	    // Assigned user must be SA_ (counsellor) / SalesManager / Admin
+	    String assignedRole = assignedUser.getRole() != null ? assignedUser.getRole().getName() : null;
+	    boolean validAssignmentTarget =
+	            assignedRole != null &&
+	            (assignedRole.startsWith("SA_")
+	                    || "SALES_MANAGER".equalsIgnoreCase(assignedRole)
+	                    || "MASTER_ADMIN".equalsIgnoreCase(assignedRole));
+
+	    if (!validAssignmentTarget) {
+	        throw new UnauthorizedActionException("This user cannot be assigned leads");
+	    }
+
+	    // Fetch leads
 	    List<SalesCourseManagement> leads = salesCourseManagementRepository.findAllById(leadIds);
 
 	    if (leads.isEmpty()) {
 	        throw new ResourceNotFoundException("No valid lead IDs provided");
 	    }
 
-	    // FETCH LOGGED-IN USER
-	    User loggedInUser = userRepository.findById(loggedInUserId)
-	            .orElseThrow(() -> new ResourceNotFoundException("Logged-in user not found"));
-
-	    // BULK ASSIGN
+	    // Bulk assign
 	    for (SalesCourseManagement lead : leads) {
-	    	lead.setAssignedTo(assignedUser);
-	    	lead.setAssignedBy(loggedInUser);  // ✅ store who performed assignment
-	    	lead.setAssignedAt(LocalDateTime.now());
+	        lead.setAssignedTo(assignedUser);
+	        lead.setAssignedBy(loggedInUser);
+	        lead.setAssignedAt(LocalDateTime.now());
 	    }
 
 	    salesCourseManagementRepository.saveAll(leads);
@@ -451,29 +446,81 @@ public class SalesCourseServiceImpl implements SalesCourseService {
 	}
 
 	@Override
-	 @Transactional
-	public Map<String, Object> getLeadsWithPagination(int page, int size) {
-		Pageable pageable = PageRequest.of(page, size);
+	@Transactional
+	public Map<String, Object> getLeadsByRoleWithPagination(Long loggedInUserId, Integer page, Integer size) {
+	    // ----------------- 1️⃣ Fetch logged-in user -----------------
+	    User loggedInUser = userRepository.findById(loggedInUserId)
+	            .orElseThrow(() -> new ResourceNotFoundException("Logged-in user not found"));
 
-		Page<SalesCourseManagement> pagedResult = salesCourseManagementRepository.findAll(pageable);
+	    String roleName = loggedInUser.getRole() != null ? loggedInUser.getRole().getName() : null;
+	    if (roleName == null) {
+	        throw new UnauthorizedActionException("User role not found");
+	    }
 
-		List<SalesCourseManagementResponseDto> dtoList = new ArrayList<>();
-		for (SalesCourseManagement lead : pagedResult.getContent()) {
-			dtoList.add(SalesCourseManagementMapper.toResponseDto(lead));
-		}
+	    // ----------------- 2️⃣ Determine pagination -----------------
+	    boolean isPaginated = (page != null && size != null);
 
-		Map<String, Object> response = new HashMap<>();
-		response.put("leads", dtoList);
-		response.put("currentPage", pagedResult.getNumber());
-		response.put("totalItems", pagedResult.getTotalElements());
-		response.put("totalPages", pagedResult.getTotalPages());
+	    List<SalesCourseManagementResponseDto> dtoList = new ArrayList<>();
+	    Map<String, Object> response = new HashMap<>();
 
-		return response;
+	    // ----------------- 3️⃣ Fetch leads based on role -----------------
+	    if ("MASTER_ADMIN".equalsIgnoreCase(roleName) || "SALES_MANAGER".equalsIgnoreCase(roleName)) {
+	        // Admin / Sales Manager -> all leads
+	        if (isPaginated) {
+	            Pageable pageable = PageRequest.of(page, size);
+	            Page<SalesCourseManagement> pagedResult = salesCourseManagementRepository.findAll(pageable);
+
+	            for (SalesCourseManagement lead : pagedResult.getContent()) {
+	                dtoList.add(SalesCourseManagementMapper.toResponseDto(lead));
+	            }
+
+	            response.put("leads", dtoList);
+	            response.put("currentPage", pagedResult.getNumber());
+	            response.put("totalItems", pagedResult.getTotalElements());
+	            response.put("totalPages", pagedResult.getTotalPages());
+	        } else {
+	            List<SalesCourseManagement> leads = salesCourseManagementRepository.findAll();
+	            for (SalesCourseManagement lead : leads) {
+	                dtoList.add(SalesCourseManagementMapper.toResponseDto(lead));
+	            }
+	            response.put("leads", dtoList);
+	        }
+
+	    } else if (roleName.startsWith("SA_")) {
+	        // Counsellor -> only their assigned leads
+	        if (isPaginated) {
+	            Pageable pageable = PageRequest.of(page, size);
+	            Page<SalesCourseManagement> pagedResult = salesCourseManagementRepository.findByAssignedTo_UserId(loggedInUserId, pageable);
+
+	            for (SalesCourseManagement lead : pagedResult.getContent()) {
+	                dtoList.add(SalesCourseManagementMapper.toResponseDto(lead));
+	            }
+
+	            response.put("leads", dtoList);
+	            response.put("currentPage", pagedResult.getNumber());
+	            response.put("totalItems", pagedResult.getTotalElements());
+	            response.put("totalPages", pagedResult.getTotalPages());
+	        } else {
+	            List<SalesCourseManagement> leads = salesCourseManagementRepository.findByAssignedTo_UserId(loggedInUserId);
+	            for (SalesCourseManagement lead : leads) {
+	                dtoList.add(SalesCourseManagementMapper.toResponseDto(lead));
+	            }
+	            response.put("leads", dtoList);
+	        }
+
+	    } else {
+	        throw new UnauthorizedActionException(
+	                "User (" + loggedInUser.getFirstName() + ") is not authorized to view leads"
+	        );
+	    }
+
+	    return response;
 	}
-	
+
+
 	private User findBestCounsellorForAutoAssign() {
 
-	    // 1️⃣ Fetch all active counsellors
+	    // 1️⃣ Fetch only active counsellors (SA_*) — excludes SALES_MANAGER / MASTER_ADMIN
 	    List<User> counsellors = userRepository
 	            .findByRole_NameStartingWithAndStatus("SA_", "ACTIVE");
 
@@ -485,7 +532,6 @@ public class SalesCourseServiceImpl implements SalesCourseService {
 	    List<Object[]> counts = salesCourseManagementRepository.getNewLeadCounts();
 
 	    Map<Long, Long> loadMap = new HashMap<>();
-
 	    for (Object[] row : counts) {
 	        Long userId = (Long) row[0];
 	        Long cnt = (Long) row[1];
@@ -499,7 +545,8 @@ public class SalesCourseServiceImpl implements SalesCourseService {
 	    for (User u : counsellors) {
 	        long load = loadMap.getOrDefault(u.getUserId(), 0L);
 
-	        if (load < min) {
+	        // Only SA_* allowed
+	        if (u.getRole().getName().startsWith("SA_") && load < min) {
 	            min = load;
 	            best = u;
 	        }
@@ -512,31 +559,42 @@ public class SalesCourseServiceImpl implements SalesCourseService {
 	
 	private void autoAssignOnStatusChange(SalesCourseManagement lead, Long loggedInUserId) {
 
+	    // Only assign if status is NEW
 	    if (!"NEW".equalsIgnoreCase(lead.getStatus())) {
 	        return;
 	    }
 
+	    // Pick the best counsellor (SA_*) for assignment
 	    User bestUser = findBestCounsellorForAutoAssign();
-	    if (bestUser == null) return;
+	    if (bestUser == null) return; // No active counsellors available
 
+	    // Safety check: ensure only SA_* are assigned
+	    if (!bestUser.getRole().getName().startsWith("SA_")) {
+	        return;
+	    }
+
+	    // Assign lead
 	    lead.setAssignedTo(bestUser);
 
+	    // Set who performed the assignment
 	    if (loggedInUserId != null) {
 	        User loggedInUser = userRepository.findById(loggedInUserId)
 	                .orElseThrow(() -> new ResourceNotFoundException("Logged-in user not found"));
-	        lead.setAssignedBy(loggedInUser); // ✅ store User entity
+	        lead.setAssignedBy(loggedInUser);
 	    }
 
 	    lead.setAssignedAt(LocalDateTime.now());
+
+	    // Save the lead with assignment
 	    salesCourseManagementRepository.save(lead);
 	}
 
 	
 	@Override
-	 @Transactional
+	@Transactional
 	public String rebalanceAssignments(Long loggedInUserId) {
 
-	    // 1️⃣ Fetch counsellors
+	    // 1️⃣ Fetch only active counsellors (SA_*) — explicitly excludes managers/admins
 	    List<User> counsellors = userRepository
 	            .findByRole_NameStartingWithAndStatus("SA_", "ACTIVE");
 
@@ -567,12 +625,12 @@ public class SalesCourseServiceImpl implements SalesCourseService {
 	        s.setAssignedTo(null);
 	    }
 
-	    // 6️⃣ Apply Round Robin (Equal Distribution)
+	    // 6️⃣ Apply Round Robin (only SA_*)
 	    for (SalesCourseManagement s : newLeads) {
 	        User assignTo = counsellors.get(index);
 
 	        s.setAssignedTo(assignTo);
-	        s.setAssignedBy(loggedInUser); // ✅ stores the logged-in user entity
+	        s.setAssignedBy(loggedInUser);
 	        s.setAssignedAt(LocalDateTime.now());
 
 	        index = (index + 1) % cCount;
@@ -584,6 +642,7 @@ public class SalesCourseServiceImpl implements SalesCourseService {
 	            + newLeads.size() + " leads distributed equally among "
 	            + cCount + " counsellors.";
 	}
+
 
 	@Override
 	 @Transactional
@@ -604,15 +663,8 @@ public class SalesCourseServiceImpl implements SalesCourseService {
 	    return response;
 	}
 	
-	@Override
-	public List<SalesCourseManagementResponseDto> getLeadsAssignedToUser(Long userId) {
-	    List<SalesCourseManagement> leads = salesCourseManagementRepository.findByAssignedTo_UserId(userId);
-	    List<SalesCourseManagementResponseDto> dtoList = new ArrayList<>();
-	    for (SalesCourseManagement s : leads) {
-	        dtoList.add(SalesCourseManagementMapper.toResponseDto(s));
-	    }
-	    return dtoList;
-	}
+	
+
 
 	private void validateUserRole(Long loggedInUserId) {
 	    if (loggedInUserId == null) {
@@ -625,7 +677,7 @@ public class SalesCourseServiceImpl implements SalesCourseService {
 	    String roleName = loggedInUser.getRole() != null ? loggedInUser.getRole().getName() : null;
 
 	    if (roleName == null || 
-	        (!roleName.startsWith("SA_") && !"MASTER_ADMIN".equals(roleName))) {
+	        (!roleName.startsWith("SA_") && !"MASTER_ADMIN".equals(roleName) && !"SALES_MANAGER".equalsIgnoreCase(roleName))) {
 	        throw new UnauthorizedActionException(
 	            "User (" + loggedInUser.getFirstName() + ") is not authorized to perform this action"
 	        );

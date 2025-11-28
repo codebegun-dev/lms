@@ -56,43 +56,42 @@ public class SalesCourseController {
     @DeleteMapping("/{id}")
     public String deleteLead(@PathVariable Long id) {
         salesCourseService.deleteLead(id);
-        return "Student deleted successfully with ID: " + id;
+        return "Lead deleted successfully with ID: " + id;
     }
 
-    // ---------------- GET ALL OR ASSIGNED STUDENTS ----------------
-    @GetMapping
-    public List<SalesCourseManagementResponseDto> getLeads(
-            @RequestParam(required = false) Long userId) {
-
-        if (userId != null) {
-            return salesCourseService.getLeadsAssignedToUser(userId);
-        }
-        return salesCourseService.getAllLeads();
-    }
+   
 
     // ---------------- GET BY STATUS ----------------
     @GetMapping("/status/{status}")
     public List<SalesCourseManagementResponseDto> getLeadsByStatus(@PathVariable String status) {
         return salesCourseService.getLeadsByStatus(status);
     }
+    
+    
+ // ---------------- GET ALL LEADS BASED ON ID ----------------
+    @GetMapping
+    public Map<String, Object> getLeads(
+            @RequestParam("loggedInUserId") Long loggedInUserId,
+            @RequestParam(value = "page", required = false) Integer page) {
 
-    // ---------------- PAGINATED LEADS ----------------
-    @GetMapping("/paginated")
-    public Map<String, Object> getPaginatedLeads(
-            @RequestParam(defaultValue = "0") int page) {
-        return salesCourseService.getLeadsWithPagination(page, 14);
+        int pageNumber = (page != null && page >= 0) ? page : 0;
+        int pageSize = 14; // fixed default size
+
+        return salesCourseService.getLeadsByRoleWithPagination(loggedInUserId, pageNumber, pageSize);
     }
 
-    // ---------------- BULK UPDATE STATUS ----------------
-    @PostMapping("/bulk-update-status")
-    public String bulkUpdateStatus(
-            @Valid @RequestBody BulkUpdateRequestDto request) {
 
+
+    // ---------------- BULK UPDATE STATUS ----------------
+ // Correct definition
+    @PostMapping("/bulk-update-status")
+    public String bulkUpdateStatus(@Valid @RequestBody BulkUpdateRequestDto request) {
         return salesCourseService.bulkUpdateStatus(
                 request.getLeadIds(),
                 request.getStatus(),
                 request.getLoggedInUserId());
     }
+
 
     // ---------------- BULK ASSIGN ----------------
     @PostMapping("/assign/bulk")

@@ -2,7 +2,8 @@ package com.mockInterview.repository;
 
 
 import java.util.List;
-
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
@@ -28,6 +29,10 @@ public interface SalesCourseManagementRepository extends JpaRepository<SalesCour
 
 	    
 	    List<SalesCourseManagement> findByAssignedTo_UserIdAndStatus(Long userId, String status);
+	    
+	    Page<SalesCourseManagement> findByAssignedTo_UserId(Long userId, Pageable pageable);
+	    Page<SalesCourseManagement> findByAssignedTo_UserIdAndStatus(Long userId, String status, Pageable pageable);
+
 
 
 
