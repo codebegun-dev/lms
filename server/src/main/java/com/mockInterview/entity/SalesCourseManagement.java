@@ -21,10 +21,10 @@ public class SalesCourseManagement {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long studentId;
+    private Long leadId;
 
     @Size(min = 3, max = 30, message = "Name must be between 3 and 30 characters")
-    private String studentName;
+    private String leadName;
 
     @Pattern(regexp = "^[0-9]{10}$", message = "Phone must be a valid 10-digit number")
     private String phone;

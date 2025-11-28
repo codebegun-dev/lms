@@ -50,9 +50,9 @@ public class SalesCourseServiceImpl implements SalesCourseService {
 	@Autowired
 	private CourseManagementRepository courseManagementRepository;
 
-	// ---------------- CREATE STUDENT ----------------
+	// ---------------- CREATE LEAD ----------------
 	@Override
-	public SalesCourseManagementResponseDto createStudent(SalesCourseManagementRequestDto dto) {
+	public SalesCourseManagementResponseDto createLead(SalesCourseManagementRequestDto dto) {
 		validateUserRole(dto.getLoggedInUserId());
 	    // --------------------- CLEAN INPUTS ---------------------
 	    String email = dto.getEmail() != null ? dto.getEmail().trim() : null;
@@ -124,7 +124,7 @@ public class SalesCourseServiceImpl implements SalesCourseService {
 	}
 	
 	@Override
-	public Map<String, Object> uploadStudentsFromExcel(MultipartFile file, Long loggedInUserId)
+	public Map<String, Object> uploadLeadsFromExcel(MultipartFile file, Long loggedInUserId)
  {
 		validateUserRole(loggedInUserId);
 		List<SalesCourseManagementRequestDto> dtos = ExcelHelper.parseExcelFile(file);
@@ -159,7 +159,7 @@ public class SalesCourseServiceImpl implements SalesCourseService {
 
 
 			try {
-				createStudent(dto);
+				createLead(dto);
 				successCount++;
 
 			} catch (ConstraintViolationException cve) {
@@ -192,31 +192,31 @@ public class SalesCourseServiceImpl implements SalesCourseService {
 		return result;
 	}
 
-	// ---------------- GET STUDENT BY ID ----------------
+	// ---------------- GET LEAD BY ID ----------------
 	@Override
-	public SalesCourseManagementResponseDto getStudentsById(Long id) {
-		SalesCourseManagement student = salesCourseManagementRepository.findById(id)
-				.orElseThrow(() -> new ResourceNotFoundException("Student not found with ID: " + id));
-		return SalesCourseManagementMapper.toResponseDto(student);
+	public SalesCourseManagementResponseDto getLeadsById(Long id) {
+		SalesCourseManagement lead= salesCourseManagementRepository.findById(id)
+				.orElseThrow(() -> new ResourceNotFoundException("lead not found with ID: " + id));
+		return SalesCourseManagementMapper.toResponseDto(lead);
 	}
 
-	// ---------------- GET ALL STUDENTS ----------------
+	// ---------------- GET ALL LEADS ----------------
 	@Override
-	public List<SalesCourseManagementResponseDto> getAllStudents() {
-		List<SalesCourseManagement> students = salesCourseManagementRepository.findAll();
+	public List<SalesCourseManagementResponseDto> getAllLeads() {
+		List<SalesCourseManagement> leads = salesCourseManagementRepository.findAll();
 		List<SalesCourseManagementResponseDto> dtoList = new ArrayList<>();
-		for (SalesCourseManagement student : students) {
-			dtoList.add(SalesCourseManagementMapper.toResponseDto(student));
+		for (SalesCourseManagement lead : leads) {
+			dtoList.add(SalesCourseManagementMapper.toResponseDto(lead));
 		}
 		return dtoList;
 	}
 
-	// ---------------- UPDATE STUDENT ----------------
+	// ---------------- UPDATE LEAD ----------------
 	@Override
-	public SalesCourseManagementResponseDto updateStudentDetails(Long id, SalesCourseManagementRequestDto dto) {
+	public SalesCourseManagementResponseDto updateLeadDetails(Long id, SalesCourseManagementRequestDto dto) {
 		validateUserRole(dto.getLoggedInUserId());
-	    SalesCourseManagement student = salesCourseManagementRepository.findById(id)
-	            .orElseThrow(() -> new ResourceNotFoundException("Student not found with ID: " + id));
+	    SalesCourseManagement lead = salesCourseManagementRepository.findById(id)
+	            .orElseThrow(() -> new ResourceNotFoundException("lead not found with ID: " + id));
 
 	    String email = dto.getEmail() != null ? dto.getEmail().trim() : null;
 	    String phone = dto.getPhone() != null ? dto.getPhone().trim() : null;
@@ -224,7 +224,7 @@ public class SalesCourseServiceImpl implements SalesCourseService {
 	    // ---------------- DUPLICATE CHECKS ----------------
 	    if (phone != null && !phone.isEmpty()) {
 	        SalesCourseManagement phoneCheck = salesCourseManagementRepository.findByPhone(phone);
-	        if (phoneCheck != null && !phoneCheck.getStudentId().equals(id)) {
+	        if (phoneCheck != null && !phoneCheck.getLeadId().equals(id)) {
 	            throw new DuplicateFieldException("Phone already exists!");
 	        }
 	        if (userRepository.findByPhone(phone) != null
@@ -235,7 +235,7 @@ public class SalesCourseServiceImpl implements SalesCourseService {
 
 	    if (email != null && !email.isEmpty()) {
 	        SalesCourseManagement emailCheck = salesCourseManagementRepository.findByEmail(email);
-	        if (emailCheck != null && !emailCheck.getStudentId().equals(id)) {
+	        if (emailCheck != null && !emailCheck.getLeadId().equals(id)) {
 	            throw new DuplicateFieldException("Email already exists!");
 	        }
 	        if (userRepository.findByEmail(email) != null) {
@@ -247,28 +247,28 @@ public class SalesCourseServiceImpl implements SalesCourseService {
 	    if (dto.getCourseId() != null && dto.getCourseId() > 0) {
 	        CourseManagement course = courseManagementRepository.findById(dto.getCourseId())
 	                .orElseThrow(() -> new ResourceNotFoundException("Course not found!"));
-	        student.setCourseManagement(course);
+	        lead.setCourseManagement(course);
 	    }
 
 	    // ---------------- MAIN FIELDS ----------------
-	    if (dto.getStudentName() != null) student.setStudentName(dto.getStudentName());
-	    if (phone != null && !phone.isEmpty()) student.setPhone(phone);
-	    if (email != null && !email.isEmpty()) student.setEmail(email);
-	    if (dto.getGender() != null) student.setGender(dto.getGender());
-	    if (dto.getPassedOutYear() != null) student.setPassedOutYear(dto.getPassedOutYear());
-	    if (dto.getQualification() != null) student.setQualification(dto.getQualification());
+	    if (dto.getLeadName() != null) lead.setLeadName(dto.getLeadName());
+	    if (phone != null && !phone.isEmpty()) lead.setPhone(phone);
+	    if (email != null && !email.isEmpty()) lead.setEmail(email);
+	    if (dto.getGender() != null) lead.setGender(dto.getGender());
+	    if (dto.getPassedOutYear() != null) lead.setPassedOutYear(dto.getPassedOutYear());
+	    if (dto.getQualification() != null) lead.setQualification(dto.getQualification());
 
 	    // Capture OLD status before updating
-	    String oldStatus = student.getStatus();
+	    String oldStatus = lead.getStatus();
 
 	    if (dto.getStatus() != null && !dto.getStatus().trim().isEmpty())
-	        student.setStatus(dto.getStatus().trim());
+	    	lead.setStatus(dto.getStatus().trim());
 
 	    // ---------------- OPTIONAL FIELDS ----------------
-	    if (dto.getCollege() != null) student.setCollege(dto.getCollege().trim());
-	    if (dto.getCity() != null) student.setCity(dto.getCity().trim());
-	    if (dto.getSource() != null) student.setSource(dto.getSource().trim());
-	    if (dto.getCampaign() != null) student.setCampaign(dto.getCampaign().trim());
+	    if (dto.getCollege() != null) lead.setCollege(dto.getCollege().trim());
+	    if (dto.getCity() != null) lead.setCity(dto.getCity().trim());
+	    if (dto.getSource() != null) lead.setSource(dto.getSource().trim());
+	    if (dto.getCampaign() != null) lead.setCampaign(dto.getCampaign().trim());
 
 	    // ===========================================================
 	    //        🔥 USER ASSIGNMENT RESTRICTION (Manual Assignment)
@@ -285,31 +285,31 @@ public class SalesCourseServiceImpl implements SalesCourseService {
 
 	        if (!isSalesRole && !isMasterAdmin) {
 	            throw new UnauthorizedActionException(
-	                    "This user (" + assignedUser.getFirstName() + ") cannot be assigned to a student");
+	                    "This user (" + assignedUser.getFirstName() + ") cannot be assigned to a lead");
 	        }
 
 	        // Valid manual assignment
-	        student.setAssignedTo(assignedUser);
+	        lead.setAssignedTo(assignedUser);
 	     // Suppose frontend sends the logged-in user's ID in DTO
 	        Long loggedInUserId = dto.getLoggedInUserId();
 
 	        User loggedInUser = userRepository.findById(loggedInUserId)
 	                .orElseThrow(() -> new ResourceNotFoundException("Logged-in user not found"));
 
-	        // Assign to student
-	        student.setAssignedBy(loggedInUser);  // ✅ stores the User entity
-	        student.setAssignedAt(LocalDateTime.now());
+	        // Assign to lead
+	        lead.setAssignedBy(loggedInUser);  // ✅ stores the User entity
+	        lead.setAssignedAt(LocalDateTime.now());
 
 	        
 
 	    } else {
-	        student.setAssignedTo(null);
-	        student.setAssignedBy(null);
-	        student.setAssignedAt(null);
+	    	lead.setAssignedTo(null);
+	        lead.setAssignedBy(null);
+	        lead.setAssignedAt(null);
 	    }
 
 	    // Save update
-	    SalesCourseManagement updated = salesCourseManagementRepository.save(student);
+	    SalesCourseManagement updated = salesCourseManagementRepository.save(lead);
 
 	    // ===========================================================
 	    //      🔥 AUTO-ASSIGN WHEN STATUS CHANGES → NEW
@@ -327,10 +327,10 @@ public class SalesCourseServiceImpl implements SalesCourseService {
 	
 	@Override
 	 @Transactional
-	public String bulkUpdateStatus(List<Long> studentIds, String status, Long loggedInUserId) {
+	public String bulkUpdateStatus(List<Long> leadIds, String status, Long loggedInUserId) {
 		validateUserRole(loggedInUserId);
-	    if (studentIds == null || studentIds.isEmpty()) {
-	        throw new IllegalArgumentException("Student IDs cannot be empty");
+	    if (leadIds == null || leadIds.isEmpty()) {
+	        throw new IllegalArgumentException("lead IDs cannot be empty");
 	    }
 
 	    if (status == null || status.trim().isEmpty()) {
@@ -341,31 +341,31 @@ public class SalesCourseServiceImpl implements SalesCourseService {
 	        throw new IllegalArgumentException("Logged-in user ID is required for assignment");
 	    }
 
-	    List<SalesCourseManagement> students = salesCourseManagementRepository.findAllById(studentIds);
+	    List<SalesCourseManagement> leads = salesCourseManagementRepository.findAllById(leadIds);
 
-	    if (students.isEmpty()) {
-	        throw new ResourceNotFoundException("No students found for the given IDs");
+	    if (leads.isEmpty()) {
+	        throw new ResourceNotFoundException("No leads found for the given IDs");
 	    }
 
-	    List<SalesCourseManagement> studentsToSave = new ArrayList<>();
+	    List<SalesCourseManagement> leadsToSave = new ArrayList<>();
 
-	    for (SalesCourseManagement student : students) {
-	        String oldStatus = student.getStatus();
+	    for (SalesCourseManagement lead : leads) {
+	        String oldStatus = lead.getStatus();
 
 	        // Update only status
-	        student.setStatus(status.trim());
-	        studentsToSave.add(student);
+	        lead.setStatus(status.trim());
+	        leadsToSave.add(lead);
 
 	        // Auto-assign if status changed to NEW
 	        if (!status.equalsIgnoreCase(oldStatus) && "NEW".equalsIgnoreCase(status)) {
-	            autoAssignOnStatusChange(student, loggedInUserId); // ✅ saves internally
+	            autoAssignOnStatusChange(lead, loggedInUserId); // ✅ saves internally
 	        }
 	    }
 
-	    // Batch save remaining students (excluding auto-assigned ones if already saved)
-	    salesCourseManagementRepository.saveAll(studentsToSave);
+	    // Batch save remaining leads (excluding auto-assigned ones if already saved)
+	    salesCourseManagementRepository.saveAll(leadsToSave);
 
-	    return studentsToSave.size() + " students updated successfully with status: " + status;
+	    return leadsToSave.size() + " leads updated successfully with status: " + status;
 	}
 
 
@@ -373,10 +373,10 @@ public class SalesCourseServiceImpl implements SalesCourseService {
 	
 	@Override
 	@Transactional
-	public String bulkAssignStudentsToUser(List<Long> studentIds, Long assignedUserId, Long loggedInUserId) {
+	public String bulkAssignLeadsToUser(List<Long> leadIds, Long assignedUserId, Long loggedInUserId) {
 		validateUserRole(loggedInUserId);
-	    if (assignedUserId == null || studentIds == null || studentIds.isEmpty()) {
-	        throw new IllegalArgumentException("Student IDs and Assigned User ID cannot be empty");
+	    if (assignedUserId == null || leadIds == null ||leadIds.isEmpty()) {
+	        throw new IllegalArgumentException("Lead IDs and Assigned User ID cannot be empty");
 	    }
 
 	    if (loggedInUserId == null) {
@@ -393,15 +393,15 @@ public class SalesCourseServiceImpl implements SalesCourseService {
 
 	    if (!isSalesRole && !isMasterAdmin) {
 	        throw new UnauthorizedActionException(
-	                "This user (" + assignedUser.getFirstName() + ") cannot be assigned to students"
+	                "This user (" + assignedUser.getFirstName() + ") cannot be assigned to leads"
 	        );
 	    }
 
-	    // FETCH STUDENTS
-	    List<SalesCourseManagement> students = salesCourseManagementRepository.findAllById(studentIds);
+	    // FETCH LEADS
+	    List<SalesCourseManagement> leads = salesCourseManagementRepository.findAllById(leadIds);
 
-	    if (students.isEmpty()) {
-	        throw new ResourceNotFoundException("No valid student IDs provided");
+	    if (leads.isEmpty()) {
+	        throw new ResourceNotFoundException("No valid lead IDs provided");
 	    }
 
 	    // FETCH LOGGED-IN USER
@@ -409,42 +409,42 @@ public class SalesCourseServiceImpl implements SalesCourseService {
 	            .orElseThrow(() -> new ResourceNotFoundException("Logged-in user not found"));
 
 	    // BULK ASSIGN
-	    for (SalesCourseManagement student : students) {
-	        student.setAssignedTo(assignedUser);
-	        student.setAssignedBy(loggedInUser);  // ✅ store who performed assignment
-	        student.setAssignedAt(LocalDateTime.now());
+	    for (SalesCourseManagement lead : leads) {
+	    	lead.setAssignedTo(assignedUser);
+	    	lead.setAssignedBy(loggedInUser);  // ✅ store who performed assignment
+	    	lead.setAssignedAt(LocalDateTime.now());
 	    }
 
-	    salesCourseManagementRepository.saveAll(students);
+	    salesCourseManagementRepository.saveAll(leads);
 
-	    return "Successfully assigned " + students.size() + " students to " + assignedUser.getFirstName();
+	    return "Successfully assigned " + leads.size() + " leads to " + assignedUser.getFirstName();
 	}
 
 
 
-	// ---------------- DELETE STUDENT ----------------
+	// ---------------- DELETE LEAD ----------------
 	@Override
-	public void deleteStudent(Long id) {
-		SalesCourseManagement student = salesCourseManagementRepository.findById(id)
-				.orElseThrow(() -> new ResourceNotFoundException("Student not found with ID: " + id));
-		salesCourseManagementRepository.delete(student);
+	public void deleteLead(Long id) {
+		SalesCourseManagement lead = salesCourseManagementRepository.findById(id)
+				.orElseThrow(() -> new ResourceNotFoundException("lead not found with ID: " + id));
+		salesCourseManagementRepository.delete(lead);
 	}
 
-	// ---------------- GET STUDENTS BY STATUS ----------------
+	// ---------------- GET LEADS BY STATUS ----------------
 	@Override
-	public List<SalesCourseManagementResponseDto> getStudentsByStatus(String status) {
+	public List<SalesCourseManagementResponseDto> getLeadsByStatus(String status) {
 
 		if (status == null || status.trim().isEmpty()) {
 			throw new IllegalArgumentException("Status cannot be empty!");
 		}
 
-		List<SalesCourseManagement> students = salesCourseManagementRepository.findByStatus(status.trim());
-		if (students.isEmpty()) {
-			throw new ResourceNotFoundException("No students found with status: " + status);
+		List<SalesCourseManagement> leads = salesCourseManagementRepository.findByStatus(status.trim());
+		if (leads.isEmpty()) {
+			throw new ResourceNotFoundException("No leads found with status: " + status);
 		}
 
 		List<SalesCourseManagementResponseDto> dtoList = new ArrayList<>();
-		for (SalesCourseManagement sc : students) {
+		for (SalesCourseManagement sc : leads) {
 			dtoList.add(SalesCourseManagementMapper.toResponseDto(sc));
 		}
 		return dtoList;
@@ -452,18 +452,18 @@ public class SalesCourseServiceImpl implements SalesCourseService {
 
 	@Override
 	 @Transactional
-	public Map<String, Object> getStudentsWithPagination(int page, int size) {
+	public Map<String, Object> getLeadsWithPagination(int page, int size) {
 		Pageable pageable = PageRequest.of(page, size);
 
 		Page<SalesCourseManagement> pagedResult = salesCourseManagementRepository.findAll(pageable);
 
 		List<SalesCourseManagementResponseDto> dtoList = new ArrayList<>();
-		for (SalesCourseManagement student : pagedResult.getContent()) {
-			dtoList.add(SalesCourseManagementMapper.toResponseDto(student));
+		for (SalesCourseManagement lead : pagedResult.getContent()) {
+			dtoList.add(SalesCourseManagementMapper.toResponseDto(lead));
 		}
 
 		Map<String, Object> response = new HashMap<>();
-		response.put("students", dtoList);
+		response.put("leads", dtoList);
 		response.put("currentPage", pagedResult.getNumber());
 		response.put("totalItems", pagedResult.getTotalElements());
 		response.put("totalPages", pagedResult.getTotalPages());
@@ -481,8 +481,8 @@ public class SalesCourseServiceImpl implements SalesCourseService {
 	        return null;
 	    }
 
-	    // 2️⃣ Fetch load counts (only NEW students)
-	    List<Object[]> counts = salesCourseManagementRepository.getNewStudentCounts();
+	    // 2️⃣ Fetch load counts (only NEW leads)
+	    List<Object[]> counts = salesCourseManagementRepository.getNewLeadCounts();
 
 	    Map<Long, Long> loadMap = new HashMap<>();
 
@@ -492,7 +492,7 @@ public class SalesCourseServiceImpl implements SalesCourseService {
 	        loadMap.put(userId, cnt);
 	    }
 
-	    // 3️⃣ Pick counsellor with lowest NEW student count
+	    // 3️⃣ Pick counsellor with lowest NEW lead count
 	    User best = null;
 	    long min = Long.MAX_VALUE;
 
@@ -510,25 +510,25 @@ public class SalesCourseServiceImpl implements SalesCourseService {
 
 
 	
-	private void autoAssignOnStatusChange(SalesCourseManagement student, Long loggedInUserId) {
+	private void autoAssignOnStatusChange(SalesCourseManagement lead, Long loggedInUserId) {
 
-	    if (!"NEW".equalsIgnoreCase(student.getStatus())) {
+	    if (!"NEW".equalsIgnoreCase(lead.getStatus())) {
 	        return;
 	    }
 
 	    User bestUser = findBestCounsellorForAutoAssign();
 	    if (bestUser == null) return;
 
-	    student.setAssignedTo(bestUser);
+	    lead.setAssignedTo(bestUser);
 
 	    if (loggedInUserId != null) {
 	        User loggedInUser = userRepository.findById(loggedInUserId)
 	                .orElseThrow(() -> new ResourceNotFoundException("Logged-in user not found"));
-	        student.setAssignedBy(loggedInUser); // ✅ store User entity
+	        lead.setAssignedBy(loggedInUser); // ✅ store User entity
 	    }
 
-	    student.setAssignedAt(LocalDateTime.now());
-	    salesCourseManagementRepository.save(student);
+	    lead.setAssignedAt(LocalDateTime.now());
+	    salesCourseManagementRepository.save(lead);
 	}
 
 	
@@ -544,12 +544,12 @@ public class SalesCourseServiceImpl implements SalesCourseService {
 	        return "No counsellors to rebalance.";
 	    }
 
-	    // 2️⃣ Fetch NEW students only
-	    List<SalesCourseManagement> newStudents =
+	    // 2️⃣ Fetch NEW leads only
+	    List<SalesCourseManagement> newLeads =
 	            salesCourseManagementRepository.findByStatus("NEW");
 
-	    if (newStudents.isEmpty()) {
-	        return "No NEW students available.";
+	    if (newLeads.isEmpty()) {
+	        return "No NEW leads available.";
 	    }
 
 	    // 3️⃣ Sort counsellors by ID for stable distribution
@@ -562,13 +562,13 @@ public class SalesCourseServiceImpl implements SalesCourseService {
 	    User loggedInUser = userRepository.findById(loggedInUserId)
 	            .orElseThrow(() -> new ResourceNotFoundException("Logged-in user not found"));
 
-	    // 5️⃣ Clear all NEW student assignments before reassigning
-	    for (SalesCourseManagement s : newStudents) {
+	    // 5️⃣ Clear all NEW lead assignments before reassigning
+	    for (SalesCourseManagement s : newLeads) {
 	        s.setAssignedTo(null);
 	    }
 
 	    // 6️⃣ Apply Round Robin (Equal Distribution)
-	    for (SalesCourseManagement s : newStudents) {
+	    for (SalesCourseManagement s : newLeads) {
 	        User assignTo = counsellors.get(index);
 
 	        s.setAssignedTo(assignTo);
@@ -578,10 +578,10 @@ public class SalesCourseServiceImpl implements SalesCourseService {
 	        index = (index + 1) % cCount;
 	    }
 
-	    salesCourseManagementRepository.saveAll(newStudents);
+	    salesCourseManagementRepository.saveAll(newLeads);
 
 	    return "Rebalance completed successfully. "
-	            + newStudents.size() + " students distributed equally among "
+	            + newLeads.size() + " leads distributed equally among "
 	            + cCount + " counsellors.";
 	}
 
@@ -589,8 +589,8 @@ public class SalesCourseServiceImpl implements SalesCourseService {
 	 @Transactional
 	public List<AssignedCountResponseDto> getAssignedCountsForCounsellors() {
 
-	    // Fetch counts only for NEW status students
-	    List<Object[]> results = salesCourseManagementRepository.getNewStudentCounts();
+	    // Fetch counts only for NEW status leads 
+	    List<Object[]> results = salesCourseManagementRepository.getNewLeadCounts();
 
 	    List<AssignedCountResponseDto> response = new ArrayList<>();
 
@@ -605,10 +605,10 @@ public class SalesCourseServiceImpl implements SalesCourseService {
 	}
 	
 	@Override
-	public List<SalesCourseManagementResponseDto> getStudentsAssignedToUser(Long userId) {
-	    List<SalesCourseManagement> students = salesCourseManagementRepository.findByAssignedTo_UserId(userId);
+	public List<SalesCourseManagementResponseDto> getLeadsAssignedToUser(Long userId) {
+	    List<SalesCourseManagement> leads = salesCourseManagementRepository.findByAssignedTo_UserId(userId);
 	    List<SalesCourseManagementResponseDto> dtoList = new ArrayList<>();
-	    for (SalesCourseManagement s : students) {
+	    for (SalesCourseManagement s : leads) {
 	        dtoList.add(SalesCourseManagementMapper.toResponseDto(s));
 	    }
 	    return dtoList;

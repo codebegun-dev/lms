@@ -13,34 +13,34 @@ import com.mockInterview.responseDtos.SalesCourseManagementResponseDto;
 public interface SalesCourseService {
 
     
-    SalesCourseManagementResponseDto createStudent(SalesCourseManagementRequestDto dto);
-    public Map<String, Object> uploadStudentsFromExcel(MultipartFile file, Long loggedInUserId);
+    SalesCourseManagementResponseDto createLead(SalesCourseManagementRequestDto dto);
+    public Map<String, Object> uploadLeadsFromExcel(MultipartFile file, Long loggedInUserId);
 
     
-    SalesCourseManagementResponseDto getStudentsById(Long id);
+    SalesCourseManagementResponseDto getLeadsById(Long id);
 
     
-    List<SalesCourseManagementResponseDto> getAllStudents();
+    List<SalesCourseManagementResponseDto> getAllLeads();
 
     
-    SalesCourseManagementResponseDto updateStudentDetails(Long id, SalesCourseManagementRequestDto dto);
+    SalesCourseManagementResponseDto updateLeadDetails(Long id, SalesCourseManagementRequestDto dto);
 
    
-    void deleteStudent(Long id);
+    void deleteLead(Long id);
     
-    public Map<String, Object> getStudentsWithPagination(int page, int size);
+    public Map<String, Object> getLeadsWithPagination(int page, int size);
 
     
-    List<SalesCourseManagementResponseDto> getStudentsByStatus(String status);
+    List<SalesCourseManagementResponseDto> getLeadsByStatus(String status);
     
-    public String bulkUpdateStatus(List<Long> studentIds, String status, Long loggedInUserId);
+    public String bulkUpdateStatus(List<Long> leadIds, String status, Long loggedInUserId);
 
-   public String bulkAssignStudentsToUser(List<Long> studentIds, Long assignedUserId, Long loggedInUserId);
+   public String bulkAssignLeadsToUser(List<Long> leadIds, Long assignedUserId, Long loggedInUserId);
     public String rebalanceAssignments(Long loggedInUserId);
     
     public List<AssignedCountResponseDto> getAssignedCountsForCounsellors();
     
-    public List<SalesCourseManagementResponseDto> getStudentsAssignedToUser(Long userId);
+    public List<SalesCourseManagementResponseDto> getLeadsAssignedToUser(Long userId);
     	
     
     

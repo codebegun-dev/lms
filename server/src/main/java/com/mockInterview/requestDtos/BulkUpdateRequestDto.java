@@ -8,8 +8,8 @@ import lombok.Data;
 @Data
 public class BulkUpdateRequestDto {
 
-    @NotEmpty(message = "Student IDs cannot be empty")
-    private List<Long> studentIds;
+    @NotEmpty(message = "lead IDs cannot be empty")
+    private List<Long> leadIds;
 
     @NotNull(message = "Status cannot be null")
     private String status;

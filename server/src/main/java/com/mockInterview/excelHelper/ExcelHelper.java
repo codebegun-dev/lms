@@ -34,7 +34,7 @@ public class ExcelHelper {
 
                 SalesCourseManagementRequestDto dto = new SalesCourseManagementRequestDto();
 
-                dto.setStudentName(getCellValueAsString(currentRow.getCell(0)));
+                dto.setLeadName(getCellValueAsString(currentRow.getCell(0)));
                 dto.setPhone(getCellValueAsString(currentRow.getCell(1)));
                 dto.setEmail(getCellValueAsString(currentRow.getCell(2)));
                 dto.setGender(getCellValueAsString(currentRow.getCell(3)));

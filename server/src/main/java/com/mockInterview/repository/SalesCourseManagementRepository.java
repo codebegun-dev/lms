@@ -22,7 +22,7 @@ public interface SalesCourseManagementRepository extends JpaRepository<SalesCour
 		       WHERE s.status = 'NEW' AND s.assignedTo IS NOT NULL
 		       GROUP BY s.assignedTo.userId
 		       """)
-		List<Object[]> getNewStudentCounts();
+		List<Object[]> getNewLeadCounts();
 		
 		List<SalesCourseManagement> findByAssignedTo_UserId(Long userId);
 
