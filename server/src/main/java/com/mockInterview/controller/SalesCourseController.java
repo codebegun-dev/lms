@@ -16,97 +16,94 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/saleCourse/student")
+@RequestMapping("/api/saleCourse/leads")
 @CrossOrigin(origins = "*")
-public class SalesCourseController { 
-    
-    @Autowired
-    private SalesCourseService salesCourseService;
+public class SalesCourseController {
 
-    // ---------------- CREATE STUDENT ----------------
+    @Autowired
+    private SalesCourseService salesCourseService; 
+
+    // ---------------- CREATE LEAD ----------------
     @PostMapping
-    public SalesCourseManagementResponseDto createStudent(
+    public SalesCourseManagementResponseDto createLead(
             @Valid @RequestBody SalesCourseManagementRequestDto dto) {
-        return salesCourseService.createStudent(dto);
-    } 
-    
+        return salesCourseService.createLead(dto);
+    }
+
     // ---------------- BULK UPLOAD ----------------
     @PostMapping("/bulk-upload")
-    public Map<String, Object> uploadStudents(
+    public Map<String, Object> uploadLeads(
             @RequestParam("file") MultipartFile file,
-            @RequestParam("loggedInUserId") Long loggedInUserId
-    ) {
-        return salesCourseService.uploadStudentsFromExcel(file, loggedInUserId);
+            @RequestParam("loggedInUserId") Long loggedInUserId) {
+        return salesCourseService.uploadLeadsFromExcel(file, loggedInUserId);
     }
 
-    // ---------------- GET BY ID ----------------
+    // ---------------- GET SINGLE LEAD ----------------
     @GetMapping("/{id}")
-    public SalesCourseManagementResponseDto getStudentById(@PathVariable Long id) {
-        return salesCourseService.getStudentsById(id);
+    public SalesCourseManagementResponseDto getLeadById(@PathVariable Long id) {
+        return salesCourseService.getLeadsById(id);
     }
 
-    // ---------------- GET ALL ----------------
-    @GetMapping
-    public List<SalesCourseManagementResponseDto> getAllStudents() {
-        return salesCourseService.getAllStudents();
-    }
-
-    // ---------------- UPDATE STUDENT ----------------
+    // ---------------- UPDATE LEAD ----------------
     @PutMapping("/{id}")
-    public SalesCourseManagementResponseDto updateStudent(
+    public SalesCourseManagementResponseDto updateLead(
             @PathVariable Long id,
             @Valid @RequestBody SalesCourseManagementRequestDto dto) {
-        return salesCourseService.updateStudentDetails(id, dto);
+        return salesCourseService.updateLeadDetails(id, dto);
     }
-    
+
+    // ---------------- DELETE LEAD ----------------
+    @DeleteMapping("/{id}")
+    public String deleteLead(@PathVariable Long id) {
+        salesCourseService.deleteLead(id);
+        return "Student deleted successfully with ID: " + id;
+    }
+
+    // ---------------- GET ALL OR ASSIGNED STUDENTS ----------------
+    @GetMapping
+    public List<SalesCourseManagementResponseDto> getLeads(
+            @RequestParam(required = false) Long userId) {
+
+        if (userId != null) {
+            return salesCourseService.getLeadsAssignedToUser(userId);
+        }
+        return salesCourseService.getAllLeads();
+    }
+
+    // ---------------- GET BY STATUS ----------------
+    @GetMapping("/status/{status}")
+    public List<SalesCourseManagementResponseDto> getLeadsByStatus(@PathVariable String status) {
+        return salesCourseService.getLeadsByStatus(status);
+    }
+
+    // ---------------- PAGINATED LEADS ----------------
+    @GetMapping("/paginated")
+    public Map<String, Object> getPaginatedLeads(
+            @RequestParam(defaultValue = "0") int page) {
+        return salesCourseService.getLeadsWithPagination(page, 14);
+    }
+
     // ---------------- BULK UPDATE STATUS ----------------
     @PostMapping("/bulk-update-status")
-    public String bulkUpdateStatus(@Valid @RequestBody BulkUpdateRequestDto request) {
+    public String bulkUpdateStatus(
+            @Valid @RequestBody BulkUpdateRequestDto request) {
+
         return salesCourseService.bulkUpdateStatus(
-                request.getStudentIds(),
+                request.getLeadIds(),
                 request.getStatus(),
-                request.getLoggedInUserId()
-        );
+                request.getLoggedInUserId());
     }
-    
+
     // ---------------- BULK ASSIGN ----------------
     @PostMapping("/assign/bulk")
     public String bulkAssign(
             @RequestBody BulkAssignRequest request,
-            @RequestParam("loggedInUserId") Long loggedInUserId
-    ) {
-        return salesCourseService.bulkAssignStudentsToUser(
-                request.getStudentIds(),
+            @RequestParam("loggedInUserId") Long loggedInUserId) {
+
+        return salesCourseService.bulkAssignLeadsToUser(
+                request.getLeadIds(),
                 request.getAssignedUserId(),
-                loggedInUserId
-        );
-    }
-
-    // ---------------- DELETE STUDENT ----------------
-    @DeleteMapping("/{id}")
-    public String deleteStudent(@PathVariable Long id) {
-        salesCourseService.deleteStudent(id);
-        return "Student deleted successfully with ID: " + id;
-    }
-    
-    // ---------------- GET STUDENTS BY STATUS ----------------
-    @GetMapping("/status/{status}")
-    public List<SalesCourseManagementResponseDto> getStudentsByStatus(@PathVariable String status) {
-        return salesCourseService.getStudentsByStatus(status);
-    }
-    
-    // ---------------- PAGINATED STUDENTS ----------------
-    @GetMapping("/students")
-    public Map<String, Object> getPaginatedStudents(
-            @RequestParam(defaultValue = "0") int page
-    ) {
-        return salesCourseService.getStudentsWithPagination(page, 30);
-    }
-
-    // ---------------- AUTO REBALANCE ----------------
-    @PostMapping("/auto-rebalance")
-    public String rebalance(@RequestParam("loggedInUserId") Long loggedInUserId) {
-        return salesCourseService.rebalanceAssignments(loggedInUserId);
+                loggedInUserId);
     }
 
     // ---------------- GET ASSIGNED COUNTS ----------------
@@ -114,10 +111,10 @@ public class SalesCourseController {
     public List<AssignedCountResponseDto> getAssignedCounts() {
         return salesCourseService.getAssignedCountsForCounsellors();
     }
-    
-    @GetMapping("/assigned-to/{userId}")
-    public List<SalesCourseManagementResponseDto> getAssignedStudents(@PathVariable Long userId) {
-        return salesCourseService.getStudentsAssignedToUser(userId);
-    }
 
+    // ---------------- AUTO REBALANCE ----------------
+    @PostMapping("/auto-rebalance")
+    public String rebalance(@RequestParam("loggedInUserId") Long loggedInUserId) {
+        return salesCourseService.rebalanceAssignments(loggedInUserId);
+    }
 }

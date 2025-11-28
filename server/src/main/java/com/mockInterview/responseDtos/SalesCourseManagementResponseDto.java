@@ -5,9 +5,9 @@ import lombok.Data;
 @Data
 public class SalesCourseManagementResponseDto {
 
-    private Long studentId;
+    private Long leadId;
 
-    private String studentName;
+    private String leadName;
 
     private String phone;
 

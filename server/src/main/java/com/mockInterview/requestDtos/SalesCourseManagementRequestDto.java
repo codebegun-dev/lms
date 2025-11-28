@@ -9,9 +9,9 @@ import lombok.Data;
 @Data
 public class SalesCourseManagementRequestDto {
 
-	@NotNull(message = "Student name is required")
+	@NotNull(message ="name is required")
 	@Size(min = 3, max = 30, message = "Name must be between 3 and 30 characters")
-	private String studentName;
+	private String leadName;
 
 	@NotNull(message = "Phone number is required")
 	@Pattern(regexp = "^[0-9]{10}$", message = "Phone must be a valid 10-digit number")

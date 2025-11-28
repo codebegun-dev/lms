@@ -11,7 +11,7 @@ public class SalesCourseManagementMapper {
     public static SalesCourseManagement toEntity(SalesCourseManagementRequestDto dto, CourseManagement course) {
         SalesCourseManagement sc = new SalesCourseManagement();
 
-        sc.setStudentName(dto.getStudentName());
+        sc.setLeadName(dto.getLeadName());
         sc.setPhone(dto.getPhone());
         sc.setEmail(dto.getEmail());
         sc.setGender(dto.getGender());
@@ -39,8 +39,8 @@ public class SalesCourseManagementMapper {
     public static SalesCourseManagementResponseDto toResponseDto(SalesCourseManagement sc) {
         SalesCourseManagementResponseDto dto = new SalesCourseManagementResponseDto();
 
-        dto.setStudentId(sc.getStudentId());
-        dto.setStudentName(sc.getStudentName());
+        dto.setLeadId(sc.getLeadId());
+        dto.setLeadName(sc.getLeadName());
         dto.setPhone(sc.getPhone());
         dto.setEmail(sc.getEmail());
         dto.setGender(sc.getGender());
