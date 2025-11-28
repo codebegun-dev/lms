@@ -23,12 +23,13 @@ function SalesDashboard() {
     }
   };
 
-  // Count logic
+  // Count logic - using LeadsList approach for "New" count
   const total = leads.length;
-  const initial = leads.filter(l => l.status === "INITIAL").length;
+  const newCount = leads.filter(l => l.status === "NEW" || l.status === "INITIAL").length;
   const contacted = leads.filter(l => l.status === "Contacted").length;
   const interested = leads.filter(l => l.status === "Interested").length;
   const notInterested = leads.filter(l => l.status === "Not Interested").length;
+  const enrolled = leads.filter(l => l.status === "Enrolled").length;
 
   const statsCards = [
     { 
@@ -39,8 +40,8 @@ function SalesDashboard() {
       textColor: "#fff"
     },
     { 
-      title: "Initial", 
-      value: initial, 
+      title: "New", 
+      value: newCount, 
       icon: "🆕",
       bgGradient: "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
       textColor: "#fff"
@@ -64,6 +65,13 @@ function SalesDashboard() {
       value: notInterested, 
       icon: "❌",
       bgGradient: "linear-gradient(135deg, #fa709a 0%, #fee140 100%)",
+      textColor: "#fff"
+    },
+    { 
+      title: "Enrolled", 
+      value: enrolled, 
+      icon: "🎓",
+      bgGradient: "linear-gradient(135deg, #6a11cb 0%, #2575fc 100%)",
       textColor: "#fff"
     }
   ];
@@ -100,7 +108,7 @@ function SalesDashboard() {
                 <p className="text-muted mb-0">Track your sales leads performance</p>
               </div>
 
-              <div className="row g-4">
+              <div className="row g-3">
                 {statsCards.map((card, index) => (
                   <div 
                     key={index} 
@@ -121,44 +129,43 @@ function SalesDashboard() {
                         e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.1)";
                       }}
                     >
-                      <div className="card-body p-4">
-                        <div className="d-flex justify-content-between align-items-start mb-3">
+                      <div className="card-body p-3">
+                        <div className="d-flex justify-content-between align-items-center">
                           <div>
                             <h6 
                               className="text-uppercase mb-2 fw-semibold" 
                               style={{ 
                                 color: card.textColor,
                                 opacity: 0.9,
-                                fontSize: "0.875rem",
+                                fontSize: "0.75rem",
                                 letterSpacing: "0.5px"
                               }}
                             >
                               {card.title}
                             </h6>
-                            <h2 
+                            <h3 
                               className="fw-bold mb-1" 
                               style={{ 
                                 color: card.textColor,
-                                fontSize: "2.5rem"
+                                fontSize: "2rem"
                               }}
                             >
                               {card.value}
-                            </h2>
+                            </h3>
                             <p 
                               className="mb-0 fw-semibold"
                               style={{
                                 color: card.textColor,
                                 opacity: 0.9,
-                                fontSize: "0.875rem"
+                                fontSize: "0.75rem"
                               }}
                             >
                               {total > 0 ? ((card.value / total) * 100).toFixed(1) : 0}%
                             </p>
                           </div>
                           <div 
-                            className="d-flex align-items-center justify-content-center"
                             style={{
-                              fontSize: "2.5rem",
+                              fontSize: "2rem",
                               opacity: 0.8
                             }}
                           >

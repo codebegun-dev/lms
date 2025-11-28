@@ -7,6 +7,20 @@ function BulkUpload() {
   const [error, setError] = useState("");
   const [uploading, setUploading] = useState(false);
 
+  // Function to get logged-in user from localStorage
+  const getLoggedInUserId = () => {
+    try {
+      const userData = localStorage.getItem('user');
+      if (userData) {
+        const user = JSON.parse(userData);
+        return user.userId;
+      }
+    } catch (error) {
+      console.error("Error parsing user data from localStorage:", error);
+    }
+    return null;
+  };
+
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0];
     if (selectedFile) {
@@ -28,6 +42,13 @@ function BulkUpload() {
       return;
     }
 
+    // Get logged-in user ID
+    const loggedInUserId = getLoggedInUserId();
+    if (!loggedInUserId) {
+      setError("User not logged in. Please login again.");
+      return;
+    }
+
     setUploading(true);
     setError("");
     setMessage("");
@@ -37,7 +58,7 @@ function BulkUpload() {
 
     try {
       const res = await axios.post(
-        "http://localhost:8080/api/saleCourse/student/bulk-upload",
+        `http://localhost:8080/api/saleCourse/student/bulk-upload?loggedInUserId=${loggedInUserId}`,
         formData,
         {
           headers: { "Content-Type": "multipart/form-data" },
@@ -47,10 +68,14 @@ function BulkUpload() {
       setMessage(
         `Upload completed! Success: ${res.data.successCount}, Failed: ${res.data.failedCount}`
       );
-      if (res.data.failedRows.length > 0) {
-        console.table(res.data.failedRows);
+      
+      // Show failed rows details if any
+      if (res.data.failedRows && res.data.failedRows.length > 0) {
+        console.log("Failed rows:", res.data.failedRows);
+        setMessage(prev => prev + `. Check console for failed rows details.`);
       }
     } catch (err) {
+      console.error("Upload error:", err);
       setError(err.response?.data?.message || "Upload failed!");
     } finally {
       setUploading(false);

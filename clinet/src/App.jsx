@@ -34,12 +34,17 @@ import Syllabus from './Admin_Dashboard/Syllabus';
 import EditArticle from './Admin_Dashboard/EditArticle';
 import AddSection from './Admin_Dashboard/ContentTypeModal';
 
-// Sales Dash
+// Sales Dashboard
 import SalesForm from './Sales_Dashboard/SalesForm';
 import SalesDashboard from './Sales_Dashboard/SalesDashboard';
 import LeadsList from "./Sales_Dashboard/LeadsList";
 import SalesProfile from './Sales_Dashboard/SalesProfile';
 import BulkUpload from './Sales_Dashboard/BulkUpload';
+
+
+// Sales Counselor Dashboard
+import SalesCounselorDashboard from './Sales_Dashboard/Sales_Counselor/SalesCounselorDashboard';
+import CounselorProfile from "./Sales_Dashboard/Sales_Counselor/CounselorProfile";
 
 
 function App() {
@@ -92,6 +97,13 @@ function App() {
           <Route path="leads" element={<LeadsList />} />
           <Route path="myprofile" element={<SalesProfile />} />
           <Route path="bulkupload" element={<BulkUpload />} />
+        </Route>
+
+
+        {/* Sales Counselor Dashboard */}
+        <Route path="/sales-counselor" element={<SalesCounselorDashboard />}>
+          <Route index element={<h2>Welcome Counselor</h2>} />
+          <Route path="myprofile" element={<CounselorProfile />} />
         </Route>
 
 
