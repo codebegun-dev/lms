@@ -448,7 +448,7 @@ public class SalesCourseServiceImpl implements SalesCourseService {
 	@Override
 	@Transactional
 	public Map<String, Object> getLeadsByRoleWithPagination(Long loggedInUserId, Integer page, Integer size) {
-	    // ----------------- 1️⃣ Fetch logged-in user -----------------
+
 	    User loggedInUser = userRepository.findById(loggedInUserId)
 	            .orElseThrow(() -> new ResourceNotFoundException("Logged-in user not found"));
 
@@ -457,61 +457,94 @@ public class SalesCourseServiceImpl implements SalesCourseService {
 	        throw new UnauthorizedActionException("User role not found");
 	    }
 
-	    // ----------------- 2️⃣ Determine pagination -----------------
 	    boolean isPaginated = (page != null && size != null);
 
 	    List<SalesCourseManagementResponseDto> dtoList = new ArrayList<>();
 	    Map<String, Object> response = new HashMap<>();
 
-	    // ----------------- 3️⃣ Fetch leads based on role -----------------
+	    Page<SalesCourseManagement> pagedResult = null;
+	    List<SalesCourseManagement> fullListForCounts = null;   // ✔ full list for statusCounts
+
+	    // ===============================
+	    //    ADMIN / MANAGER
+	    // ===============================
 	    if ("MASTER_ADMIN".equalsIgnoreCase(roleName) || "SALES_MANAGER".equalsIgnoreCase(roleName)) {
-	        // Admin / Sales Manager -> all leads
+
+	        // Pagination: fetch only page
 	        if (isPaginated) {
 	            Pageable pageable = PageRequest.of(page, size);
-	            Page<SalesCourseManagement> pagedResult = salesCourseManagementRepository.findAll(pageable);
+	            pagedResult = salesCourseManagementRepository.findAll(pageable);
 
 	            for (SalesCourseManagement lead : pagedResult.getContent()) {
 	                dtoList.add(SalesCourseManagementMapper.toResponseDto(lead));
 	            }
-
-	            response.put("leads", dtoList);
-	            response.put("currentPage", pagedResult.getNumber());
-	            response.put("totalItems", pagedResult.getTotalElements());
-	            response.put("totalPages", pagedResult.getTotalPages());
 	        } else {
-	            List<SalesCourseManagement> leads = salesCourseManagementRepository.findAll();
-	            for (SalesCourseManagement lead : leads) {
+	            List<SalesCourseManagement> list = salesCourseManagementRepository.findAll();
+	            for (SalesCourseManagement lead : list) {
 	                dtoList.add(SalesCourseManagementMapper.toResponseDto(lead));
 	            }
-	            response.put("leads", dtoList);
 	        }
 
-	    } else if (roleName.startsWith("SA_")) {
-	        // Counsellor -> only their assigned leads
+	        // ✔ FULL LIST (for statusCounts)
+	        fullListForCounts = salesCourseManagementRepository.findAll();
+	    }
+
+	    // ===============================
+	    //    COUNSELLOR (SA_XXX)
+	    // ===============================
+	    else if (roleName.startsWith("SA_")) {
+
+	        // Pagination: fetch only page
 	        if (isPaginated) {
 	            Pageable pageable = PageRequest.of(page, size);
-	            Page<SalesCourseManagement> pagedResult = salesCourseManagementRepository.findByAssignedTo_UserId(loggedInUserId, pageable);
+	            pagedResult = salesCourseManagementRepository.findByAssignedTo_UserId(loggedInUserId, pageable);
 
 	            for (SalesCourseManagement lead : pagedResult.getContent()) {
 	                dtoList.add(SalesCourseManagementMapper.toResponseDto(lead));
 	            }
-
-	            response.put("leads", dtoList);
-	            response.put("currentPage", pagedResult.getNumber());
-	            response.put("totalItems", pagedResult.getTotalElements());
-	            response.put("totalPages", pagedResult.getTotalPages());
 	        } else {
-	            List<SalesCourseManagement> leads = salesCourseManagementRepository.findByAssignedTo_UserId(loggedInUserId);
-	            for (SalesCourseManagement lead : leads) {
+	            List<SalesCourseManagement> list = salesCourseManagementRepository.findByAssignedTo_UserId(loggedInUserId);
+	            for (SalesCourseManagement lead : list) {
 	                dtoList.add(SalesCourseManagementMapper.toResponseDto(lead));
 	            }
-	            response.put("leads", dtoList);
 	        }
 
-	    } else {
+	        // ✔ FULL LIST for STATUS COUNTS
+	        fullListForCounts = salesCourseManagementRepository.findByAssignedTo_UserId(loggedInUserId);
+	    }
+
+	    // ===============================
+	    //   INVALID USER ROLE
+	    // ===============================
+	    else {
 	        throw new UnauthorizedActionException(
 	                "User (" + loggedInUser.getFirstName() + ") is not authorized to view leads"
 	        );
+	    }
+
+	    // ===============================
+	    //   STATUS COUNTS FROM FULL LIST
+	    // ===============================
+	    Map<String, Long> statusCounts = new HashMap<>();
+
+	    for (SalesCourseManagement lead : fullListForCounts) {
+	        String status = lead.getStatus();
+	        statusCounts.put(status, statusCounts.getOrDefault(status, 0L) + 1);
+	    }
+
+	    // ===============================
+	    //      BUILD RESPONSE
+	    // ===============================
+	    response.put("leads", dtoList);
+	    response.put("statusCounts", statusCounts);   // ✔ full list counts
+
+	    if (pagedResult != null) {
+	        response.put("currentPage", pagedResult.getNumber());
+	        response.put("totalLeads", pagedResult.getTotalElements());
+	        response.put("totalPages", pagedResult.getTotalPages());
+	    } else {
+	        response.put("totalLeads", dtoList.size());
+	        response.put("totalPages", 1);
 	    }
 
 	    return response;
