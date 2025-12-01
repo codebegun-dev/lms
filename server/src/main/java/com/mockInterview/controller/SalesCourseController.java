@@ -3,6 +3,7 @@ package com.mockInterview.controller;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.beans.factory.annotation.Value;
 
 import com.mockInterview.requestDtos.BulkAssignRequest;
 import com.mockInterview.requestDtos.BulkUpdateRequestDto;
@@ -19,6 +20,12 @@ import java.util.Map;
 @RequestMapping("/api/saleCourse/leads")
 @CrossOrigin(origins = "*")
 public class SalesCourseController {
+	
+	
+	// inside class
+	@Value("${lead.pagination.default-page-size}")
+	private int defaultPageSize;
+
 
     @Autowired
     private SalesCourseService salesCourseService; 
@@ -75,10 +82,11 @@ public class SalesCourseController {
             @RequestParam(value = "page", required = false) Integer page) {
 
         int pageNumber = (page != null && page >= 0) ? page : 0;
-        int pageSize = 14; // fixed default size
+        int pageSize = defaultPageSize; // taken from application.properties
 
         return salesCourseService.getLeadsByRoleWithPagination(loggedInUserId, pageNumber, pageSize);
     }
+
 
 
 
