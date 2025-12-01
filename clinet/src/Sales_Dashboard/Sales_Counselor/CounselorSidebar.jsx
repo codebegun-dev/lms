@@ -8,15 +8,15 @@ function CounselorSidebar() {
   
         <ul className="list-group">
   
-          <Link to="/sales-dashboard" className="list-group-item list-group-item-action">
+          <Link to="/sales-counselor" className="list-group-item list-group-item-action">
             Dashboard
           </Link>
   
-          <Link to="/sales-dashboard/add-enquiry" className="list-group-item list-group-item-action">
+          <Link to="/sales-counselor/add-enquiry" className="list-group-item list-group-item-action">
             Add Enquiry
           </Link>
   
-          <Link to="/sales-dashboard/leads" className="list-group-item list-group-item-action">
+          <Link to="/sales-counselor/leads" className="list-group-item list-group-item-action">
             Leads List
           </Link>
   

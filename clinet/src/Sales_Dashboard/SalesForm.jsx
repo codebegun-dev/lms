@@ -3,7 +3,7 @@ import axios from "axios";
 
 function SalesForm() {
   const [formData, setFormData] = useState({
-    studentName: "",
+    leadName: "",
     phone: "",
     email: "",
     gender: "",
@@ -48,50 +48,64 @@ function SalesForm() {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    let newErrors = {};
-    if (!formData.studentName.trim()) newErrors.studentName = "Name is required";
-    if (!formData.phone.trim()) newErrors.phone = "Phone number is required";
+  e.preventDefault();
 
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      return;
-    }
+  let newErrors = {};
+  if (!formData.leadName.trim()) newErrors.leadName = "Name is required";
+  if (!formData.phone.trim()) newErrors.phone = "Phone number is required";
 
-    try {
-      // Convert NEW back to INITIAL for API if needed
-      const submitData = {
-        ...formData,
-        status: formData.status === "NEW" ? "INITIAL" : formData.status
-      };
-      
-      await axios.post("http://localhost:8080/api/saleCourse/student", submitData);
-      setSuccessMsg("Enquiry submitted successfully!");
-      setErrors({});
-      setApiError("");
-      setFormData({
-        studentName: "",
-        phone: "",
-        email: "",
-        gender: "",
-        passedOutYear: "",
-        qualification: "",
-        courseId: "",
-        status: "NEW",
-        college: "",
-        city: "",
-        source: "",
-        campaign: ""
-      });
-    } catch (error) {
-      const msg = error.response?.data?.message || "Something went wrong!";
-      const lower = msg.toLowerCase();
-      if (lower.includes("email")) setErrors({ email: msg });
-      else if (lower.includes("phone")) setErrors({ phone: msg });
-      else if (lower.includes("name")) setErrors({ studentName: msg });
-      else setApiError(msg);
-    }
-  };
+  if (Object.keys(newErrors).length > 0) {
+    setErrors(newErrors);
+    return;
+  }
+
+  try {
+    const loggedInUserId = localStorage.getItem("userId");
+
+    // Prepare final request body
+    const finalRequest = {
+      ...formData,
+      loggedInUserId: Number(loggedInUserId),
+      // status: formData.status === "NEW" ? "NEW" : formData.status
+    };
+
+    // Post WITHOUT query param
+    await axios.post(
+      "http://localhost:8080/api/saleCourse/leads",
+      finalRequest
+    );
+
+    setSuccessMsg("Enquiry submitted successfully!");
+    setErrors({});
+    setApiError("");
+
+    // Reset form fields
+    setFormData({
+      leadName: "",
+      phone: "",
+      email: "",
+      gender: "",
+      passedOutYear: "",
+      qualification: "",
+      courseId: "",
+      status: "NEW",
+      college: "",
+      city: "",
+      source: "",
+      campaign: ""
+    });
+
+  } catch (error) {
+    const msg = error.response?.data?.message || "Something went wrong!";
+    const lower = msg.toLowerCase();
+
+    if (lower.includes("email")) setErrors({ email: msg });
+    else if (lower.includes("phone")) setErrors({ phone: msg });
+    else if (lower.includes("name")) setErrors({ leadName: msg });
+    else setApiError(msg);
+  }
+};
+
 
   return (
     <div className="container-fluid py-3">
@@ -100,7 +114,7 @@ function SalesForm() {
           <div className="card border-0 shadow rounded-3">
 
             <div className="card-header bg-primary text-white py-2 rounded-top-3">
-              <h5 className="text-center mb-0">Student Enquiry Form</h5>
+              <h5 className="text-center mb-0">Lead Enquiry Form</h5>
             </div>
 
             <div className="card-body p-3">
@@ -118,12 +132,12 @@ function SalesForm() {
                     <label className="small fw-semibold">Full Name *</label>
                     <input
                       type="text"
-                      name="studentName"
-                      value={formData.studentName}
+                      name="leadName"
+                      value={formData.leadName}
                       onChange={handleChange}
-                      className={`form-control ${errors.studentName ? "is-invalid" : ""}`}
+                      className={`form-control ${errors.leadName ? "is-invalid" : ""}`}
                     />
-                    {errors.studentName && <div className="invalid-feedback">{errors.studentName}</div>}
+                    {errors.leadName && <div className="invalid-feedback">{errors.leadName}</div>}
                   </div>
 
                   <div className="col-md-6">

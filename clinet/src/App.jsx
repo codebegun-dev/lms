@@ -90,7 +90,7 @@ function App() {
         </Route>
         
 
-        {/* Sales Dashboard */}
+        {/* Sales Manager Dashboard */}
         <Route path="/sales-dashboard" element={<SalesDashboard />}>
           <Route index element={<Dashboard />} />
           <Route path="add-enquiry" element={<SalesForm />} />
@@ -103,6 +103,8 @@ function App() {
         {/* Sales Counselor Dashboard */}
         <Route path="/sales-counselor" element={<SalesCounselorDashboard />}>
           <Route index element={<h2>Welcome Counselor</h2>} />
+          <Route path="add-enquiry" element={<SalesForm />} />
+          <Route path="leads" element={<LeadsList />} />
           <Route path="myprofile" element={<CounselorProfile />} />
         </Route>
 
