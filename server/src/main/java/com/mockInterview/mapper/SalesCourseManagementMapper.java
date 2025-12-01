@@ -64,7 +64,7 @@ public class SalesCourseManagementMapper {
             dto.setAssignedTo(String.valueOf(sc.getAssignedTo().getUserId()));
         }
         
-        dto.setLoggedInUserId(sc.getAssignedBy() != null ? sc.getAssignedBy().getUserId() : null);
+        dto.setAssignedBy(sc.getAssignedBy() != null ? sc.getAssignedBy().getUserId() : null);
 
 
         return dto;
