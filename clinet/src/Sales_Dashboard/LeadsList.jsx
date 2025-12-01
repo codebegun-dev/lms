@@ -8,6 +8,8 @@ function LeadsList() {
   const [apiError, setApiError] = useState("");
   const [courses, setCourses] = useState([]);
   const [counselors, setCounselors] = useState([]);
+  const [allUsers, setAllUsers] = useState([]); // For storing all users to map IDs to names
+  const [userRole, setUserRole] = useState("");
 
   const [searchEmail, setSearchEmail] = useState("");
   const [filterYear, setFilterYear] = useState("");
@@ -27,7 +29,7 @@ function LeadsList() {
   const [assigning, setAssigning] = useState(false);
   
   const [formData, setFormData] = useState({
-    studentName: "",
+    leadName: "",
     phone: "",
     email: "",
     gender: "",
@@ -43,13 +45,16 @@ function LeadsList() {
   });
 
   const [page, setPage] = useState(0);
-  const [pageSize] = useState(30);
+  const [pageSize] = useState(14);
   const [totalElements, setTotalElements] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
+  const [currentPage, setCurrentPage] = useState(0);
   const [loadingPage, setLoadingPage] = useState(false);
+  const [backendStatusCounts, setBackendStatusCounts] = useState({});
 
-  const BASE_URL = "http://localhost:8080/api/saleCourse/student";
+  const BASE_URL = "http://localhost:8080/api/saleCourse/leads";
   const COUNSELOR_URL = "http://localhost:8080/api/user/assignable-users";
+  const USERS_URL = "http://localhost:8080/api/user/all"; // Endpoint to get all users
 
   // Function to get logged-in user from localStorage
   const getLoggedInUser = () => {
@@ -74,17 +79,35 @@ function LeadsList() {
   const getCurrentUserName = () => {
     const user = getLoggedInUser();
     if (user) {
-      // Try different possible name fields
       return user.firstName || user.name || user.username || 'Current User';
     }
     return 'Current User';
   };
 
+  // Function to get logged-in user role
+  const getLoggedInUserRole = () => {
+    const user = getLoggedInUser();
+    return user ? (user.role || user.roleName || '') : '';
+  };
+
+  // Check if user can assign leads (MASTER_ADMIN or SALES_MANAGER)
+  const canAssignLeads = () => {
+    return userRole === "MASTER_ADMIN" || userRole === "SALES_MANAGER";
+  };
+
+  // Check if user can edit leads (MASTER_ADMIN, SALES_MANAGER, or SA_SALES)
+  const canEditLeads = () => {
+    return userRole === "MASTER_ADMIN" || userRole === "SALES_MANAGER" || userRole === "SA_SALES";
+  };
+
   useEffect(() => {
+    // Set user role when component mounts
+    setUserRole(getLoggedInUserRole());
     fetchPage(page);
     fetchAllLeadsForCounts();
     fetchCourses();
     fetchCounselors();
+    fetchAllUsers();
   }, []);
 
   useEffect(() => {
@@ -112,48 +135,30 @@ function LeadsList() {
     try {
       setLoadingPage(true);
       setApiError("");
-      const res = await axios.get(`${BASE_URL}/students?page=${pageNumber}`);
+      
+      const loggedInUserId = getLoggedInUserId();
+      if (!loggedInUserId) {
+        setApiError("User not logged in. Please login again.");
+        return;
+      }
+      
+      const res = await axios.get(`${BASE_URL}?loggedInUserId=${loggedInUserId}&page=${pageNumber}`);
       const body = res.data || {};
 
-      const content =
-        body.content ||
-        body.students ||
-        body.items ||
-        body.data ||
-        body.studentsList ||
-        body.page ||
-        body.result ||
-        [];
+      // Updated to handle new response structure
+      const content = body.leads || [];
+      const total = body.totalLeads || 0;
+      const pages = body.totalPages || 0;
+      const currentPg = body.currentPage || 0;
+      const statusCounts = body.statusCounts || {};
 
-      const leadsArray = Array.isArray(content) && content.length > 0 ? content :
-        Array.isArray(body) ? body : content;
+      const leadsArray = Array.isArray(content) ? content : [];
 
-      // FIXED: Only modify status, don't touch assignedTo field
-      const leadsWithAssigned = leadsArray.map(lead => ({
-        ...lead,
-        // Remove INITIAL status conversion - keep status as it comes from API
-        status: lead.status
-      }));
-
-      const total =
-        typeof body.totalElements === "number"
-          ? body.totalElements
-          : typeof body.total === "number"
-          ? body.total
-          : typeof body.totalCount === "number"
-          ? body.totalCount
-          : Array.isArray(body) ? body.length : leadsArray.length;
-
-      const pages =
-        typeof body.totalPages === "number"
-          ? body.totalPages
-          : typeof body.pages === "number"
-          ? body.pages
-          : Math.ceil(total / pageSize);
-
-      setPaginatedLeads(leadsWithAssigned || []);
-      setTotalElements(total || 0);
-      setTotalPages(pages || 0);
+      setPaginatedLeads(leadsArray);
+      setTotalElements(total);
+      setTotalPages(pages);
+      setCurrentPage(currentPg);
+      setBackendStatusCounts(statusCounts);
       setLoading(false);
     } catch (err) {
       console.error("fetchPage error", err);
@@ -168,19 +173,22 @@ function LeadsList() {
     try {
       setLoading(true);
       setApiError("");
-      const res = await axios.get(BASE_URL);
-      const data = res.data || [];
       
-      // FIXED: Only modify status, don't touch assignedTo field
-      const leadsWithAssigned = Array.isArray(data) 
-        ? data.map(lead => ({
-            ...lead,
-            // Remove INITIAL status conversion - keep status as it comes from API
-            status: lead.status
-          }))
-        : [];
+      const loggedInUserId = getLoggedInUserId();
+      if (!loggedInUserId) {
+        setApiError("User not logged in. Please login again.");
+        return;
+      }
       
-      setAllLeads(leadsWithAssigned);
+      const res = await axios.get(`${BASE_URL}?loggedInUserId=${loggedInUserId}`);
+      const data = res.data || {};
+      
+      // Updated to handle new response structure
+      const leadsData = data.leads || [];
+      const statusCounts = data.statusCounts || {};
+      
+      setAllLeads(Array.isArray(leadsData) ? leadsData : []);
+      setBackendStatusCounts(statusCounts);
     } catch (err) {
       console.error("fetchAllLeadsForCounts error", err);
       setApiError("Failed to load leads!");
@@ -229,44 +237,74 @@ function LeadsList() {
     }
   };
 
+  // Fetch all users to map IDs to names
+  const fetchAllUsers = async () => {
+    try {
+      const res = await axios.get(USERS_URL);
+      console.log("All Users API Response:", res.data);
+      
+      const transformedUsers = (res.data || []).map(user => ({
+        id: user.userId || user.id,
+        name: user.name || user.username || `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Unknown User',
+        email: user.email || 'No email',
+        role: user.role || user.roleName || 'Unknown Role'
+      }));
+      
+      console.log("Transformed Users:", transformedUsers);
+      setAllUsers(transformedUsers);
+    } catch (err) {
+      console.error("Failed to load all users", err);
+      setAllUsers([]);
+    }
+  };
+
+  // Function to get user name from ID
+  const getUserNameById = (userId) => {
+    if (!userId) return "";
+    const user = allUsers.find(u => u.id.toString() === userId.toString());
+    return user ? user.name : `User ${userId}`;
+  };
+
   // Function to get counselor name from ID
   const getCounselorNameById = (counselorId) => {
     if (!counselorId) return "";
-    const counselor = counselors.find(c => c.id === counselorId);
-    return counselor ? counselor.name : counselorId; // Return ID if name not found
+    const counselor = counselors.find(c => c.id.toString() === counselorId.toString());
+    return counselor ? counselor.name : counselorId;
   };
 
-  // Function to get counselor name from assignedTo field (could be ID or name)
+  // Function to get counselor name from assignedTo field
   const getAssignedCounselorName = (lead) => {
     if (!lead.assignedTo || lead.assignedTo.trim() === "") {
       return "";
     }
     
-    // Check if assignedTo is already a name (from existing data)
+    // First try to find by name
     const counselorByName = counselors.find(c => c.name === lead.assignedTo);
     if (counselorByName) {
       return counselorByName.name;
     }
     
-    // Check if assignedTo is an ID (from new bulk assignment)
+    // Then try to find by ID
     const counselorById = counselors.find(c => c.id.toString() === lead.assignedTo.toString());
     if (counselorById) {
       return counselorById.name;
     }
     
-    // If not found in counselors list, return as is (could be ID or name)
+    // If not found in counselors list, try to convert ID to name
+    const convertedName = getCounselorNameById(lead.assignedTo);
+    if (convertedName && convertedName !== lead.assignedTo) {
+      return convertedName;
+    }
+    
     return lead.assignedTo;
   };
 
-  // Function to get assigned by name - this is the key function you need
+  // Function to get assigned by name
   const getAssignedByName = (lead) => {
-    // For newly assigned leads, show current user's name
-    const currentUserName = getCurrentUserName();
-    
-    // If the lead has an assignedBy field from backend, you might want to handle it differently
-    // But since your backend logic uses the current logged-in user for assignment,
-    // we'll show the current user's name for all assignments
-    return currentUserName;
+    if (lead.assignedBy) {
+      return getUserNameById(lead.assignedBy);
+    }
+    return getCurrentUserName();
   };
 
   const handleChange = (e) => {
@@ -276,74 +314,74 @@ function LeadsList() {
   const handleEdit = (lead) => {
     setSelectedLead(lead);
     setFormData({
-      studentName: lead.studentName || "",
+      leadName: lead.leadName || "",
       phone: lead.phone || "",
       email: lead.email || "",
       gender: lead.gender || "",
       passedOutYear: lead.passedOutYear || "",
       qualification: lead.qualification || "",
-      courseId: lead.courseManagement?.courseId || lead.courseId || "",
-      status: lead.status || "NEW", // Remove INITIAL conversion
+      courseId: lead.courseId || "",
+      status: lead.status || "NEW",
       college: lead.college || "",
       city: lead.city || "",
       source: lead.source || "",
       campaign: lead.campaign || "",
-      assignedTo: getAssignedCounselorName(lead) || "" // Get counselor name for display
+      assignedTo: getAssignedCounselorName(lead) || ""
     });
   };
 
   const handleUpdate = async () => {
     if (!selectedLead) return;
     try {
-      // Get logged-in user ID
       const loggedInUserId = getLoggedInUserId();
       if (!loggedInUserId) {
         alert("User not logged in. Please login again.");
         return;
       }
 
-      // Find counselor ID from selected name
-      let assignedUserId = "";
-      if (formData.assignedTo && formData.assignedTo.trim() !== "") {
+      // For SA_SALES role, don't send assignedTo field to avoid permission issues
+      let updateData = {
+        ...formData,
+        loggedInUserId: loggedInUserId
+      };
+
+      // Only include assignedTo if user has permission to assign leads
+      if (canAssignLeads() && formData.assignedTo && formData.assignedTo.trim() !== "") {
         const counselor = counselors.find(c => c.name === formData.assignedTo);
         if (counselor) {
-          assignedUserId = counselor.id;
+          updateData.assignedTo = counselor.id;
         }
+      } else {
+        // Remove assignedTo from update data for SA_SALES and other roles without assign permission
+        delete updateData.assignedTo;
       }
 
-      const updateData = {
-        ...formData,
-        status: formData.status, // Remove INITIAL conversion
-        assignedTo: assignedUserId, // Send counselor ID to backend
-        loggedInUserId: loggedInUserId // Add logged-in user ID
-      };
+      // Remove assignedTo name from update data to avoid backend validation issues
+      const { assignedTo, ...dataToSend } = updateData;
       
-      await axios.put(`${BASE_URL}/${selectedLead.studentId}`, updateData);
+      await axios.put(`${BASE_URL}/${selectedLead.leadId}`, dataToSend);
       
       alert("Lead updated successfully!");
       setSelectedLead(null);
       
-      // Update local state immediately for better UX
       const updatedLead = {
         ...selectedLead,
         ...formData,
-        assignedTo: formData.assignedTo, // Store counselor name in local state
-        status: formData.status, // Remove INITIAL conversion
+        // Keep the original assignedTo value for SA_SALES since they can't change it
+        assignedTo: canAssignLeads() ? formData.assignedTo : selectedLead.assignedTo,
       };
       
-      // Update in paginatedLeads
       setPaginatedLeads(prevLeads => 
         prevLeads.map(lead => 
-          lead.studentId === selectedLead.studentId 
+          lead.leadId === selectedLead.leadId 
             ? { ...lead, ...updatedLead }
             : lead
         )
       );
       
-      // Update in allLeads
       setAllLeads(prevLeads => 
         prevLeads.map(lead => 
-          lead.studentId === selectedLead.studentId 
+          lead.leadId === selectedLead.leadId 
             ? { ...lead, ...updatedLead }
             : lead
         )
@@ -371,6 +409,8 @@ function LeadsList() {
   };
 
   const toggleLeadSelection = (leadId) => {
+    if (!canAssignLeads()) return; // Only allow selection if user can assign leads
+    
     const newSelected = new Set(selectedLeads);
     if (newSelected.has(leadId)) {
       newSelected.delete(leadId);
@@ -381,11 +421,13 @@ function LeadsList() {
   };
 
   const toggleSelectAll = () => {
+    if (!canAssignLeads()) return; // Only allow select all if user can assign leads
+    
     const currentLeads = isFilteringActive() ? filteredLeads : paginatedLeads;
     if (selectedLeads.size === currentLeads.length) {
       setSelectedLeads(new Set());
     } else {
-      const allIds = new Set(currentLeads.map(lead => lead.studentId));
+      const allIds = new Set(currentLeads.map(lead => lead.leadId));
       setSelectedLeads(allIds);
     }
   };
@@ -420,13 +462,11 @@ function LeadsList() {
       
       const selectedLeadIds = Array.from(selectedLeads);
       
-      // Get the counselor ID from the selected counselor name
       const selectedCounselorObj = counselors.find(c => c.name === selectedCounselor);
       if (!selectedCounselorObj) {
         throw new Error("Selected counselor not found");
       }
 
-      // Get logged-in user ID
       const loggedInUserId = getLoggedInUserId();
       if (!loggedInUserId) {
         throw new Error("User not logged in. Please login again.");
@@ -435,15 +475,14 @@ function LeadsList() {
       const previousPaginatedLeads = [...paginatedLeads];
       const previousAllLeads = [...allLeads];
       
-      // Update local state immediately for better UX - store counselor name and assigned by name
       const currentUserName = getCurrentUserName();
       setPaginatedLeads(prevLeads => 
         prevLeads.map(lead => 
-          selectedLeadIds.includes(lead.studentId) 
+          selectedLeadIds.includes(lead.leadId) 
             ? { 
                 ...lead, 
-                assignedTo: selectedCounselor, // Store counselor name
-                assignedBy: currentUserName // Store assigned by name for display
+                assignedTo: selectedCounselor,
+                assignedBy: currentUserName
               } 
             : lead
         )
@@ -451,11 +490,11 @@ function LeadsList() {
       
       setAllLeads(prevLeads => 
         prevLeads.map(lead => 
-          selectedLeadIds.includes(lead.studentId) 
+          selectedLeadIds.includes(lead.leadId) 
             ? { 
                 ...lead, 
-                assignedTo: selectedCounselor, // Store counselor name
-                assignedBy: currentUserName // Store assigned by name for display
+                assignedTo: selectedCounselor,
+                assignedBy: currentUserName
               } 
             : lead
         )
@@ -463,9 +502,8 @@ function LeadsList() {
 
       console.log(`Assigning ${selectedLeadIds.length} leads to ${selectedCounselor} (ID: ${selectedCounselorObj.id}) by user ${loggedInUserId}`);
       
-      // Use the new bulk assign endpoint with loggedInUserId as query parameter
       const bulkAssignRequest = {
-        studentIds: selectedLeadIds,
+        leadIds: selectedLeadIds,
         assignedUserId: selectedCounselorObj.id
       };
 
@@ -479,7 +517,6 @@ function LeadsList() {
       setShowAssignModal(false);
       setSelectedCounselor("");
       
-      // Refresh data to ensure consistency with backend
       setTimeout(async () => {
         try {
           await Promise.all([
@@ -494,7 +531,6 @@ function LeadsList() {
     } catch (err) {
       console.error("Bulk assignment error:", err);
       
-      // Revert local state on error
       setPaginatedLeads(previousPaginatedLeads);
       setAllLeads(previousAllLeads);
       
@@ -508,16 +544,33 @@ function LeadsList() {
     switch (status) {
       case "NEW":
         return "bg-primary";
-      case "Contacted":
+      case "CONTACTED":
         return "bg-info";
-      case "Interested":
+      case "INTERESTED":
         return "bg-success";
-      case "Not Interested":
+      case "NOT_INTERESTED":
         return "bg-danger";
-      case "Enrolled":
+      case "ENROLLED":
         return "bg-dark";
       default:
         return "bg-secondary";
+    }
+  };
+
+  const getStatusDisplayText = (status) => {
+    switch (status) {
+      case "NEW":
+        return "NEW";
+      case "CONTACTED":
+        return "CONTACTED";
+      case "INTERESTED":
+        return "INTERESTED";
+      case "NOT_INTERESTED":
+        return "NOT INTERESTED";
+      case "ENROLLED":
+        return "ENROLLED";
+      default:
+        return status;
     }
   };
 
@@ -542,20 +595,40 @@ function LeadsList() {
       : "badge bg-danger";
   };
 
-  const totalLeadsCount = allLeads.length || totalElements;
-  const countByStatus = (status) =>
-    allLeads.filter((l) => (l.status || "").toString() === status).length;
+  // Use backend status counts when available, otherwise calculate from allLeads
+  const getStatusCounts = () => {
+    if (Object.keys(backendStatusCounts).length > 0) {
+      return {
+        NEW: backendStatusCounts.NEW || 0,
+        CONTACTED: backendStatusCounts.CONTACTED || 0,
+        INTERESTED: backendStatusCounts.INTERESTED || 0,
+        NOT_INTERESTED: backendStatusCounts.NOT_INTERESTED || 0,
+        ENROLLED: backendStatusCounts.ENROLLED || 0
+      };
+    }
+    
+    // Fallback to calculating from allLeads
+    const counts = {
+      NEW: 0,
+      CONTACTED: 0,
+      INTERESTED: 0,
+      NOT_INTERESTED: 0,
+      ENROLLED: 0
+    };
+    
+    allLeads.forEach(lead => {
+      if (lead.status && counts.hasOwnProperty(lead.status)) {
+        counts[lead.status]++;
+      }
+    });
+    
+    return counts;
+  };
 
-  const newCount = countByStatus("NEW");
-  const contactedCount = countByStatus("Contacted");
-  const interestedCount = countByStatus("Interested");
-  const notInterestedCount = countByStatus("Not Interested");
-  const enrolledCount = countByStatus("Enrolled");
+  const statusCounts = getStatusCounts();
+  const totalLeadsCount = totalElements || allLeads.length;
 
   const getLeadCourseName = (lead) => {
-    if (lead.courseManagement?.courseName) {
-      return lead.courseManagement.courseName;
-    }
     if (lead.courseId && courses.length > 0) {
       const course = courses.find(c => c.courseId === lead.courseId);
       return course ? course.courseName : "N/A";
@@ -580,7 +653,7 @@ function LeadsList() {
 
         const matchesName =
           filterName.trim() === "" ||
-          (lead.studentName && lead.studentName.toLowerCase().includes(filterName.toLowerCase().trim()));
+          (lead.leadName && lead.leadName.toLowerCase().includes(filterName.toLowerCase().trim()));
 
         const matchesPhone =
           filterPhone.trim() === "" ||
@@ -646,72 +719,92 @@ function LeadsList() {
     setPage(p);
   };
 
+  // Main Stats Cards
   const statsCards = [
     { 
       title: "Total Leads", 
       value: totalLeadsCount, 
       icon: "📊",
-      bgGradient: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+      bgGradient: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+      description: "All leads in system"
     },
     { 
-      title: "New", 
-      value: newCount, 
+      title: "New Leads", 
+      value: statusCounts.NEW, 
       icon: "🆕",
-      bgGradient: "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)"
+      bgGradient: "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
+      description: "Leads to be contacted"
     },
     { 
       title: "Contacted", 
-      value: contactedCount, 
+      value: statusCounts.CONTACTED, 
       icon: "📞",
-      bgGradient: "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)"
+      bgGradient: "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)",
+      description: "Initial contact made"
     },
     { 
       title: "Interested", 
-      value: interestedCount, 
+      value: statusCounts.INTERESTED, 
       icon: "⭐",
-      bgGradient: "linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)"
+      bgGradient: "linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)",
+      description: "Shown interest"
     },
     { 
       title: "Not Interested", 
-      value: notInterestedCount, 
+      value: statusCounts.NOT_INTERESTED, 
       icon: "❌",
-      bgGradient: "linear-gradient(135deg, #fa709a 0%, #fee140 100%)"
+      bgGradient: "linear-gradient(135deg, #fa709a 0%, #fee140 100%)",
+      description: "Declined offers"
     },
     { 
       title: "Enrolled", 
-      value: enrolledCount, 
+      value: statusCounts.ENROLLED, 
       icon: "🎓",
-      bgGradient: "linear-gradient(135deg, #6a11cb 0%, #2575fc 100%)"
+      bgGradient: "linear-gradient(135deg, #6a11cb 0%, #2575fc 100%)",
+      description: "Successfully enrolled"
     }
   ];
 
-  // Get current user info for display
-  const currentUser = getLoggedInUser();
   const currentUserName = getCurrentUserName();
 
   return (
     <div className="container-fluid p-4" style={{ background: "linear-gradient(180deg, #f8f9fc 0%, #eef2f7 100%)", minHeight: "100vh" }}>
       
       {/* User Info Header */}
-      <div className="d-flex justify-content-between align-items-center mb-3">
-        <h2 className="fw-bold text-dark mb-0">🎯 Leads Management</h2>
+      <div className="d-flex justify-content-between align-items-center mb-4">
+        <div>
+          <h2 className="fw-bold text-dark mb-1">🎯 Leads Management Dashboard</h2>
+          <p className="text-muted mb-0">Comprehensive overview of your leads and performance metrics</p>
+        </div>
         <div className="text-end">
-          <small className="text-muted">Logged in as: <strong>{currentUserName}</strong></small>
+          <div className="badge bg-primary fs-6 mb-2">Role: {userRole}</div>
           <br />
-          <small className="text-muted">User ID: <strong>{getLoggedInUserId() || 'Not found'}</strong></small>
+          <small className="text-muted">User: <strong>{currentUserName}</strong></small>
+          {canAssignLeads() && (
+            <small className="text-success d-block mt-1">
+              ✅ Can assign leads to counselors
+            </small>
+          )}
+          {canEditLeads() && (
+            <small className="text-info d-block mt-1">
+              ✏️ Can edit leads
+            </small>
+          )}
         </div>
       </div>
       
-      {/* Stats Cards Row */}
+      {/* Main Stats Cards Row */}
       <div className="mb-4">
+        <h5 className="fw-bold mb-3 text-dark">📊 Lead Status Overview</h5>
         <div className="row g-3">
           {statsCards.map((card, index) => (
-            <div key={index} className="col">
+            <div key={index} className="col-xl-2 col-lg-4 col-md-6">
               <div 
                 className="card border-0 shadow-sm h-100"
                 style={{
                   background: card.bgGradient,
-                  transition: "transform 0.3s ease, box-shadow 0.3s ease"
+                  transition: "transform 0.3s ease, box-shadow 0.3s ease",
+                  cursor: "pointer"
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.transform = "translateY(-5px)";
@@ -721,10 +814,13 @@ function LeadsList() {
                   e.currentTarget.style.transform = "translateY(0)";
                   e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.1)";
                 }}
+                onClick={() => {
+                  setFilterStatus(card.title.toUpperCase().replace(' ', '_'));
+                }}
               >
                 <div className="card-body p-3">
-                  <div className="d-flex justify-content-between align-items-center">
-                    <div>
+                  <div className="d-flex justify-content-between align-items-start">
+                    <div className="flex-grow-1">
                       <h6 className="text-uppercase mb-2 fw-semibold" style={{ color: "#fff", opacity: 0.9, fontSize: "0.75rem", letterSpacing: "0.5px" }}>
                         {card.title}
                       </h6>
@@ -732,12 +828,15 @@ function LeadsList() {
                         {card.value}
                       </h3>
                       <p className="mb-0 fw-semibold" style={{ color: "#fff", opacity: 0.9, fontSize: "0.75rem" }}>
-                        {totalLeadsCount > 0 ? ((card.value / totalLeadsCount) * 100).toFixed(1) : 0}%
+                        {totalLeadsCount > 0 ? ((card.value / totalLeadsCount) * 100).toFixed(1) : 0}% of total
                       </p>
                     </div>
                     <div style={{ fontSize: "2rem", opacity: 0.8 }}>
                       {card.icon}
                     </div>
+                  </div>
+                  <div className="mt-2">
+                    <small style={{ color: "#fff", opacity: 0.8 }}>{card.description}</small>
                   </div>
                 </div>
               </div>
@@ -792,23 +891,26 @@ function LeadsList() {
               />
             </div>
 
-            <div className="col-md-3">
-              <label className="form-label fw-semibold small text-muted">Assigned To</label>
-              <select
-                className="form-select"
-                value={filterAssignedTo}
-                onChange={(e) => setFilterAssignedTo(e.target.value)}
-              >
-                <option value="">All Assignments</option>
-                <option value="Un-Assigned">Un-Assigned</option>
-                <option value="Assigned">Assigned</option>
-                {uniqueAssignedTo
-                  .filter(assigned => assigned !== "Un-Assigned")
-                  .map((assigned) => (
-                    <option key={assigned} value={assigned}>{assigned}</option>
-                  ))}
-              </select>
-            </div>
+            {/* Assigned To Filter - Only show for MASTER_ADMIN and SALES_MANAGER */}
+            {canAssignLeads() && (
+              <div className="col-md-3">
+                <label className="form-label fw-semibold small text-muted">Assigned To</label>
+                <select
+                  className="form-select"
+                  value={filterAssignedTo}
+                  onChange={(e) => setFilterAssignedTo(e.target.value)}
+                >
+                  <option value="">All Assignments</option>
+                  <option value="Un-Assigned">Un-Assigned</option>
+                  <option value="Assigned">Assigned</option>
+                  {uniqueAssignedTo
+                    .filter(assigned => assigned !== "Un-Assigned")
+                    .map((assigned) => (
+                      <option key={assigned} value={assigned}>{assigned}</option>
+                    ))}
+                </select>
+              </div>
+            )}
 
             <div className="col-md-3">
               <label className="form-label fw-semibold small text-muted">Gender</label>
@@ -889,18 +991,18 @@ function LeadsList() {
               >
                 <option value="">All Statuses</option>
                 <option value="NEW">NEW</option>
-                <option value="Contacted">Contacted</option>
-                <option value="Interested">Interested</option>
-                <option value="Not Interested">Not Interested</option>
-                <option value="Enrolled">Enrolled</option>
+                <option value="CONTACTED">CONTACTED</option>
+                <option value="INTERESTED">INTERESTED</option>
+                <option value="NOT_INTERESTED">NOT INTERESTED</option>
+                <option value="ENROLLED">ENROLLED</option>
               </select>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Selected Leads Card */}
-      {selectedLeads.size > 0 && (
+      {/* Selected Leads Card - Only show for MASTER_ADMIN and SALES_MANAGER */}
+      {canAssignLeads() && selectedLeads.size > 0 && (
         <div className="card shadow-sm mb-3 border-warning">
           <div className="card-body py-2">
             <div className="d-flex justify-content-between align-items-center">
@@ -975,26 +1077,32 @@ function LeadsList() {
           <div className="card-header bg-white border-bottom py-3">
             <div className="d-flex justify-content-between align-items-center">
               <h5 className="mb-0 fw-bold text-dark">📋 Leads List ({filteredLeads.length} records)</h5>
-              <div className="form-check">
-                <input
-                  className="form-check-input"
-                  type="checkbox"
-                  checked={selectedLeads.size === filteredLeads.length && filteredLeads.length > 0}
-                  onChange={toggleSelectAll}
-                  id="selectAll"
-                  disabled={assigning}
-                />
-                <label className="form-check-label small fw-semibold" htmlFor="selectAll">
-                  Select All
-                </label>
-              </div>
+              {/* Select All checkbox - Only show for MASTER_ADMIN and SALES_MANAGER */}
+              {canAssignLeads() && (
+                <div className="form-check">
+                  <input
+                    className="form-check-input"
+                    type="checkbox"
+                    checked={selectedLeads.size === filteredLeads.length && filteredLeads.length > 0}
+                    onChange={toggleSelectAll}
+                    id="selectAll"
+                    disabled={assigning}
+                  />
+                  <label className="form-check-label small fw-semibold" htmlFor="selectAll">
+                    Select All
+                  </label>
+                </div>
+              )}
             </div>
           </div>
           <div className="table-responsive">
             <table className="table table-hover mb-0 align-middle">
               <thead style={{ background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)", color: "#fff" }}>
                 <tr>
-                  <th className="fw-semibold" style={{ width: '40px' }}>#</th>
+                  {/* Checkbox column - Only show for MASTER_ADMIN and SALES_MANAGER */}
+                  {canAssignLeads() && (
+                    <th className="fw-semibold" style={{ width: '40px' }}>#</th>
+                  )}
                   <th className="fw-semibold">ID</th>
                   <th className="fw-semibold">Name</th>
                   <th className="fw-semibold">Phone</th>
@@ -1008,23 +1116,26 @@ function LeadsList() {
 
               <tbody>
                 {filteredLeads.map((lead, idx) => (
-                  <tr key={lead.studentId} style={{ background: idx % 2 === 0 ? "#fff" : "#f8f9fa" }}>
-                    <td>
-                      <input
-                        type="checkbox"
-                        className="form-check-input"
-                        checked={isLeadSelected(lead.studentId)}
-                        onChange={() => toggleLeadSelection(lead.studentId)}
-                        disabled={assigning}
-                      />
-                    </td>
-                    <td className="fw-medium">{lead.studentId}</td>
-                    <td className="fw-semibold text-dark">{lead.studentName}</td>
+                  <tr key={lead.leadId} style={{ background: idx % 2 === 0 ? "#fff" : "#f8f9fa" }}>
+                    {/* Checkbox - Only show for MASTER_ADMIN and SALES_MANAGER */}
+                    {canAssignLeads() && (
+                      <td>
+                        <input
+                          type="checkbox"
+                          className="form-check-input"
+                          checked={isLeadSelected(lead.leadId)}
+                          onChange={() => toggleLeadSelection(lead.leadId)}
+                          disabled={assigning}
+                        />
+                      </td>
+                    )}
+                    <td className="fw-medium">{lead.leadId}</td>
+                    <td className="fw-semibold text-dark">{lead.leadName}</td>
                     <td>{lead.phone}</td>
                     <td>{lead.email || <span className="text-muted">-</span>}</td>
                     <td>
                       <span className={`badge ${getStatusBadgeClass(lead.status)} rounded-pill px-3 py-2`}>
-                        {lead.status}
+                        {getStatusDisplayText(lead.status)}
                       </span>
                     </td>
                     <td>
@@ -1033,23 +1144,26 @@ function LeadsList() {
                       </span>
                     </td>
                     <td>
-                      <span className="text-muted">
-                        {lead.assignedBy || getAssignedByName(lead)}
+                      <span className="text-muted fw-medium">
+                        {getAssignedByName(lead)}
                       </span>
                     </td>
                     <td>
                       <div className="d-flex gap-2 justify-content-center">
-                        <button 
-                          className="btn btn-sm btn-outline-primary" 
-                          onClick={() => handleEdit(lead)} 
-                          disabled={assigning}
-                          title="Edit Lead"
-                        >
-                          ✏️
-                        </button>
+                        {/* Edit button - Show for MASTER_ADMIN, SALES_MANAGER, and SA_SALES */}
+                        {canEditLeads() && (
+                          <button 
+                            className="btn btn-sm btn-outline-primary" 
+                            onClick={() => handleEdit(lead)} 
+                            disabled={assigning}
+                            title="Edit Lead"
+                          >
+                            ✏️
+                          </button>
+                        )}
                         <button 
                           className="btn btn-sm btn-outline-danger" 
-                          onClick={() => deleteLead(lead.studentId)} 
+                          onClick={() => deleteLead(lead.leadId)} 
                           disabled={assigning}
                           title="Delete Lead"
                         >
@@ -1069,30 +1183,30 @@ function LeadsList() {
       {!isFilteringActive() && totalPages > 0 && (
         <div className="d-flex justify-content-between align-items-center mt-3">
           <div className="text-muted">
-            Showing page <strong className="text-dark">{page + 1}</strong> of <strong className="text-dark">{totalPages}</strong>
+            Showing page <strong className="text-dark">{currentPage + 1}</strong> of <strong className="text-dark">{totalPages}</strong>
             {" · "}Total records: <strong className="text-dark">{totalElements}</strong>
           </div>
 
           <nav>
             <ul className="pagination mb-0">
-              <li className={`page-item ${page === 0 ? "disabled" : ""}`}>
-                <button className="page-link" onClick={() => goToPage(page - 1)} disabled={assigning}>Previous</button>
+              <li className={`page-item ${currentPage === 0 ? "disabled" : ""}`}>
+                <button className="page-link" onClick={() => goToPage(currentPage - 1)} disabled={assigning}>Previous</button>
               </li>
 
               {Array.from({ length: totalPages }).map((_, idx) => {
                 if (
                   idx === 0 ||
                   idx === totalPages - 1 ||
-                  (idx >= page - 2 && idx <= page + 2)
+                  (idx >= currentPage - 2 && idx <= currentPage + 2)
                 ) {
                   return (
-                    <li key={idx} className={`page-item ${idx === page ? "active" : ""}`}>
+                    <li key={idx} className={`page-item ${idx === currentPage ? "active" : ""}`}>
                       <button className="page-link" onClick={() => goToPage(idx)} disabled={assigning}>{idx + 1}</button>
                     </li>
                   );
                 }
-                const shouldShowLeftEllipsis = idx === 1 && page > 3;
-                const shouldShowRightEllipsis = idx === totalPages - 2 && page < totalPages - 4;
+                const shouldShowLeftEllipsis = idx === 1 && currentPage > 3;
+                const shouldShowRightEllipsis = idx === totalPages - 2 && currentPage < totalPages - 4;
                 if (shouldShowLeftEllipsis || shouldShowRightEllipsis) {
                   return (
                     <li key={`dots-${idx}`} className="page-item disabled">
@@ -1103,16 +1217,16 @@ function LeadsList() {
                 return null;
               })}
 
-              <li className={`page-item ${page >= totalPages - 1 ? "disabled" : ""}`}>
-                <button className="page-link" onClick={() => goToPage(page + 1)} disabled={assigning}>Next</button>
+              <li className={`page-item ${currentPage >= totalPages - 1 ? "disabled" : ""}`}>
+                <button className="page-link" onClick={() => goToPage(currentPage + 1)} disabled={assigning}>Next</button>
               </li>
             </ul>
           </nav>
         </div>
       )}
 
-      {/* Assign to Counselor Modal */}
-      {showAssignModal && (
+      {/* Assign to Counselor Modal - Only show for MASTER_ADMIN and SALES_MANAGER */}
+      {canAssignLeads() && showAssignModal && (
         <div className="modal show fade" style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}>
           <div className="modal-dialog modal-dialog-centered">
             <div className="modal-content shadow-lg border-0">
@@ -1222,8 +1336,8 @@ function LeadsList() {
         </div>
       )}
 
-      {/* Edit Modal */}
-      {selectedLead && (
+      {/* Edit Modal - Show for MASTER_ADMIN, SALES_MANAGER, and SA_SALES */}
+      {selectedLead && canEditLeads() && (
         <div className="modal show fade" style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}>
           <div className="modal-dialog modal-dialog-centered modal-lg">
             <div className="modal-content shadow-lg border-0">
@@ -1239,7 +1353,7 @@ function LeadsList() {
                 <div className="row g-3">
                   <div className="col-md-6">
                     <label className="form-label fw-semibold">Full Name</label>
-                    <input type="text" name="studentName" className="form-control" value={formData.studentName} onChange={handleChange} />
+                    <input type="text" name="leadName" className="form-control" value={formData.leadName} onChange={handleChange} />
                   </div>
 
                   <div className="col-md-6">
@@ -1288,6 +1402,8 @@ function LeadsList() {
                       <option value="">Select Source</option>
                       <option value="Instagram">Instagram</option>
                       <option value="WhatsApp">WhatsApp</option>
+                      <option value="Facebook">Facebook</option>
+                      <option value="Youtube">Youtube</option>
                       <option value="Refer">Refer</option>
                       <option value="Walk-in">Walk-in</option>
                     </select>
@@ -1297,9 +1413,9 @@ function LeadsList() {
                     <label className="form-label fw-semibold">Campaign</label>
                     <select name="campaign" className="form-select" value={formData.campaign} onChange={handleChange}>
                       <option value="">Select Campaign</option>
-                      <option value="Campaign 1">General</option>
-                      <option value="Campaign 2">Campaign-1</option>
-                      <option value="Campaign 3">Campaign-2</option>
+                      <option value="General">General</option>
+                      <option value="Campaign-1">Campaign-1</option>
+                      <option value="Campaign-2">Campaign-2</option>
                     </select>
                   </div>
 
@@ -1318,31 +1434,34 @@ function LeadsList() {
                     <select name="status" className="form-select" value={formData.status} onChange={handleChange}>
                       <option value="">Select Status</option>
                       <option value="NEW">NEW</option>
-                      <option value="Contacted">Contacted</option>
-                      <option value="Interested">Interested</option>
-                      <option value="Not Interested">Not Interested</option>
-                      <option value="Enrolled">Enrolled</option>
+                      <option value="CONTACTED">CONTACTED</option>
+                      <option value="INTERESTED">INTERESTED</option>
+                      <option value="NOT_INTERESTED">NOT INTERESTED</option>
+                      <option value="ENROLLED">ENROLLED</option>
                     </select>
                   </div>
 
-                  <div className="col-md-6">
-                    <label className="form-label fw-semibold">Assigned To</label>
-                    <select 
-                      name="assignedTo" 
-                      className="form-select" 
-                      value={formData.assignedTo} 
-                      onChange={handleChange}
-                    >
-                      <option value="">Un-Assigned</option>
-                      {counselors
-                        .filter(counselor => counselor.status === "Active")
-                        .map((counselor) => (
-                          <option key={counselor.id} value={counselor.name}>
-                            {counselor.name}
-                          </option>
-                        ))}
-                    </select>
-                  </div>
+                  {/* Conditionally show Assigned To field only for MASTER_ADMIN and SALES_MANAGER */}
+                  {canAssignLeads() && (
+                    <div className="col-md-6">
+                      <label className="form-label fw-semibold">Assigned To</label>
+                      <select 
+                        name="assignedTo" 
+                        className="form-select" 
+                        value={formData.assignedTo} 
+                        onChange={handleChange}
+                      >
+                        <option value="">Un-Assigned</option>
+                        {counselors
+                          .filter(counselor => counselor.status === "Active")
+                          .map((counselor) => (
+                            <option key={counselor.id} value={counselor.name}>
+                              {counselor.name}
+                            </option>
+                          ))}
+                      </select>
+                    </div>
+                  )}
                 </div>
               </div>
 

@@ -48,6 +48,8 @@ function LoginForm() {
       const roleName = user.role.trim().toUpperCase();
 
        localStorage.setItem("user", JSON.stringify(user));
+       localStorage.setItem("userId", user.userId); // required for lead APIs
+
 
        if (roleName === "MASTER_ADMIN") {
         localStorage.setItem("masterAdminId", user.userId);
@@ -60,9 +62,9 @@ function LoginForm() {
       if (roleName === "STUDENT") navigate("/student-dashboard");
       else if (roleName === "ADMIN" || roleName === "MASTER_ADMIN") navigate("/admin-dashboard");
       else if (roleName === "INTERVIEWER") navigate("/interviewer-dashboard");
-      else if (roleName === "SA_SALES MANAGER") navigate("/sales-dashboard");
+      else if (roleName === "SALES_MANAGER") navigate("/sales-dashboard");
       else if (roleName === "SA_SALES") navigate("/sales-counselor");
-else setGeneralError(`Unknown role: ${roleName}`);
+      else setGeneralError(`Unknown role: ${roleName}`);
 
     } catch (error) {
       console.error("Login error:", error);

@@ -58,7 +58,7 @@ function BulkUpload() {
 
     try {
       const res = await axios.post(
-        `http://localhost:8080/api/saleCourse/student/bulk-upload?loggedInUserId=${loggedInUserId}`,
+        `http://localhost:8080/api/saleCourse/leads/bulk-upload?loggedInUserId=${loggedInUserId}`,
         formData,
         {
           headers: { "Content-Type": "multipart/form-data" },
@@ -97,9 +97,9 @@ function BulkUpload() {
                     <polyline points="17 8 12 3 7 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                     <line x1="12" y1="3" x2="12" y2="15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
-                  Bulk Upload Students
+                  Bulk Upload Leads
                 </h4>
-                <p className="mb-0 small opacity-75">Upload multiple student records via Excel file</p>
+                <p className="mb-0 small opacity-75">Upload multiple lead records via Excel file</p>
               </div>
             </div>
 
