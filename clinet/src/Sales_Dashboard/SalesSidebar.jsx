@@ -24,6 +24,14 @@ function SalesSidebar() {
           Bulk Upload
         </Link>
 
+        <Link to="/sales-dashboard/create-source" className="list-group-item list-group-item-action">
+          Create Source
+        </Link>
+
+        <Link to="/sales-dashboard/create-compaign" className="list-group-item list-group-item-action">
+          Create Compaign
+        </Link>
+
       </ul>
     </div>
   );

@@ -8,7 +8,9 @@ function LeadsList() {
   const [apiError, setApiError] = useState("");
   const [courses, setCourses] = useState([]);
   const [counselors, setCounselors] = useState([]);
-  const [allUsers, setAllUsers] = useState([]); // For storing all users to map IDs to names
+  const [sources, setSources] = useState([]); // Added for sources API
+  const [campaigns, setCampaigns] = useState([]); // Added for campaigns API
+  const [allUsers, setAllUsers] = useState([]);
   const [userRole, setUserRole] = useState("");
 
   const [searchEmail, setSearchEmail] = useState("");
@@ -21,12 +23,17 @@ function LeadsList() {
   const [filterQualification, setFilterQualification] = useState("");
   const [filterCity, setFilterCity] = useState("");
   const [filterCourse, setFilterCourse] = useState("");
+  const [filterSource, setFilterSource] = useState(""); // Added filter for source
+  const [filterCampaign, setFilterCampaign] = useState(""); // Added filter for campaign
 
   const [selectedLead, setSelectedLead] = useState(null);
   const [selectedLeads, setSelectedLeads] = useState(new Set());
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [selectedCounselor, setSelectedCounselor] = useState("");
   const [assigning, setAssigning] = useState(false);
+  
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [viewingLead, setViewingLead] = useState(null);
   
   const [formData, setFormData] = useState({
     leadName: "",
@@ -41,7 +48,9 @@ function LeadsList() {
     city: "",
     source: "",
     campaign: "",
-    assignedTo: ""
+    assignedTo: "",
+    notes: "",
+    reminderTime: ""
   });
 
   const [page, setPage] = useState(0);
@@ -54,9 +63,50 @@ function LeadsList() {
 
   const BASE_URL = "http://localhost:8080/api/saleCourse/leads";
   const COUNSELOR_URL = "http://localhost:8080/api/user/assignable-users";
-  const USERS_URL = "http://localhost:8080/api/user/all"; // Endpoint to get all users
+  const USERS_URL = "http://localhost:8080/api/user/all";
+  const SOURCES_URL = "http://localhost:8080/api/sources"; // Sources API endpoint
+  const CAMPAIGNS_URL = "http://localhost:8080/api/campaigns"; // Campaigns API endpoint
 
-  // Function to get logged-in user from localStorage
+  const formatDateForInput = (dateString) => {
+    if (!dateString) return '';
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) {
+        console.warn('Invalid date string:', dateString);
+        return '';
+      }
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      return `${year}-${month}-${day}T${hours}:${minutes}`;
+    } catch (error) {
+      console.error('Error formatting date:', error, dateString);
+      return '';
+    }
+  };
+
+  const formatDateForDisplay = (dateString) => {
+    if (!dateString) return 'Not set';
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) {
+        return 'Invalid date';
+      }
+      return date.toLocaleString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch (error) {
+      console.error('Error formatting display date:', error, dateString);
+      return 'Invalid date';
+    }
+  };
+
   const getLoggedInUser = () => {
     try {
       const userData = localStorage.getItem('user');
@@ -69,13 +119,11 @@ function LeadsList() {
     return null;
   };
 
-  // Function to get logged-in user ID
   const getLoggedInUserId = () => {
     const user = getLoggedInUser();
     return user ? user.userId : null;
   };
 
-  // Function to get current user's name for display
   const getCurrentUserName = () => {
     const user = getLoggedInUser();
     if (user) {
@@ -84,30 +132,28 @@ function LeadsList() {
     return 'Current User';
   };
 
-  // Function to get logged-in user role
   const getLoggedInUserRole = () => {
     const user = getLoggedInUser();
     return user ? (user.role || user.roleName || '') : '';
   };
 
-  // Check if user can assign leads (MASTER_ADMIN or SALES_MANAGER)
   const canAssignLeads = () => {
     return userRole === "MASTER_ADMIN" || userRole === "SALES_MANAGER";
   };
 
-  // Check if user can edit leads (MASTER_ADMIN, SALES_MANAGER, or SA_SALES)
   const canEditLeads = () => {
     return userRole === "MASTER_ADMIN" || userRole === "SALES_MANAGER" || userRole === "SA_SALES";
   };
 
   useEffect(() => {
-    // Set user role when component mounts
     setUserRole(getLoggedInUserRole());
     fetchPage(page);
     fetchAllLeadsForCounts();
     fetchCourses();
     fetchCounselors();
     fetchAllUsers();
+    fetchSources(); // Fetch sources
+    fetchCampaigns(); // Fetch campaigns
   }, []);
 
   useEffect(() => {
@@ -127,7 +173,9 @@ function LeadsList() {
       (filterGender && filterGender.trim() !== "") ||
       (filterQualification && filterQualification.trim() !== "") ||
       (filterCity && filterCity.trim() !== "") ||
-      (filterCourse && filterCourse.trim() !== "")
+      (filterCourse && filterCourse.trim() !== "") ||
+      (filterSource && filterSource.trim() !== "") || // Added source filter
+      (filterCampaign && filterCampaign.trim() !== "") // Added campaign filter
     );
   };
 
@@ -135,25 +183,19 @@ function LeadsList() {
     try {
       setLoadingPage(true);
       setApiError("");
-      
       const loggedInUserId = getLoggedInUserId();
       if (!loggedInUserId) {
         setApiError("User not logged in. Please login again.");
         return;
       }
-      
       const res = await axios.get(`${BASE_URL}?loggedInUserId=${loggedInUserId}&page=${pageNumber}`);
       const body = res.data || {};
-
-      // Updated to handle new response structure
       const content = body.leads || [];
       const total = body.totalLeads || 0;
       const pages = body.totalPages || 0;
       const currentPg = body.currentPage || 0;
       const statusCounts = body.statusCounts || {};
-
       const leadsArray = Array.isArray(content) ? content : [];
-
       setPaginatedLeads(leadsArray);
       setTotalElements(total);
       setTotalPages(pages);
@@ -173,20 +215,15 @@ function LeadsList() {
     try {
       setLoading(true);
       setApiError("");
-      
       const loggedInUserId = getLoggedInUserId();
       if (!loggedInUserId) {
         setApiError("User not logged in. Please login again.");
         return;
       }
-      
       const res = await axios.get(`${BASE_URL}?loggedInUserId=${loggedInUserId}`);
       const data = res.data || {};
-      
-      // Updated to handle new response structure
       const leadsData = data.leads || [];
       const statusCounts = data.statusCounts || {};
-      
       setAllLeads(Array.isArray(leadsData) ? leadsData : []);
       setBackendStatusCounts(statusCounts);
     } catch (err) {
@@ -211,7 +248,6 @@ function LeadsList() {
     try {
       const res = await axios.get(COUNSELOR_URL);
       console.log("Counselors API Response:", res.data);
-      
       const transformedCounselors = (res.data || []).map(user => {
         let name = 'Unknown User';
         if (user.name) name = user.name;
@@ -219,7 +255,6 @@ function LeadsList() {
         else if (user.firstName || user.lastName) {
           name = `${user.firstName || ''} ${user.lastName || ''}`.trim();
         }
-        
         return {
           id: user.userId || user.id,
           name: name,
@@ -228,7 +263,6 @@ function LeadsList() {
           status: user.active !== false ? "Active" : "Inactive"
         };
       });
-      
       console.log("Transformed Counselors:", transformedCounselors);
       setCounselors(transformedCounselors);
     } catch (err) {
@@ -237,19 +271,16 @@ function LeadsList() {
     }
   };
 
-  // Fetch all users to map IDs to names
   const fetchAllUsers = async () => {
     try {
       const res = await axios.get(USERS_URL);
       console.log("All Users API Response:", res.data);
-      
       const transformedUsers = (res.data || []).map(user => ({
         id: user.userId || user.id,
         name: user.name || user.username || `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Unknown User',
         email: user.email || 'No email',
         role: user.role || user.roleName || 'Unknown Role'
       }));
-      
       console.log("Transformed Users:", transformedUsers);
       setAllUsers(transformedUsers);
     } catch (err) {
@@ -258,48 +289,71 @@ function LeadsList() {
     }
   };
 
-  // Function to get user name from ID
+  // Fetch sources from API
+  const fetchSources = async () => {
+    try {
+      const res = await axios.get(SOURCES_URL);
+      console.log("Sources API Response:", res.data);
+      const transformedSources = (res.data || []).map(source => ({
+        id: source.sourceId || source.id,
+        name: source.sourceName || source.name || 'Unknown Source'
+      }));
+      console.log("Transformed Sources:", transformedSources);
+      setSources(transformedSources);
+    } catch (err) {
+      console.error("Failed to load sources", err);
+      setSources([]);
+    }
+  };
+
+  // Fetch campaigns from API
+  const fetchCampaigns = async () => {
+    try {
+      const res = await axios.get(CAMPAIGNS_URL);
+      console.log("Campaigns API Response:", res.data);
+      const transformedCampaigns = (res.data || []).map(campaign => ({
+        id: campaign.campaignId || campaign.id,
+        name: campaign.campaignName || campaign.name || 'Unknown Campaign'
+      }));
+      console.log("Transformed Campaigns:", transformedCampaigns);
+      setCampaigns(transformedCampaigns);
+    } catch (err) {
+      console.error("Failed to load campaigns", err);
+      setCampaigns([]);
+    }
+  };
+
   const getUserNameById = (userId) => {
     if (!userId) return "";
     const user = allUsers.find(u => u.id.toString() === userId.toString());
     return user ? user.name : `User ${userId}`;
   };
 
-  // Function to get counselor name from ID
   const getCounselorNameById = (counselorId) => {
     if (!counselorId) return "";
     const counselor = counselors.find(c => c.id.toString() === counselorId.toString());
     return counselor ? counselor.name : counselorId;
   };
 
-  // Function to get counselor name from assignedTo field
   const getAssignedCounselorName = (lead) => {
     if (!lead.assignedTo || lead.assignedTo.trim() === "") {
       return "";
     }
-    
-    // First try to find by name
     const counselorByName = counselors.find(c => c.name === lead.assignedTo);
     if (counselorByName) {
       return counselorByName.name;
     }
-    
-    // Then try to find by ID
     const counselorById = counselors.find(c => c.id.toString() === lead.assignedTo.toString());
     if (counselorById) {
       return counselorById.name;
     }
-    
-    // If not found in counselors list, try to convert ID to name
     const convertedName = getCounselorNameById(lead.assignedTo);
     if (convertedName && convertedName !== lead.assignedTo) {
       return convertedName;
     }
-    
     return lead.assignedTo;
   };
 
-  // Function to get assigned by name
   const getAssignedByName = (lead) => {
     if (lead.assignedBy) {
       return getUserNameById(lead.assignedBy);
@@ -309,6 +363,11 @@ function LeadsList() {
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleView = (lead) => {
+    setViewingLead(lead);
+    setShowViewModal(true);
   };
 
   const handleEdit = (lead) => {
@@ -326,7 +385,9 @@ function LeadsList() {
       city: lead.city || "",
       source: lead.source || "",
       campaign: lead.campaign || "",
-      assignedTo: getAssignedCounselorName(lead) || ""
+      assignedTo: getAssignedCounselorName(lead) || "",
+      notes: lead.notes || "",
+      reminderTime: lead.reminderTime ? formatDateForInput(lead.reminderTime) : ""
     });
   };
 
@@ -339,24 +400,20 @@ function LeadsList() {
         return;
       }
 
-      // For SA_SALES role, don't send assignedTo field to avoid permission issues
       let updateData = {
         ...formData,
         loggedInUserId: loggedInUserId
       };
 
-      // Only include assignedTo if user has permission to assign leads
       if (canAssignLeads() && formData.assignedTo && formData.assignedTo.trim() !== "") {
         const counselor = counselors.find(c => c.name === formData.assignedTo);
         if (counselor) {
           updateData.assignedTo = counselor.id;
         }
       } else {
-        // Remove assignedTo from update data for SA_SALES and other roles without assign permission
         delete updateData.assignedTo;
       }
 
-      // Remove assignedTo name from update data to avoid backend validation issues
       const { assignedTo, ...dataToSend } = updateData;
       
       await axios.put(`${BASE_URL}/${selectedLead.leadId}`, dataToSend);
@@ -367,7 +424,6 @@ function LeadsList() {
       const updatedLead = {
         ...selectedLead,
         ...formData,
-        // Keep the original assignedTo value for SA_SALES since they can't change it
         assignedTo: canAssignLeads() ? formData.assignedTo : selectedLead.assignedTo,
       };
       
@@ -409,8 +465,7 @@ function LeadsList() {
   };
 
   const toggleLeadSelection = (leadId) => {
-    if (!canAssignLeads()) return; // Only allow selection if user can assign leads
-    
+    if (!canAssignLeads()) return;
     const newSelected = new Set(selectedLeads);
     if (newSelected.has(leadId)) {
       newSelected.delete(leadId);
@@ -421,8 +476,7 @@ function LeadsList() {
   };
 
   const toggleSelectAll = () => {
-    if (!canAssignLeads()) return; // Only allow select all if user can assign leads
-    
+    if (!canAssignLeads()) return;
     const currentLeads = isFilteringActive() ? filteredLeads : paginatedLeads;
     if (selectedLeads.size === currentLeads.length) {
       setSelectedLeads(new Set());
@@ -459,9 +513,7 @@ function LeadsList() {
 
     try {
       setAssigning(true);
-      
       const selectedLeadIds = Array.from(selectedLeads);
-      
       const selectedCounselorObj = counselors.find(c => c.name === selectedCounselor);
       if (!selectedCounselorObj) {
         throw new Error("Selected counselor not found");
@@ -530,10 +582,8 @@ function LeadsList() {
       
     } catch (err) {
       console.error("Bulk assignment error:", err);
-      
       setPaginatedLeads(previousPaginatedLeads);
       setAllLeads(previousAllLeads);
-      
       alert("Failed to assign leads: " + (err.response?.data?.message || err.message || "Unknown error"));
     } finally {
       setAssigning(false);
@@ -595,7 +645,6 @@ function LeadsList() {
       : "badge bg-danger";
   };
 
-  // Use backend status counts when available, otherwise calculate from allLeads
   const getStatusCounts = () => {
     if (Object.keys(backendStatusCounts).length > 0) {
       return {
@@ -607,7 +656,6 @@ function LeadsList() {
       };
     }
     
-    // Fallback to calculating from allLeads
     const counts = {
       NEW: 0,
       CONTACTED: 0,
@@ -680,9 +728,17 @@ function LeadsList() {
           filterCourse === "" ||
           getLeadCourseName(lead) === filterCourse;
 
+        // Added source and campaign filters
+        const matchesSource =
+          filterSource === "" || (lead.source && lead.source === filterSource);
+
+        const matchesCampaign =
+          filterCampaign === "" || (lead.campaign && lead.campaign === filterCampaign);
+
         return matchesEmail && matchesYear && matchesStatus && matchesName && 
                matchesPhone && matchesAssignedTo && matchesGender && 
-               matchesQualification && matchesCity && matchesCourse;
+               matchesQualification && matchesCity && matchesCourse &&
+               matchesSource && matchesCampaign; // Added source and campaign conditions
       })
     : paginatedLeads
   ) || [];
@@ -691,12 +747,12 @@ function LeadsList() {
   const uniqueGenders = [...new Set(allLeads.map((lead) => lead.gender).filter(Boolean))];
   const uniqueQualifications = [...new Set(allLeads.map((lead) => lead.qualification).filter(Boolean))].sort();
   const uniqueCities = [...new Set(allLeads.map((lead) => lead.city).filter(Boolean))].sort();
-  
   const uniqueCourses = [...new Set(allLeads.map(lead => getLeadCourseName(lead)).filter(name => name !== "N/A"))].sort();
-  
   const uniqueAssignedTo = [...new Set(allLeads
     .map((lead) => getAssignedDisplayText(lead))
     .filter(Boolean))].sort();
+  const uniqueSources = [...new Set(allLeads.map((lead) => lead.source).filter(Boolean))].sort(); // Get unique sources
+  const uniqueCampaigns = [...new Set(allLeads.map((lead) => lead.campaign).filter(Boolean))].sort(); // Get unique campaigns
 
   const clearFilters = () => {
     setSearchEmail("");
@@ -709,6 +765,8 @@ function LeadsList() {
     setFilterQualification("");
     setFilterCity("");
     setFilterCourse("");
+    setFilterSource(""); // Clear source filter
+    setFilterCampaign(""); // Clear campaign filter
     setPage(0);
     fetchPage(0);
   };
@@ -719,7 +777,7 @@ function LeadsList() {
     setPage(p);
   };
 
-  // Main Stats Cards
+  // Main Stats Cards (unchanged)
   const statsCards = [
     { 
       title: "Total Leads", 
@@ -891,7 +949,7 @@ function LeadsList() {
               />
             </div>
 
-            {/* Assigned To Filter - Only show for MASTER_ADMIN and SALES_MANAGER */}
+            {/* Assigned To Filter */}
             {canAssignLeads() && (
               <div className="col-md-3">
                 <label className="form-label fw-semibold small text-muted">Assigned To</label>
@@ -968,6 +1026,36 @@ function LeadsList() {
               </select>
             </div>
 
+            {/* Added Source Filter */}
+            <div className="col-md-3">
+              <label className="form-label fw-semibold small text-muted">Source</label>
+              <select
+                className="form-select"
+                value={filterSource}
+                onChange={(e) => setFilterSource(e.target.value)}
+              >
+                <option value="">All Sources</option>
+                {uniqueSources.map((source) => (
+                  <option key={source} value={source}>{source}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Added Campaign Filter */}
+            <div className="col-md-3">
+              <label className="form-label fw-semibold small text-muted">Campaign</label>
+              <select
+                className="form-select"
+                value={filterCampaign}
+                onChange={(e) => setFilterCampaign(e.target.value)}
+              >
+                <option value="">All Campaigns</option>
+                {uniqueCampaigns.map((campaign) => (
+                  <option key={campaign} value={campaign}>{campaign}</option>
+                ))}
+              </select>
+            </div>
+
             <div className="col-md-3">
               <label className="form-label fw-semibold small text-muted">Passed Out Year</label>
               <select
@@ -1001,7 +1089,7 @@ function LeadsList() {
         </div>
       </div>
 
-      {/* Selected Leads Card - Only show for MASTER_ADMIN and SALES_MANAGER */}
+      {/* Selected Leads Card */}
       {canAssignLeads() && selectedLeads.size > 0 && (
         <div className="card shadow-sm mb-3 border-warning">
           <div className="card-body py-2">
@@ -1077,7 +1165,7 @@ function LeadsList() {
           <div className="card-header bg-white border-bottom py-3">
             <div className="d-flex justify-content-between align-items-center">
               <h5 className="mb-0 fw-bold text-dark">📋 Leads List ({filteredLeads.length} records)</h5>
-              {/* Select All checkbox - Only show for MASTER_ADMIN and SALES_MANAGER */}
+              {/* Select All checkbox */}
               {canAssignLeads() && (
                 <div className="form-check">
                   <input
@@ -1099,7 +1187,6 @@ function LeadsList() {
             <table className="table table-hover mb-0 align-middle">
               <thead style={{ background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)", color: "#fff" }}>
                 <tr>
-                  {/* Checkbox column - Only show for MASTER_ADMIN and SALES_MANAGER */}
                   {canAssignLeads() && (
                     <th className="fw-semibold" style={{ width: '40px' }}>#</th>
                   )}
@@ -1117,7 +1204,6 @@ function LeadsList() {
               <tbody>
                 {filteredLeads.map((lead, idx) => (
                   <tr key={lead.leadId} style={{ background: idx % 2 === 0 ? "#fff" : "#f8f9fa" }}>
-                    {/* Checkbox - Only show for MASTER_ADMIN and SALES_MANAGER */}
                     {canAssignLeads() && (
                       <td>
                         <input
@@ -1150,7 +1236,15 @@ function LeadsList() {
                     </td>
                     <td>
                       <div className="d-flex gap-2 justify-content-center">
-                        {/* Edit button - Show for MASTER_ADMIN, SALES_MANAGER, and SA_SALES */}
+                        <button 
+                          className="btn btn-sm btn-outline-info" 
+                          onClick={() => handleView(lead)} 
+                          disabled={assigning}
+                          title="View Lead History"
+                        >
+                          👁️
+                        </button>
+                        
                         {canEditLeads() && (
                           <button 
                             className="btn btn-sm btn-outline-primary" 
@@ -1225,7 +1319,145 @@ function LeadsList() {
         </div>
       )}
 
-      {/* Assign to Counselor Modal - Only show for MASTER_ADMIN and SALES_MANAGER */}
+      {/* View Lead Modal */}
+      {showViewModal && viewingLead && (
+        <div className="modal show fade" style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}>
+          <div className="modal-dialog modal-dialog-centered modal-lg">
+            <div className="modal-content shadow-lg border-0">
+              <div className="modal-header" style={{ background: "linear-gradient(135deg, #6a11cb 0%, #2575fc 100%)", color: "#fff" }}>
+                <div>
+                  <h5 className="modal-title fw-bold mb-0">👁️ View Lead History</h5>
+                  <small className="opacity-75">Lead ID: {viewingLead.leadId}</small>
+                </div>
+                <button type="button" className="btn-close btn-close-white" onClick={() => {
+                  setShowViewModal(false);
+                  setViewingLead(null);
+                }}></button>
+              </div>
+
+              <div className="modal-body p-4">
+                <div className="row">
+                  <div className="col-md-6">
+                    <h6 className="fw-semibold border-bottom pb-2 mb-3">📋 Personal Information</h6>
+                    <div className="mb-3">
+                      <label className="form-label fw-medium text-muted">Full Name</label>
+                      <p className="fw-semibold">{viewingLead.leadName || "N/A"}</p>
+                    </div>
+                    
+                    <div className="mb-3">
+                      <label className="form-label fw-medium text-muted">Phone</label>
+                      <p className="fw-semibold">{viewingLead.phone || "N/A"}</p>
+                    </div>
+                    
+                    <div className="mb-3">
+                      <label className="form-label fw-medium text-muted">Email</label>
+                      <p className="fw-semibold">{viewingLead.email || "N/A"}</p>
+                    </div>
+                    
+                    <div className="mb-3">
+                      <label className="form-label fw-medium text-muted">Gender</label>
+                      <p className="fw-semibold">{viewingLead.gender || "N/A"}</p>
+                    </div>
+                    
+                    <div className="mb-3">
+                      <label className="form-label fw-medium text-muted">City</label>
+                      <p className="fw-semibold">{viewingLead.city || "N/A"}</p>
+                    </div>
+                    
+                    <div className="mb-3">
+                      <label className="form-label fw-medium text-muted">College</label>
+                      <p className="fw-semibold">{viewingLead.college || "N/A"}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="col-md-6">
+                    <h6 className="fw-semibold border-bottom pb-2 mb-3">🎓 Academic Information</h6>
+                    <div className="mb-3">
+                      <label className="form-label fw-medium text-muted">Qualification</label>
+                      <p className="fw-semibold">{viewingLead.qualification || "N/A"}</p>
+                    </div>
+                    
+                    <div className="mb-3">
+                      <label className="form-label fw-medium text-muted">Passed Out Year</label>
+                      <p className="fw-semibold">{viewingLead.passedOutYear || "N/A"}</p>
+                    </div>
+                    
+                    <div className="mb-3">
+                      <label className="form-label fw-medium text-muted">Course Interested</label>
+                      <p className="fw-semibold">{getLeadCourseName(viewingLead)}</p>
+                    </div>
+                    
+                    <h6 className="fw-semibold border-bottom pb-2 mb-3 mt-4">📊 Status & Assignment</h6>
+                    <div className="mb-3">
+                      <label className="form-label fw-medium text-muted">Status</label>
+                      <span className={`badge ${getStatusBadgeClass(viewingLead.status)} rounded-pill px-3 py-2`}>
+                        {getStatusDisplayText(viewingLead.status)}
+                      </span>
+                    </div>
+                    
+                    <div className="mb-3">
+                      <label className="form-label fw-medium text-muted">Assigned To</label>
+                      <p className="fw-semibold">
+                        <span className={`badge ${getAssignedBadgeClass(getAssignedDisplayText(viewingLead))} rounded-pill px-3 py-2`}>
+                          {getAssignedDisplayText(viewingLead)}
+                        </span>
+                      </p>
+                    </div>
+                    
+                    <div className="mb-3">
+                      <label className="form-label fw-medium text-muted">Assigned By</label>
+                      <p className="fw-semibold">{getAssignedByName(viewingLead)}</p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="row mt-3">
+                  <div className="col-md-6">
+                    <h6 className="fw-semibold border-bottom pb-2 mb-3">📈 Lead Source</h6>
+                    <div className="mb-3">
+                      <label className="form-label fw-medium text-muted">Source</label>
+                      <p className="fw-semibold">{viewingLead.source || "N/A"}</p>
+                    </div>
+                    
+                    <div className="mb-3">
+                      <label className="form-label fw-medium text-muted">Campaign</label>
+                      <p className="fw-semibold">{viewingLead.campaign || "N/A"}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="col-md-6">
+                    <h6 className="fw-semibold border-bottom pb-2 mb-3">🗒️ Additional Information</h6>
+                    <div className="mb-3">
+                      <label className="form-label fw-medium text-muted">Notes</label>
+                      <p className="fw-semibold">{viewingLead.notes || "No notes available"}</p>
+                    </div>
+                    
+                    <div className="mb-3">
+                      <label className="form-label fw-medium text-muted">Reminder Time</label>
+                      <p className="fw-semibold">{formatDateForDisplay(viewingLead.reminderTime)}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="modal-footer">
+                <button type="button" className="btn btn-secondary" onClick={() => {
+                  setShowViewModal(false);
+                  setViewingLead(null);
+                }}>Close</button>
+                {canEditLeads() && (
+                  <button type="button" className="btn btn-primary" onClick={() => {
+                    setShowViewModal(false);
+                    handleEdit(viewingLead);
+                  }}>✏️ Edit Lead</button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Assign to Counselor Modal */}
       {canAssignLeads() && showAssignModal && (
         <div className="modal show fade" style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}>
           <div className="modal-dialog modal-dialog-centered">
@@ -1336,7 +1568,7 @@ function LeadsList() {
         </div>
       )}
 
-      {/* Edit Modal - Show for MASTER_ADMIN, SALES_MANAGER, and SA_SALES */}
+      {/* Edit Modal */}
       {selectedLead && canEditLeads() && (
         <div className="modal show fade" style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}>
           <div className="modal-dialog modal-dialog-centered modal-lg">
@@ -1396,26 +1628,29 @@ function LeadsList() {
                     <input type="text" name="city" className="form-control" value={formData.city} onChange={handleChange} />
                   </div>
 
+                  {/* Updated Source dropdown to use API data */}
                   <div className="col-md-6">
                     <label className="form-label fw-semibold">Source</label>
                     <select name="source" className="form-select" value={formData.source} onChange={handleChange}>
                       <option value="">Select Source</option>
-                      <option value="Instagram">Instagram</option>
-                      <option value="WhatsApp">WhatsApp</option>
-                      <option value="Facebook">Facebook</option>
-                      <option value="Youtube">Youtube</option>
-                      <option value="Refer">Refer</option>
-                      <option value="Walk-in">Walk-in</option>
+                      {sources.map((source) => (
+                        <option key={source.id} value={source.name}>
+                          {source.name}
+                        </option>
+                      ))}
                     </select>
                   </div>
 
+                  {/* Updated Campaign dropdown to use API data */}
                   <div className="col-md-6">
                     <label className="form-label fw-semibold">Campaign</label>
                     <select name="campaign" className="form-select" value={formData.campaign} onChange={handleChange}>
                       <option value="">Select Campaign</option>
-                      <option value="General">General</option>
-                      <option value="Campaign-1">Campaign-1</option>
-                      <option value="Campaign-2">Campaign-2</option>
+                      {campaigns.map((campaign) => (
+                        <option key={campaign.id} value={campaign.name}>
+                          {campaign.name}
+                        </option>
+                      ))}
                     </select>
                   </div>
 
@@ -1441,7 +1676,6 @@ function LeadsList() {
                     </select>
                   </div>
 
-                  {/* Conditionally show Assigned To field only for MASTER_ADMIN and SALES_MANAGER */}
                   {canAssignLeads() && (
                     <div className="col-md-6">
                       <label className="form-label fw-semibold">Assigned To</label>
@@ -1462,6 +1696,31 @@ function LeadsList() {
                       </select>
                     </div>
                   )}
+
+                  <div className="col-12">
+                    <label className="form-label fw-semibold">Notes</label>
+                    <textarea 
+                      name="notes" 
+                      className="form-control" 
+                      rows="3" 
+                      value={formData.notes || ''} 
+                      onChange={handleChange}
+                      placeholder="Add any additional notes about the lead..."
+                    />
+                    <small className="text-muted">Add any important notes or comments about this lead.</small>
+                  </div>
+
+                  <div className="col-md-6">
+                    <label className="form-label fw-semibold">Reminder Time</label>
+                    <input 
+                      type="datetime-local" 
+                      name="reminderTime" 
+                      className="form-control" 
+                      value={formData.reminderTime || ''} 
+                      onChange={handleChange}
+                    />
+                    <small className="text-muted">Set a reminder for follow-up (Date and Time)</small>
+                  </div>
                 </div>
               </div>
 

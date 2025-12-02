@@ -14,24 +14,52 @@ function SalesForm() {
     college: "",
     city: "",
     source: "",
-    campaign: ""
+    campaign: "",
+    notes: "",
+    reminderTime: ""
   });
 
   const [courses, setCourses] = useState([]);
+  const [sources, setSources] = useState([]);
+  const [campaigns, setCampaigns] = useState([]);
   const [errors, setErrors] = useState({});
   const [apiError, setApiError] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
+  const [loading, setLoading] = useState({
+    courses: false,
+    sources: false,
+    campaigns: false
+  });
 
+  // Fetch courses, sources, and campaigns
   useEffect(() => {
-    const fetchCourses = async () => {
+    const fetchData = async () => {
       try {
-        const res = await axios.get("http://localhost:8080/api/courses/all");
-        if (Array.isArray(res.data)) setCourses(res.data);
-      } catch {
-        setApiError("Failed to load courses!");
+        // Fetch courses
+        setLoading(prev => ({ ...prev, courses: true }));
+        const coursesRes = await axios.get("http://localhost:8080/api/courses/all");
+        if (Array.isArray(coursesRes.data)) setCourses(coursesRes.data);
+        setLoading(prev => ({ ...prev, courses: false }));
+
+        // Fetch sources
+        setLoading(prev => ({ ...prev, sources: true }));
+        const sourcesRes = await axios.get("http://localhost:8080/api/sources");
+        if (Array.isArray(sourcesRes.data)) setSources(sourcesRes.data);
+        setLoading(prev => ({ ...prev, sources: false }));
+
+        // Fetch campaigns
+        setLoading(prev => ({ ...prev, campaigns: true }));
+        const campaignsRes = await axios.get("http://localhost:8080/api/campaigns");
+        if (Array.isArray(campaignsRes.data)) setCampaigns(campaignsRes.data);
+        setLoading(prev => ({ ...prev, campaigns: false }));
+
+      } catch (error) {
+        setApiError("Failed to load data!");
+        setLoading({ courses: false, sources: false, campaigns: false });
       }
     };
-    fetchCourses();
+    
+    fetchData();
   }, []);
 
   useEffect(() => {
@@ -48,64 +76,67 @@ function SalesForm() {
   };
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  let newErrors = {};
-  if (!formData.leadName.trim()) newErrors.leadName = "Name is required";
-  if (!formData.phone.trim()) newErrors.phone = "Phone number is required";
+    let newErrors = {};
+    if (!formData.leadName.trim()) newErrors.leadName = "Name is required";
+    if (!formData.phone.trim()) newErrors.phone = "Phone number is required";
 
-  if (Object.keys(newErrors).length > 0) {
-    setErrors(newErrors);
-    return;
-  }
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
 
-  try {
-    const loggedInUserId = localStorage.getItem("userId");
+    try {
+      const loggedInUserId = localStorage.getItem("userId");
 
-    // Prepare final request body
-    const finalRequest = {
-      ...formData,
-      loggedInUserId: Number(loggedInUserId),
-      // status: formData.status === "NEW" ? "NEW" : formData.status
-    };
+      // Prepare final request body
+      const finalRequest = {
+        ...formData,
+        loggedInUserId: Number(loggedInUserId),
+        // Convert source and campaign values to match your backend expectations
+        sourceId: formData.source ? Number(formData.source) : null,
+        campaignId: formData.campaign ? Number(formData.campaign) : null
+      };
 
-    // Post WITHOUT query param
-    await axios.post(
-      "http://localhost:8080/api/saleCourse/leads",
-      finalRequest
-    );
+      // Post WITHOUT query param
+      await axios.post(
+        "http://localhost:8080/api/saleCourse/leads",
+        finalRequest
+      );
 
-    setSuccessMsg("Enquiry submitted successfully!");
-    setErrors({});
-    setApiError("");
+      setSuccessMsg("Enquiry submitted successfully!");
+      setErrors({});
+      setApiError("");
 
-    // Reset form fields
-    setFormData({
-      leadName: "",
-      phone: "",
-      email: "",
-      gender: "",
-      passedOutYear: "",
-      qualification: "",
-      courseId: "",
-      status: "NEW",
-      college: "",
-      city: "",
-      source: "",
-      campaign: ""
-    });
+      // Reset form fields (including the new fields)
+      setFormData({
+        leadName: "",
+        phone: "",
+        email: "",
+        gender: "",
+        passedOutYear: "",
+        qualification: "",
+        courseId: "",
+        status: "NEW",
+        college: "",
+        city: "",
+        source: "",
+        campaign: "",
+        notes: "",
+        reminderTime: ""
+      });
 
-  } catch (error) {
-    const msg = error.response?.data?.message || "Something went wrong!";
-    const lower = msg.toLowerCase();
+    } catch (error) {
+      const msg = error.response?.data?.message || "Something went wrong!";
+      const lower = msg.toLowerCase();
 
-    if (lower.includes("email")) setErrors({ email: msg });
-    else if (lower.includes("phone")) setErrors({ phone: msg });
-    else if (lower.includes("name")) setErrors({ leadName: msg });
-    else setApiError(msg);
-  }
-};
-
+      if (lower.includes("email")) setErrors({ email: msg });
+      else if (lower.includes("phone")) setErrors({ phone: msg });
+      else if (lower.includes("name")) setErrors({ leadName: msg });
+      else setApiError(msg);
+    }
+  };
 
   return (
     <div className="container-fluid py-3">
@@ -175,9 +206,9 @@ function SalesForm() {
                       className="form-select"
                     >
                       <option value="">Select</option>
-                      <option>Male</option>
-                      <option>Female</option>
-                      <option>Other</option>
+                      <option value="Male">Male</option>
+                      <option value="Female">Female</option>
+                      <option value="Other">Other</option>
                     </select>
                   </div>
                 </div>
@@ -234,9 +265,12 @@ function SalesForm() {
                   </div>
                 </div>
 
+                {/* Updated Source Dropdown with API data */}
                 <div className="row g-2 mt-2">
                   <div className="col-md-6">
-                    <label className="small fw-semibold">Source</label>
+                    <label className="small fw-semibold">
+                      Source {loading.sources && <span className="spinner-border spinner-border-sm ms-2"></span>}
+                    </label>
                     <select
                       name="source"
                       value={formData.source}
@@ -244,15 +278,18 @@ function SalesForm() {
                       className="form-select"
                     >
                       <option value="">Select Source</option>
-                      <option value="Instagram">Instagram</option>
-                      <option value="WhatsApp">WhatsApp</option>
-                      <option value="Refer">Refer</option>
-                      <option value="Walk-in">Walk-in</option>
+                      {sources.map((source) => (
+                        <option key={source.sourceId} value={source.sourceId}>
+                          {source.sourceName}
+                        </option>
+                      ))}
                     </select>
                   </div>
 
                   <div className="col-md-6">
-                    <label className="small fw-semibold">Campaign</label>
+                    <label className="small fw-semibold">
+                      Campaign {loading.campaigns && <span className="spinner-border spinner-border-sm ms-2"></span>}
+                    </label>
                     <select
                       name="campaign"
                       value={formData.campaign}
@@ -260,31 +297,68 @@ function SalesForm() {
                       className="form-select"
                     >
                       <option value="">Select Campaign</option>
-                      <option value="Campaign 1">General</option>
-                      <option value="Campaign 2">Campaign-1</option>
-                      <option value="Campaign 3">Campaign-2</option>
+                      {campaigns.map((campaign) => (
+                        <option key={campaign.campaignId} value={campaign.campaignId}>
+                          {campaign.campaignName}
+                        </option>
+                      ))}
                     </select>
                   </div>
                 </div>
 
-                <div className="mt-2">
-                  <label className="small fw-semibold">Select Course</label>
-                  <select
-                    name="courseId"
-                    value={formData.courseId}
-                    onChange={handleChange}
-                    className="form-select"
-                  >
-                    <option value="">-- Select Course --</option>
-                    {courses.map((c) => (
-                      <option key={c.courseId} value={c.courseId}>
-                        {c.courseName}
-                      </option>
-                    ))}
-                  </select>
+                {/* Notes Field */}
+                <div className="row g-2 mt-2">
+                  <div className="col-12">
+                    <label className="small fw-semibold">Notes</label>
+                    <textarea
+                      name="notes"
+                      value={formData.notes}
+                      onChange={handleChange}
+                      className="form-control"
+                      rows="3"
+                      placeholder="Add any additional notes or comments..."
+                    />
+                    <small className="text-muted">Optional: Add important notes about this lead</small>
+                  </div>
                 </div>
 
-                <button className="btn btn-primary w-100 mt-3">Submit</button>
+                {/* Reminder Time and Course Selection */}
+                <div className="row g-2 mt-2">
+                  <div className="col-md-6">
+                    <label className="small fw-semibold">Reminder Time</label>
+                    <input
+                      type="datetime-local"
+                      name="reminderTime"
+                      value={formData.reminderTime}
+                      onChange={handleChange}
+                      className="form-control"
+                    />
+                    <small className="text-muted">Optional: Set a follow-up reminder</small>
+                  </div>
+
+                  <div className="col-md-6">
+                    <label className="small fw-semibold">
+                      Select Course {loading.courses && <span className="spinner-border spinner-border-sm ms-2"></span>}
+                    </label>
+                    <select
+                      name="courseId"
+                      value={formData.courseId}
+                      onChange={handleChange}
+                      className="form-select"
+                    >
+                      <option value="">-- Select Course --</option>
+                      {courses.map((c) => (
+                        <option key={c.courseId} value={c.courseId}>
+                          {c.courseName}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <button className="btn btn-primary w-100 mt-3" type="submit">
+                  Submit
+                </button>
               </form>
             </div>
 
