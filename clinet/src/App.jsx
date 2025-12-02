@@ -40,6 +40,8 @@ import SalesDashboard from './Sales_Dashboard/SalesDashboard';
 import LeadsList from "./Sales_Dashboard/LeadsList";
 import SalesProfile from './Sales_Dashboard/SalesProfile';
 import BulkUpload from './Sales_Dashboard/BulkUpload';
+import CreateSource from './Sales_Dashboard/CreateSource';
+import CreateCompaign from './Sales_Dashboard/CreateCompaign';
 
 
 // Sales Counselor Dashboard
@@ -97,6 +99,8 @@ function App() {
           <Route path="leads" element={<LeadsList />} />
           <Route path="myprofile" element={<SalesProfile />} />
           <Route path="bulkupload" element={<BulkUpload />} />
+          <Route path="create-source" element={<CreateSource />} /> {/* Fixed: removed leading slash */}
+          <Route path="create-compaign" element={<CreateCompaign />} /> {/* Fixed: removed leading slash */}
         </Route>
 
 
