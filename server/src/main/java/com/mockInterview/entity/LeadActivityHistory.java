@@ -40,6 +40,14 @@ public class LeadActivityHistory {
 
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
+    
+    @Column(name = "is_notified")
+    private boolean isNotified = false;
+    
+
+@Column(name = "notified_at")
+private LocalDateTime notifiedAt;
+
 
     @PrePersist
     public void prePersist() {
