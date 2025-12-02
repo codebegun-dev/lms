@@ -10,6 +10,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/sources")
+@CrossOrigin (origins = "*")
 public class SourceController {
 
     @Autowired
