@@ -3,6 +3,9 @@ import axios from "axios";
 
 const TenthGrade = ({ onCompletionChange }) => {
   const [isEditing, setIsEditing] = useState(false);
+  const [alertMsg, setAlertMsg] = useState(null); // ✅ Bootstrap alert message
+  const [alertType, setAlertType] = useState(""); // success / danger
+
   const [formData, setFormData] = useState({
     board: "",
     schoolName: "",
@@ -11,23 +14,27 @@ const TenthGrade = ({ onCompletionChange }) => {
     userId: null,
   });
 
+  const [backupData, setBackupData] = useState({}); // backup for cancel
+
   const boards = ["CBSE", "ICSE", "State Board", "IB", "NIOS", "Other"];
 
-  // ✅ Load userId from localStorage
+  // ✅ Load userId & fetch 10th data
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem("user"));
     if (!user?.userId) {
-      alert("User not logged in. Please login again.");
+      showAlert("User not logged in. Please login again.", "danger");
       return;
     }
 
     setFormData((prev) => ({ ...prev, userId: user.userId }));
 
-    // ✅ Fetch existing details
     axios
       .get(`http://localhost:8080/api/tenth-grade/${user.userId}`)
       .then((res) => {
-        if (res.data) setFormData(res.data);
+        if (res.data) {
+          setFormData(res.data);
+          setBackupData(res.data);
+        }
         calculateCompletion(res.data);
       })
       .catch(() => {});
@@ -36,6 +43,8 @@ const TenthGrade = ({ onCompletionChange }) => {
   useEffect(() => {
     calculateCompletion(formData);
   }, [formData]);
+
+  // -------------------------------
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -56,37 +65,74 @@ const TenthGrade = ({ onCompletionChange }) => {
     onCompletionChange(Math.round((filled / fields.length) * 100));
   };
 
+  // -------------------------------
+
+  const showAlert = (msg, type) => {
+    setAlertMsg(msg);
+    setAlertType(type);
+
+    setTimeout(() => setAlertMsg(null), 3000); // hide after 3 seconds
+  };
+
   const handleSave = async () => {
     try {
       await axios.put(`http://localhost:8080/api/tenth-grade`, formData);
+
+      showAlert("10th Grade details saved successfully!", "success");
+
+      setBackupData(formData);
       setIsEditing(false);
-      alert("10th Grade details saved ✅");
     } catch (error) {
-      alert("Failed to save 10th details ❌");
+      showAlert("Failed to save details!", "danger");
     }
   };
 
   const handleCancel = () => {
+    setFormData(backupData); // restore old values
     setIsEditing(false);
+    showAlert("Cancelled changes", "warning");
   };
+
+  // -------------------------------
 
   return (
     <div className="card shadow-sm border-0 my-3">
+
+      {/* ALERT BOX */}
+      {alertMsg && (
+        <div className={`alert alert-${alertType} rounded-0 m-0 text-center`}>
+          {alertMsg}
+        </div>
+      )}
+
+      {/* HEADER */}
       <div className="card-header bg-primary text-white d-flex justify-content-between">
         <h5 className="mb-0">10th Grade</h5>
+
         {!isEditing ? (
-          <button className="btn btn-light btn-sm" onClick={() => setIsEditing(true)}>
+          <button
+            className="btn btn-light btn-sm"
+            onClick={() => setIsEditing(true)}
+          >
             Edit
           </button>
         ) : (
-          <button className="btn btn-success btn-sm" onClick={handleSave}>
-            Save
-          </button>
+          <div>
+            <button className="btn btn-success btn-sm me-2" onClick={handleSave}>
+              Save
+            </button>
+
+            <button className="btn btn-danger btn-sm" onClick={handleCancel}>
+              Cancel
+            </button>
+          </div>
         )}
       </div>
 
+      {/* BODY */}
       <div className="card-body">
         <div className="row g-3">
+
           <div className="col-md-6">
             <label className="fw-semibold">Board *</label>
             <select
@@ -140,6 +186,7 @@ const TenthGrade = ({ onCompletionChange }) => {
               placeholder="Percentage"
             />
           </div>
+
         </div>
       </div>
     </div>

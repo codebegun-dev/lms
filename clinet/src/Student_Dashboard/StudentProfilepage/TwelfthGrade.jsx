@@ -9,6 +9,10 @@ const TwelfthGrade = ({ onCompletionChange }) => {
   const userId = user?.userId;
 
   const [isEditing, setIsEditing] = useState(false);
+
+  const [alertMsg, setAlertMsg] = useState(null);
+  const [alertType, setAlertType] = useState("");
+
   const [formData, setFormData] = useState({
     board: "",
     groupName: "",
@@ -18,14 +22,9 @@ const TwelfthGrade = ({ onCompletionChange }) => {
     userId: userId
   });
 
-  const boards = [
-    "CBSE",
-    "ICSE",
-    "State Board",
-    "IB (International Baccalaureate)",
-    "NIOS",
-    "Other",
-  ];
+  const [backupData, setBackupData] = useState({}); // for cancel
+
+  const boards = ["CBSE", "ICSE", "State Board", "IB", "NIOS", "Other"];
 
   const groups = [
     "Science (PCM)",
@@ -37,10 +36,17 @@ const TwelfthGrade = ({ onCompletionChange }) => {
     "Other",
   ];
 
-  // ✅ Redirect to login if no session
+   const showAlert = (msg, type) => {
+    setAlertMsg(msg);
+    setAlertType(type);
+
+    setTimeout(() => setAlertMsg(null), 3000);
+  };
+ 
+  // Load existing 12th details
   useEffect(() => {
     if (!userId) {
-      alert("Session expired! Please login again.");
+      showAlert("Session expired! Please login again.", "danger");
       navigate("/login");
       return;
     }
@@ -50,6 +56,7 @@ const TwelfthGrade = ({ onCompletionChange }) => {
       .then((res) => {
         if (res?.data) {
           setFormData({ ...res.data, userId });
+          setBackupData({ ...res.data, userId });
         }
       })
       .catch(() => {});
@@ -59,16 +66,17 @@ const TwelfthGrade = ({ onCompletionChange }) => {
     calculateCompletion();
   }, [formData]);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
   const calculateCompletion = () => {
     const fields = Object.values(formData);
     const filled = fields.filter((f) => f !== "" && f !== null).length;
     const percentage = Math.round((filled / fields.length) * 100);
     onCompletionChange(percentage);
+  };
+
+ 
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSave = async () => {
@@ -77,19 +85,34 @@ const TwelfthGrade = ({ onCompletionChange }) => {
 
       await axios.put("http://localhost:8080/api/twelfth-grade", payload);
 
+      setBackupData(payload);
       setIsEditing(false);
-      alert("12th grade details saved successfully ✅");
+
+      showAlert("12th grade details saved successfully!", "success");
     } catch (error) {
-      alert("Failed to save! ❌ Try again.");
+      showAlert("Failed to save details! Try again.", "danger");
     }
   };
 
   const handleCancel = () => {
+    setFormData(backupData); // restore old data
     setIsEditing(false);
+
+    showAlert("Changes cancelled", "warning");
   };
 
+ 
   return (
     <div className="card shadow-sm border-0 my-3">
+
+      {/* ALERT */}
+      {alertMsg && (
+        <div className={`alert alert-${alertType} rounded-0 m-0 text-center`}>
+          {alertMsg}
+        </div>
+      )}
+
+      {/* HEADER */}
       <div className="card-header d-flex justify-content-between align-items-center bg-primary text-white">
         <h5 className="mb-0">12th / Intermediate / Diploma</h5>
 
@@ -99,7 +122,7 @@ const TwelfthGrade = ({ onCompletionChange }) => {
           </button>
         ) : (
           <div>
-            <button className="btn btn-secondary btn-sm me-2" onClick={handleCancel}>
+            <button className="btn btn-danger btn-sm me-2" onClick={handleCancel}>
               Cancel
             </button>
             <button className="btn btn-success btn-sm" onClick={handleSave}>
@@ -109,9 +132,10 @@ const TwelfthGrade = ({ onCompletionChange }) => {
         )}
       </div>
 
+      {/* BODY */}
       <div className="card-body">
         <div className="row g-3">
-          
+
           <div className="col-md-4">
             <label className="form-label fw-semibold">Board *</label>
             <select
@@ -123,9 +147,7 @@ const TwelfthGrade = ({ onCompletionChange }) => {
             >
               <option value="">Select Board</option>
               {boards.map((board) => (
-                <option key={board} value={board}>
-                  {board}
-                </option>
+                <option key={board} value={board}>{board}</option>
               ))}
             </select>
           </div>
@@ -141,9 +163,7 @@ const TwelfthGrade = ({ onCompletionChange }) => {
             >
               <option value="">Select Group</option>
               {groups.map((grp) => (
-                <option key={grp} value={grp}>
-                  {grp}
-                </option>
+                <option key={grp} value={grp}>{grp}</option>
               ))}
             </select>
           </div>
@@ -172,7 +192,7 @@ const TwelfthGrade = ({ onCompletionChange }) => {
               className="form-control"
               placeholder="YYYY"
               min="1950"
-              max="2030"
+              max="2035"
             />
           </div>
 

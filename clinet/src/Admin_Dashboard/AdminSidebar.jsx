@@ -98,14 +98,26 @@ const AdminSidebar = () => {
 
         <li className="mb-3">
           <NavLink
-            to="syllabus"
+            to="courses"
             className={({ isActive }) =>
               `d-flex align-items-center text-decoration-none ${isActive ? "fw-bold text-primary" : "text-dark"}`
             }
           >
-            <FaUsers className="me-2" /> Syllabus
+            <FaUsers className="me-2" />Courses
           </NavLink>
         </li>
+
+        <li className="mb-3">
+          <NavLink
+            to="quiz"
+            className={({ isActive }) =>
+              `d-flex align-items-center text-decoration-none ${isActive ? "fw-bold text-primary" : "text-dark"}`
+            }
+          >
+            <FaUsers className="me-2" />Quiz
+          </NavLink>
+        </li>
+
       </ul>
     </div>
   );

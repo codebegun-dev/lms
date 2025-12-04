@@ -15,7 +15,7 @@ const AdminDashboard = () => {
           <AdminSidebar />
         </div>
 
-        {/* ✅ Outlet shows nested components */}
+        {/* Outlet shows nested components */}
         <div className="col-10 p-4">
           <Outlet />
         </div>
