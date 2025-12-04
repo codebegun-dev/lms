@@ -1,4 +1,4 @@
-// GenericDetails.jsx
+ // GenericDetails.jsx
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 
@@ -12,7 +12,7 @@ const indianStates = [
   "Delhi", "Jammu and Kashmir", "Ladakh", "Lakshadweep", "Puducherry"
 ];
 
-const GenericDetails = ({ onCompletionChange = () => {} }) => {
+const GenericDetails = ({ onCompletionChange = () => { } }) => {
   const user = JSON.parse(localStorage.getItem("user"));
   const userId = user?.userId;
 
@@ -204,10 +204,21 @@ const GenericDetails = ({ onCompletionChange = () => {} }) => {
 
     try {
       const resp = await axios.post(
-        `http://localhost:8080/api/student-generic-details/upload/${userId}/${type}`,
+        `http://localhost:8080/api/student-generic-details/upload/${userId}`,
         fd,
-        { headers: { "Content-Type": "multipart/form-data" } }
-      );
+        {
+          headers: { "Content-Type": "multipart/form-data" }
+        }
+      )
+
+      // axios.post(
+      //   `http://localhost:8080/api/student-generic-details/upload/${userId}/${type}`,
+      //   fd,
+      //   { headers: { "Content-Type": "multipart/form-data" } }
+      // );
+
+
+
 
       if (resp.data) {
         const updated = {
@@ -230,6 +241,7 @@ const GenericDetails = ({ onCompletionChange = () => {} }) => {
     } catch (err) {
       console.error("File upload failed:", err);
       alert("File upload failed.");
+      
     }
   };
 
@@ -441,4 +453,4 @@ const GenericDetails = ({ onCompletionChange = () => {} }) => {
   );
 };
 
-export default GenericDetails;
+export default GenericDetails;   
