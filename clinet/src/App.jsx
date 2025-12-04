@@ -23,18 +23,17 @@ import StudentProfile from './Student_Dashboard/Studentprofile';
 import AdminDashboard from './Admin_Dashboard/AdminDashboard';
 import AdminProfile from './Admin_Dashboard/AdminProfile';
 
+// Course Management
 import CourseManagement from './Admin_Dashboard/CourseManagement';
 
+// Batch Management
 import BatchManagement from './Admin_Dashboard/BatchManagement';
 
+// Question Bank Management
 import QuestionBank from './Admin_Dashboard/QuestionBank';
 import Category from './Admin_Dashboard/CreateCategory';
 import CreateTopic from './Admin_Dashboard/CreateTopic';
-import CreateSubTopic from './Admin_Dashboard/CreateSubTopic';
-import UserManagement from "./Admin_Dashboard/UserManagement/UserManagement.jsx";
-import ManageRoles from './Admin_Dashboard/ManageRoles';
-import Syllabus from './Admin_Dashboard/Syllabus';
-import EditArticle from './Admin_Dashboard/EditArticle';
+import CreateSubTopic from './Admin_Dashboard/CreateSubTopic'; 
 
 //User Management
 import UserManagement from './Admin_Dashboard/UserManagement';
@@ -47,8 +46,6 @@ import Syllabus from './Admin_Dashboard/SyllabusManagment/Syllabus';
 import Courses from './Admin_Dashboard/SyllabusManagment/Courses';
 import EditArticle from './Admin_Dashboard/SyllabusManagment/EditArticle';
 
-
-
 // Sales Dashboard
 import SalesForm from './Sales_Dashboard/SalesForm';
 import SalesDashboard from './Sales_Dashboard/SalesDashboard';
@@ -58,13 +55,10 @@ import BulkUpload from './Sales_Dashboard/BulkUpload';
 import CreateSource from './Sales_Dashboard/CreateSource';
 import CreateCompaign from './Sales_Dashboard/CreateCompaign';
 
-
 // Sales Counselor Dashboard
 import SalesCounselorDashboard from './Sales_Dashboard/Sales_Counselor/SalesCounselorDashboard';
 import CounselorProfile from "./Sales_Dashboard/Sales_Counselor/CounselorProfile";
 import QuizForm from './Admin_Dashboard/QuizManagement/Quiz/QuizForm';
-
-
 
 
 function App() {
