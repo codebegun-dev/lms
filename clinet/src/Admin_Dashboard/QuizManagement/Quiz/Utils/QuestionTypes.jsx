@@ -1,5 +1,4 @@
-// QuestionTypes.jsx
-export const QUESTION_TYPES = {
+ export const QUESTION_TYPES = {
   SINGLE: "single",
   MULTIPLE: "multiple",
   MANUAL: "manual",

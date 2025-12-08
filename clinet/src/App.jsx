@@ -61,6 +61,7 @@ import CreateCompaign from './Sales_Dashboard/CreateCompaign';
 // Sales Counselor Dashboard
 import SalesCounselorDashboard from './Sales_Dashboard/Sales_Counselor/SalesCounselorDashboard';
 import CounselorProfile from "./Sales_Dashboard/Sales_Counselor/CounselorProfile";
+import GetApiTest from './Admin_Dashboard/QuizManagement/Quiz/GetApiTest';
 
 
 function App() {
@@ -135,6 +136,7 @@ function App() {
 
         {/* Fallback route (optional) */}
         <Route path="*" element={<h2 className="text-center my-5">Page Not Found</h2>} />
+        <Route path="/api-test" element={<GetApiTest />} />
       </Routes>
     </>
 

@@ -1,4 +1,4 @@
-// QuizForm.jsx - Updated with Bootstrap alerts for validation
+// QuizForm.jsx - Updated with API integration
 import React, { useState } from "react";
 import { Form, Alert, Modal, Button } from "react-bootstrap";
 import OptionsBuilder from "./Parts/OptionsBuilder";
@@ -6,6 +6,7 @@ import ManualAnswer from "./Parts/ManualAnswer";
 import CodingQuestion from "./Parts/CodingQuestion";
 import AIQuestionModal from "./Parts/AIQuestionModal";
 import QuestionCard from "./Parts/QuestionCard";
+import axios from "axios";
 
 // Define QUESTION_TYPES locally
 const QUESTION_TYPES = {
@@ -232,6 +233,7 @@ export default function QuizForm() {
   const [showQuestionUI, setShowQuestionUI] = useState(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
 
   // Question Type change handler
   const handleTypeChange = (type) => {
@@ -272,10 +274,8 @@ export default function QuizForm() {
     try {
       console.log("Generating AI questions with prompt:", prompt, "count:", count, "type:", questionType);
 
-      // Use the passed questionType or fall back to form.type
       const typeToUse = questionType || form.type || QUESTION_TYPES.SINGLE;
 
-      // Mock generated questions
       const mockGeneratedQuestions = Array.from({ length: Math.min(count, 10) }, (_, i) => {
         const baseQuestion = {
           id: Date.now() + i,
@@ -343,12 +343,120 @@ export default function QuizForm() {
     setForm(question);
     setShowQuestionUI(true);
     setErrors({});
-    // Remove from questions list (will be re-added on save)
     setQuestions(questions.filter(q => q.id !== question.id));
   };
 
-  // End Quiz - with validation
-  const handleEndQuiz = () => {
+  // Prepare quiz data for API
+  const prepareQuizData = () => {
+    const totalMarks = questions.reduce((sum, q) => sum + (parseFloat(q.positiveMarks) || 0), 0);
+    const hasNegativeMarking = questions.some(q => q.negativeMarks > 0);
+    
+    // Determine the main question type (use most frequent type or first question's type)
+    const typeCounts = {};
+    questions.forEach(q => {
+      typeCounts[q.type] = (typeCounts[q.type] || 0) + 1;
+    });
+    const mainQuestionType = Object.keys(typeCounts).length > 0 
+      ? Object.keys(typeCounts).reduce((a, b) => typeCounts[a] > typeCounts[b] ? a : b)
+      : questions[0]?.type || "single";
+
+    // Prepare questions array for backend
+    const formattedQuestions = questions.map(q => {
+      const baseQuestion = {
+        question: q.question,
+        type: q.type,
+        positiveMarks: q.positiveMarks,
+        negativeMarks: q.negativeMarks,
+        mandatory: q.mandatory,
+        timestamp: q.timestamp
+      };
+
+      if (q.type === QUESTION_TYPES.SINGLE || q.type === QUESTION_TYPES.MULTIPLE) {
+        return {
+          ...baseQuestion,
+          options: q.options,
+          correctAnswers: q.correctAnswers
+        };
+      } else if (q.type === QUESTION_TYPES.MANUAL) {
+        return {
+          ...baseQuestion,
+          manualAnswer: q.manualAnswer
+        };
+      } else if (q.type === QUESTION_TYPES.CODING) {
+        return {
+          ...baseQuestion,
+          coding: q.coding
+        };
+      }
+
+      return baseQuestion;
+    });
+
+    return {
+      title: form.title,
+      description: form.description || "",
+      difficulty: "Medium",  
+      duration: "30m",  
+      marks: totalMarks,
+      negativeMarking: hasNegativeMarking,
+      questionType: mainQuestionType,
+      questions: formattedQuestions
+    };
+  };
+
+  // Save quiz to backend API
+
+const saveQuizToBackend = async () => {
+  try {
+    setLoading(true);
+    
+    const quizData = prepareQuizData();
+    
+    console.log("Sending quiz data to backend:", quizData);
+    
+    // ✅ Use the correct backend URL (default Spring Boot port is 8080)
+    const response = await axios.post('http://localhost:8080/api/quizzes', quizData, {
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    });
+    
+    console.log("Quiz saved successfully:", response.data);
+    
+    alert( " saved successfully ");
+    
+    // Reset form after successful save
+    setForm(emptyForm);
+    setQuestions([]);
+    setShowQuestionUI(false);
+    setErrors({});
+    
+  } catch (error) {
+    console.error("Error saving quiz:", error);
+    
+    let errorMessage = "Failed to save quiz. Please try again.";
+    
+    if (error.response) {
+      // Server responded with error status
+      console.error("Response error:", error.response.data);
+      errorMessage = error.response.data.message || errorMessage;
+    } else if (error.request) {
+      // Request made but no response
+      console.error("No response received:", error.request);
+      errorMessage = "No response from server. Please check if backend is running on port 8080.";
+    } else {
+      console.error("Error message:", error.message);
+      errorMessage = `Network error: ${error.message}`;
+    }
+    
+    alert(errorMessage);
+  } finally {
+    setLoading(false);
+  }
+};
+
+  // End Quiz - with validation and API call
+  const handleEndQuiz = async () => {
     const newErrors = {};
     
     if (!form.title.trim()) {
@@ -365,26 +473,11 @@ export default function QuizForm() {
       return;
     }
 
-    const quizData = {
-      title: form.title,
-      description: form.description,
-      questions: questions,
-      totalQuestions: questions.length,
-      totalMarks: questions.reduce((sum, q) => sum + (parseFloat(q.positiveMarks) || 0), 0),
-      createdAt: new Date().toISOString()
-    };
-
-    console.log("Quiz saved:", quizData);
-    alert(`Quiz "${form.title}" saved successfully with ${questions.length} questions!`);
-
-    // Reset form
-    setForm(emptyForm);
-    setQuestions([]);
-    setShowQuestionUI(false);
-    setErrors({});
+    // Save quiz to backend
+    await saveQuizToBackend();
   };
 
-  // Handle Add Manually button click - with validation using Bootstrap alerts
+  // Handle Add Manually button click
   const handleAddManually = () => {
     const newErrors = {};
     
@@ -405,7 +498,7 @@ export default function QuizForm() {
     setErrors({});
   };
 
-  // Handle AI button click - with validation using Bootstrap alerts
+  // Handle AI button click
   const handleUseAI = () => {
     const newErrors = {};
     
@@ -448,7 +541,6 @@ export default function QuizForm() {
             value={form.title}
             onChange={(e) => {
               setForm({ ...form, title: e.target.value });
-              // Clear error when user starts typing
               if (errors.title) {
                 setErrors({...errors, title: null});
               }
@@ -484,7 +576,6 @@ export default function QuizForm() {
             value={form.type}
             onChange={(e) => {
               handleTypeChange(e.target.value);
-              // Clear error when user selects a type
               if (errors.type) {
                 setErrors({...errors, type: null});
               }
@@ -730,8 +821,16 @@ export default function QuizForm() {
             <button
               className="btn btn-lg btn-success px-4"
               onClick={handleEndQuiz}
+              disabled={loading}
             >
-              Save & End Quiz
+              {loading ? (
+                <>
+                  <span className="spinner-border spinner-border-sm me-2"></span>
+                  Saving...
+                </>
+              ) : (
+                'Save & End Quiz'
+              )}
             </button>
           </div>
         </div>
