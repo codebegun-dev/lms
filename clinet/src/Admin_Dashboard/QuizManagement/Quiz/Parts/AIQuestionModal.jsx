@@ -1,5 +1,4 @@
-// AiQuestionModal.jsx - Updated version with image-like design
-import React, { useState } from "react";
+ import React, { useState } from "react";
 import { Modal, Button, Form, Alert } from "react-bootstrap";
 
 export default function AiQuestionModal({ show, onClose, onGenerate }) {
@@ -22,12 +21,11 @@ export default function AiQuestionModal({ show, onClose, onGenerate }) {
 
     setLoading(true);
     try {
-      // Parse the prompt to extract number of questions
-      let count = 1; // Default to 1 if not specified
+       let count = 1;  
       const countMatch = prompt.match(/\b(\d+)\s+(?:questions?|q|mcqs?)\b/i);
       if (countMatch) {
         count = parseInt(countMatch[1]);
-        count = Math.min(Math.max(1, count), 10); // Limit to 1-10
+        count = Math.min(Math.max(1, count), 10);  
       }
 
       // Call the parent's handleAIQuestions function with selected type
