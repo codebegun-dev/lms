@@ -1,46 +1,44 @@
-// QuestionCard.jsx
+// QuestionCard.jsx - Cleaner version
 import React from "react";
+import { Card } from "react-bootstrap";
 
-export default function QuestionCard({ data, onEdit, onDelete }) {
-  // small summary view of a question
+export default function QuestionCard({ data, index }) {
   return (
-    <div className="question-card">
-      <div className="question-card-header">
-        <strong>{data.title || "Untitled"}</strong>
-        <div className="card-actions">
-          <button onClick={() => onEdit && onEdit(data)}>Edit</button>
-          <button onClick={() => onDelete && onDelete(data.id)}>Delete</button>
-        </div>
-      </div>
-
-      <div className="question-card-body">
-        <p className="question-text">{data.question}</p>
-
-        {data.type === "manual" && (
-          <div className="meta">Manual answer: {data.manualAnswer || "—"}</div>
-        )}
-
-        {data.type === "coding" && (
-          <div className="meta">
-            Coding — test cases: {(data.coding && data.coding.testCases && data.coding.testCases.length) || 0}
+    <Card className="mb-3 shadow-sm">
+      <Card.Body>
+        <div className="d-flex align-items-start">
+          <div className="me-3">
+            <div className="bg-light border rounded-circle d-flex align-items-center justify-content-center" 
+                 style={{ width: '36px', height: '36px' }}>
+              <strong className="text-dark">{index + 1}</strong>
+            </div>
           </div>
-        )}
-
-        {["single", "multiple"].includes(data.type) && (
-          <ul className="options-summary">
-            {(data.options || []).map((o) => (
-              <li key={o.id}>
-                {o.text}
-                {data.correctAnswers && data.correctAnswers.includes(o.id) ? " ✅" : ""}
-              </li>
-            ))}
-          </ul>
-        )}
-
-        <div className="meta">
-          Marks: +{data.positiveMarks} / -{data.negativeMarks} {data.mandatory ? "(mandatory)" : ""}
+          <div className="flex-grow-1">
+            <h6 className="mb-2">{data.question || "No question text"}</h6>
+            
+            {/* Show options for multiple choice questions */}
+            {data.type === "single" || data.type === "multiple" ? (
+              <div className="mb-2">
+                <small className="text-muted d-block mb-1">Options:</small>
+                <ul className="list-unstyled mb-0">
+                  {data.options?.slice(0, 3).map((opt, idx) => (
+                    <li key={opt.id || idx} className="small mb-1">
+                      • {opt.text || `Option ${idx + 1}`}
+                    </li>
+                  ))}
+                  {data.options && data.options.length > 3 && (
+                    <li className="small text-muted">... and {data.options.length - 3} more</li>
+                  )}
+                </ul>
+              </div>
+            ) : data.type === "manual" ? (
+              <small className="text-muted d-block mb-2">Manual answer type</small>
+            ) : data.type === "coding" ? (
+              <small className="text-muted d-block mb-2">Coding question</small>
+            ) : null}
+          </div>
         </div>
-      </div>
-    </div>
+      </Card.Body>
+    </Card>
   );
 }

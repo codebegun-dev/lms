@@ -1,105 +1,274 @@
-// Parts/OptionsBuilder.jsx
+// // OptionsBuilder.jsx - Updated with 5 option limit
+// import React from "react";
+// import { Button, Form, Alert } from "react-bootstrap";
+// import { FaPlus, FaTrash } from "react-icons/fa";
+
+// export default function OptionsBuilder({ form, setForm }) {
+//   const MAX_OPTIONS = 5;
+
+//   const addOption = () => {
+//     if (form.options.length >= MAX_OPTIONS) {
+//       alert(`Maximum ${MAX_OPTIONS} options allowed`);
+//       return;
+//     }
+    
+//     const newOption = {
+//       id: Date.now(),
+//       text: "",
+//     };
+//     setForm({ ...form, options: [...form.options, newOption] });
+//   };
+
+//   const updateText = (id, value) => {
+//     const updated = form.options.map((o) =>
+//       o.id === id ? { ...o, text: value } : o
+//     );
+//     setForm({ ...form, options: updated });
+//   };
+
+//   const toggleCorrect = (id) => {
+//     if (form.type === "single") {
+//       setForm({ ...form, correctAnswers: [id] });
+//     } else {
+//       const exists = form.correctAnswers.includes(id);
+//       setForm({
+//         ...form,
+//         correctAnswers: exists
+//           ? form.correctAnswers.filter((x) => x !== id)
+//           : [...form.correctAnswers, id],
+//       });
+//     }
+//   };
+
+//   const removeOption = (id) => {
+//     setForm({
+//       ...form,
+//       options: form.options.filter((o) => o.id !== id),
+//       correctAnswers: form.correctAnswers.filter((ans) => ans !== id),
+//     });
+//   };
+
+//   return (
+//     <div className="mt-3">
+//       <div className="d-flex justify-content-between align-items-center mb-2">
+//         <h5 className="mb-0">Options</h5>
+//         <small className="text-muted">
+//           {form.options.length} / {MAX_OPTIONS} options
+//         </small>
+//       </div>
+
+//       {form.options.length >= MAX_OPTIONS && (
+//         <Alert variant="warning" className="small">
+//           Maximum {MAX_OPTIONS} options reached. Remove an option to add new one.
+//         </Alert>
+//       )}
+
+//       {form.options.map((o) => (
+//         <div
+//           key={o.id}
+//           className="d-flex align-items-center gap-2 mb-2 border rounded p-2"
+//         >
+//           {/* Drag handle */}
+//           <span className="text-muted">
+//             <FaPlus style={{ transform: "rotate(45deg)" }} />
+//           </span>
+
+//           {/* Correct Checkbox */}
+//           <Form.Check
+//             type={form.type === "single" ? "radio" : "checkbox"}
+//             checked={form.correctAnswers.includes(o.id)}
+//             onChange={() => toggleCorrect(o.id)}
+//             name={form.type === "single" ? "correctOption" : undefined}
+//           />
+
+//           {/* Option Input */}
+//           <Form.Control
+//             type="text"
+//             value={o.text}
+//             onChange={(e) => updateText(o.id, e.target.value)}
+//             placeholder={`Option ${form.options.indexOf(o) + 1}`}
+//           />
+
+//           {/* Delete button */}
+//           <Button 
+//             variant="outline-danger" 
+//             size="sm" 
+//             onClick={() => removeOption(o.id)}
+//             disabled={form.options.length <= 2}
+//             title={form.options.length <= 2 ? "Need at least 2 options" : "Remove option"}
+//           >
+//             <FaTrash />
+//           </Button>
+//         </div>
+//       ))}
+
+//       <Button 
+//         variant="success" 
+//         size="sm" 
+//         onClick={addOption}
+//         disabled={form.options.length >= MAX_OPTIONS}
+//       >
+//         <FaPlus /> Add Option  
+//       </Button>
+//     </div>
+//   );
+// }
+
+
+
+
+// OptionsBuilder.jsx - Updated with drag and drop for options
 import React from "react";
-import { Button, Form } from "react-bootstrap";
-import { BiTrash } from "react-icons/bi";
-import { QUESTION_TYPES } from "../Utils/QuestionTypes";
+import { Button, Form, Alert } from "react-bootstrap";
+import { FaPlus, FaTrash, FaGripVertical } from "react-icons/fa";
 
-export default function OptionsBuilder({ form, setForm, errors = {} }) {
+export default function OptionsBuilder({ form, setForm }) {
+  const MAX_OPTIONS = 5;
+
   const addOption = () => {
-    const newOpt = { id: Date.now().toString(), text: "" };
-    setForm((p) => ({ ...p, options: [...(p.options || []), newOpt] }));
+    if (form.options.length >= MAX_OPTIONS) {
+      alert(`Maximum ${MAX_OPTIONS} options allowed`);
+      return;
+    }
+    
+    const newOption = {
+      id: Date.now(),
+      text: "",
+    };
+    setForm({ ...form, options: [...form.options, newOption] });
   };
 
-  const updateOptionText = (id, text) => {
-    setForm((p) => ({
-      ...p,
-      options: (p.options || []).map((o) =>
-        o.id === id ? { ...o, text } : o
-      ),
-    }));
-  };
-
-  const deleteOption = (id) => {
-    setForm((p) => {
-      const opts = (p.options || []).filter((o) => o.id !== id);
-      const correct = (p.correctAnswers || []).filter((c) => c !== id);
-      return { ...p, options: opts, correctAnswers: correct };
-    });
+  const updateText = (id, value) => {
+    const updated = form.options.map((o) =>
+      o.id === id ? { ...o, text: value } : o
+    );
+    setForm({ ...form, options: updated });
   };
 
   const toggleCorrect = (id) => {
-    if (form.type === QUESTION_TYPES.SINGLE) {
-      setForm((p) => ({ ...p, correctAnswers: [id] }));
+    if (form.type === "single") {
+      setForm({ ...form, correctAnswers: [id] });
     } else {
-      setForm((p) => {
-        const existing = p.correctAnswers || [];
-        if (existing.includes(id)) {
-          return { ...p, correctAnswers: existing.filter((c) => c !== id) };
-        }
-        return { ...p, correctAnswers: [...existing, id] };
+      const exists = form.correctAnswers.includes(id);
+      setForm({
+        ...form,
+        correctAnswers: exists
+          ? form.correctAnswers.filter((x) => x !== id)
+          : [...form.correctAnswers, id],
       });
     }
   };
 
+  const removeOption = (id) => {
+    setForm({
+      ...form,
+      options: form.options.filter((o) => o.id !== id),
+      correctAnswers: form.correctAnswers.filter((ans) => ans !== id),
+    });
+  };
+
+  // Drag and Drop handlers for options
+  const handleDragStart = (e, index) => {
+    e.dataTransfer.setData('text/plain', index.toString());
+    e.currentTarget.style.opacity = '0.5';
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.currentTarget.style.borderTop = '2px solid #007bff';
+  };
+
+  const handleDragLeave = (e) => {
+    e.currentTarget.style.borderTop = '';
+  };
+
+  const handleDrop = (e, dropIndex) => {
+    e.preventDefault();
+    e.currentTarget.style.borderTop = '';
+    
+    const dragIndex = parseInt(e.dataTransfer.getData('text/plain'));
+    if (dragIndex === dropIndex) return;
+
+    const newOptions = [...form.options];
+    const [draggedItem] = newOptions.splice(dragIndex, 1);
+    newOptions.splice(dropIndex, 0, draggedItem);
+    
+    setForm({ ...form, options: newOptions });
+  };
+
+  const handleDragEnd = (e) => {
+    e.currentTarget.style.opacity = '1';
+  };
+
   return (
     <div className="mt-3">
-      <h5>Options</h5>
+      <div className="d-flex justify-content-between align-items-center mb-2">
+        <h5 className="mb-0">Options</h5>        
+      </div>
 
-      {(errors.options || errors.correctAnswers) && (
-        <div className="text-danger small mb-2">
-          {errors.options || errors.correctAnswers}
-        </div>
+      {form.options.length >= MAX_OPTIONS && (
+        <Alert variant="warning" className="small p-2">
+          Maximum {MAX_OPTIONS} options reached. Remove an option to add new one.
+        </Alert>
       )}
 
-      {(form.options || []).map((opt, idx) => {
-        const isChecked = (form.correctAnswers || []).includes(opt.id);
-
-        return (
+      <div className="options-container">
+        {form.options.map((option, index) => (
           <div
-            key={opt.id}
-            className="d-flex align-items-center mb-2"
+            key={option.id}
+            draggable
+            onDragStart={(e) => handleDragStart(e, index)}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={(e) => handleDrop(e, index)}
+            onDragEnd={handleDragEnd}
+            className="d-flex align-items-center gap-2 mb-2 border rounded p-2"
+            style={{ cursor: 'move' }}
           >
-            {form.type === QUESTION_TYPES.SINGLE ? (
-              <Form.Check
-                type="radio"
-                className="me-2"
-                checked={isChecked}
-                onChange={() => toggleCorrect(opt.id)}
-              />
-            ) : (
-              <Form.Check
-                type="checkbox"
-                className="me-2"
-                checked={isChecked}
-                onChange={() => toggleCorrect(opt.id)}
-              />
-            )}
+            {/* Drag handle */}
+            <span className="text-muted" style={{ cursor: 'grab' }}>
+              <FaGripVertical />
+            </span>
 
-            <Form.Control
-              className="me-2"
-              placeholder={`Option ${idx + 1}`}
-              value={opt.text}
-              onChange={(e) => updateOptionText(opt.id, e.target.value)}
+            {/* Correct Checkbox */}
+            <Form.Check
+              type={form.type === "single" ? "radio" : "checkbox"}
+              checked={form.correctAnswers.includes(option.id)}
+              onChange={() => toggleCorrect(option.id)}
+              name={form.type === "single" ? "correctOption" : undefined}
             />
 
-            <Button
-              variant="outline-danger"
-              size="sm"
-              onClick={() => deleteOption(opt.id)}
+            {/* Option Input */}
+            <Form.Control
+              type="text"
+              value={option.text}
+              onChange={(e) => updateText(option.id, e.target.value)}
+              placeholder={`Option ${index + 1}`}
+              className="flex-grow-1"
+            />
+
+            {/* Delete button */}
+            <Button 
+              variant="outline-danger" 
+              size="sm" 
+              onClick={() => removeOption(option.id)}
+              disabled={form.options.length <= 2}
+              title={form.options.length <= 2 ? "Need at least 2 options" : "Remove option"}
             >
-              <BiTrash />
+              <FaTrash />
             </Button>
           </div>
-        );
-      })}
+        ))}
+      </div>
 
-      <Button
-        variant="outline-primary"
-        size="sm"
-        className="mt-2"
+      <Button 
+        variant="success" 
+        size="sm" 
         onClick={addOption}
+        disabled={form.options.length >= MAX_OPTIONS}
+        className="mt-2"
       >
-        + Add Option
+        <FaPlus /> Add Option  
       </Button>
     </div>
   );
