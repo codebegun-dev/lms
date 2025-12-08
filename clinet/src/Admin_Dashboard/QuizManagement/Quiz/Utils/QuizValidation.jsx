@@ -1,62 +1,66 @@
-// QuizValidation.jsx
-import { QUESTION_TYPES } from "./QuestionTypes";
-
-/**
- *  QuizValidation(form)
- * Returns an object with error messages for invalid fields.
- */
-export function QuizValidation(form) {
+// QuizValidation function - Updated
+function QuizValidation(form) {
   const errors = {};
 
+  // Quiz Title - REQUIRED
   if (!form.title || String(form.title).trim() === "") {
     errors.title = "Quiz title is required.";
+  } else if (form.title.trim().length < 3) {
+    errors.title = "Quiz title must be at least 3 characters.";
   }
 
-  if (!form.question || String(form.question).trim() === "") {
-    errors.question = "Question text is required.";
-  }
-
+  // Question Type - REQUIRED
   if (!form.type) {
     errors.type = "Question type is required.";
-  } else if (
-    form.type === QUESTION_TYPES.SINGLE ||
-    form.type === QUESTION_TYPES.MULTIPLE
-  ) {
+  }
+
+  // Question Text - REQUIRED
+  if (!form.question || String(form.question).trim() === "") {
+    errors.question = "Question text is required.";
+  } else if (form.question.trim().length < 10) {
+    errors.question = "Question text must be at least 10 characters.";
+  }
+
+  // Validation based on question type
+  if (form.type === QUESTION_TYPES.SINGLE || form.type === QUESTION_TYPES.MULTIPLE) {
     if (!Array.isArray(form.options) || form.options.length < 2) {
       errors.options = "At least two options are required.";
     } else {
-      // ensure option texts are not empty
       const emptyOpt = form.options.find(
         (o) => !o.text || String(o.text).trim() === ""
       );
       if (emptyOpt) errors.options = "All options must have text.";
+      
+      // Check for duplicate options
+      const optionTexts = form.options.map(o => o.text.trim().toLowerCase());
+      const hasDuplicates = optionTexts.some((text, index) => 
+        optionTexts.indexOf(text) !== index
+      );
+      if (hasDuplicates) errors.options = "Options cannot be duplicates.";
     }
 
-    if (
-      !Array.isArray(form.correctAnswers) ||
-      form.correctAnswers.length === 0
-    ) {
+    if (!Array.isArray(form.correctAnswers) || form.correctAnswers.length === 0) {
       errors.correctAnswers = "Select at least one correct answer.";
     }
 
-    // if single, ensure only one correct
     if (form.type === QUESTION_TYPES.SINGLE && form.correctAnswers.length > 1) {
       errors.correctAnswers = "Only one correct answer allowed for single choice.";
     }
   } else if (form.type === QUESTION_TYPES.MANUAL) {
     if (!form.manualAnswer || String(form.manualAnswer).trim() === "") {
       errors.manualAnswer = "Manual answer cannot be empty.";
+    } else if (form.manualAnswer.trim().length < 5) {
+      errors.manualAnswer = "Manual answer must be at least 5 characters.";
     }
   } else if (form.type === QUESTION_TYPES.CODING) {
-    // basic validations for coding question
     if (!form.coding || String(form.coding.description).trim() === "") {
-      errors.coding = "Coding question description required.";
+      errors.coding = "Coding question description is required.";
+    } else if (form.coding.description.trim().length < 20) {
+      errors.coding = "Coding description must be at least 20 characters.";
     }
-    // At least one sample input/output recommended
-    // hidden test cases may be zero in the builder, that's acceptable
   }
 
-  // marks validation
+  // Marks validation - REQUIRED
   if (form.positiveMarks === "" || form.positiveMarks === null || Number.isNaN(Number(form.positiveMarks))) {
     errors.positiveMarks = "Positive marks are required.";
   } else if (Number(form.positiveMarks) <= 0) {

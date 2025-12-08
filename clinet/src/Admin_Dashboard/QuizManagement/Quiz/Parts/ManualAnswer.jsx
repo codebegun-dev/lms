@@ -1,25 +1,18 @@
 // ManualAnswer.jsx
 import React from "react";
+import { Form } from "react-bootstrap";
 
-export default function ManualAnswer({ form, setForm, errors = {} }) {
+export default function ManualAnswer({ form, setForm }) {
   return (
-    <div className="manual-answer">
-      <h4>Manual Answer</h4>
-      <div>
-        <label>
-          Correct Answer (for validation / preview)
-          <textarea
-            placeholder="Type the exact correct answer or a canonical answer"
-            value={form.manualAnswer}
-            onChange={(e) => setForm((p) => ({ ...p, manualAnswer: e.target.value }))}
-          />
-        </label>
-        {errors.manualAnswer && <div className="field-error">{errors.manualAnswer}</div>}
-      </div>
-
-      <small>
-        During preview, a text input will be shown to demonstrate how learners enter the answer.
-      </small>
+    <div className="mt-3">
+      <h5>Manual Answer</h5>
+      <Form.Control
+        as="textarea"
+        rows={3}
+        placeholder="Enter expected answer"
+        value={form.manualAnswer}
+        onChange={(e) => setForm({ ...form, manualAnswer: e.target.value })}
+      />
     </div>
   );
 }

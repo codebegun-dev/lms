@@ -33,7 +33,7 @@ import BatchManagement from './Admin_Dashboard/BatchManagement';
 import QuestionBank from './Admin_Dashboard/QuestionBank';
 import Category from './Admin_Dashboard/CreateCategory';
 import CreateTopic from './Admin_Dashboard/CreateTopic';
-import CreateSubTopic from './Admin_Dashboard/CreateSubTopic'; 
+import CreateSubTopic from './Admin_Dashboard/CreateSubTopic';
 
 //User Management
 import UserManagement from './Admin_Dashboard/UserManagement/UserManagement';
@@ -61,7 +61,7 @@ import CreateCompaign from './Sales_Dashboard/CreateCompaign';
 // Sales Counselor Dashboard
 import SalesCounselorDashboard from './Sales_Dashboard/Sales_Counselor/SalesCounselorDashboard';
 import CounselorProfile from "./Sales_Dashboard/Sales_Counselor/CounselorProfile";
- 
+
 
 function App() {
   return (
@@ -76,9 +76,6 @@ function App() {
         <Route path="/studentnavbar" element={<StudentNavbar />} />
         <Route path="/student-profile" element={<StudentProfile />} />
         <Route path="/view-progress" element={<ViewProgress />} />
-
-        {/* <Route path="courses" element={<Courses />} /> */}
-
 
         {/* Student Dashboard with nested routes */}
         <Route path="/student-dashboard" element={<StudentDashboard />}>
@@ -122,8 +119,8 @@ function App() {
           <Route path="leads" element={<LeadsList />} />
           <Route path="myprofile" element={<SalesProfile />} />
           <Route path="bulkupload" element={<BulkUpload />} />
-          <Route path="create-source" element={<CreateSource />} />  
-          <Route path="create-compaign" element={<CreateCompaign />} />  
+          <Route path="create-source" element={<CreateSource />} />
+          <Route path="create-compaign" element={<CreateCompaign />} />
         </Route>
 
 
@@ -140,6 +137,7 @@ function App() {
         <Route path="*" element={<h2 className="text-center my-5">Page Not Found</h2>} />
       </Routes>
     </>
+
   )
 }
 
