@@ -1,15 +1,13 @@
 package com.mockInterview.controller;
 
-import java.util.List;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
-
 import com.mockInterview.requestDtos.QuizRequestDto;
 import com.mockInterview.responseDtos.QuizResponseDto;
 import com.mockInterview.service.QuizService;
-
 import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/quizzes")
@@ -18,34 +16,43 @@ public class QuizController {
     @Autowired
     private QuizService quizService;
 
-    // Create quiz
+    // ---------------- CREATE ----------------
     @PostMapping
     public QuizResponseDto createQuiz(@Valid @RequestBody QuizRequestDto quizRequestDto) {
         return quizService.createQuiz(quizRequestDto);
     }
 
-    // Update quiz
-    @PutMapping("/{id}")
-    public QuizResponseDto updateQuiz(@PathVariable Long id,
+    // ---------------- UPDATE ----------------
+    @PutMapping("/{quizId}")
+    public QuizResponseDto updateQuiz(@PathVariable Long quizId,
                                       @Valid @RequestBody QuizRequestDto quizRequestDto) {
-        return quizService.updateQuiz(id, quizRequestDto);
+        return quizService.updateQuiz(quizId, quizRequestDto);
     }
 
-    // Delete quiz
-    @DeleteMapping("/{id}")
-    public void deleteQuiz(@PathVariable Long id) {
-        quizService.deleteQuiz(id);
+    // ---------------- GET BY ID ----------------
+    @GetMapping("/{quizId}")
+    public QuizResponseDto getQuizById(@PathVariable Long quizId) {
+        return quizService.getQuizById(quizId);
     }
 
-    // Get quiz by ID
-    @GetMapping("/{id}")
-    public QuizResponseDto getQuizById(@PathVariable Long id) {
-        return quizService.getQuizById(id);
-    }
-
-    // Get all quizzes
+    // ---------------- GET ALL ----------------
     @GetMapping
     public List<QuizResponseDto> getAllQuizzes() {
         return quizService.getAllQuizzes();
+    }
+
+    // ---------------- DELETE ----------------
+    @DeleteMapping("/{quizId}")
+    public String deleteQuiz(@PathVariable Long quizId) {
+        quizService.deleteQuiz(quizId);
+        
+        return "Quiz deleted successfully";
+    }
+
+    // ---------------- PUBLISH ----------------
+    @PostMapping("/{quizId}/publish")
+    public QuizResponseDto publishQuiz(@PathVariable Long quizId,
+                                       @RequestParam Long updatedBy) {
+        return quizService.publishQuiz(quizId, updatedBy);
     }
 }
