@@ -1,4 +1,3 @@
-// src/Admin_Dashboard/UserManagement/UserManagement.jsx
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { FaUserPlus, FaFilter } from "react-icons/fa";
@@ -146,27 +145,36 @@ const UserManagement = () => {
   };
 
   const performConfirm = async () => {
-    const { type, payload } = confirmState;
-    if (!payload) return;
-    try {
-      if (type === "delete") {
-        await axios.delete(`${API_BASE}/api/user/${payload.id}`);
-        await loadUsers();
-        alert("User deleted successfully");
-      } else if (type === "toggleStatus") {
-        const newStatus = payload.status === "active" ? "inactive" : "active";
-        // backend endpoint assumed: PUT /api/user/{id}/status with { status }
-        await axios.put(`${API_BASE}/api/user/${payload.id}/status`, { status: newStatus });
-        await loadUsers();
-        alert(`User ${newStatus === "active" ? "activated" : "deactivated"} successfully`);
+  const { type, payload } = confirmState;
+  if (!payload) return;
+
+  try {
+    // DELETE USER
+    if (type === "delete") {
+      await axios.delete(`${API_BASE}/api/user/delete/${payload.id}`);
+      await loadUsers();
+      alert("User deleted successfully");
+
+    // ACTIVATE / DEACTIVATE USER
+    } else if (type === "toggleStatus") {
+      if (payload.status === "active") {
+        await axios.delete(`${API_BASE}/api/user/deactivate/${payload.id}`);
+        alert("User deactivated successfully");
+      } else {
+        await axios.put(`${API_BASE}/api/user/activate/${payload.id}`);
+        alert("User activated successfully");
       }
-    } catch (err) {
-      console.error("Confirm action failed", err);
-      alert("Action failed: " + (err.response?.data?.message || err.message || ""));
-    } finally {
-      setConfirmState({ open: false, type: "", payload: null });
+
+      await loadUsers();
     }
-  };
+
+  } catch (err) {
+    console.error("Confirm action failed", err);
+    alert("Action failed: " + (err.response?.data?.message || err.message));
+  } finally {
+    setConfirmState({ open: false, type: "", payload: null });
+  }
+};
 
   return (
     <div className="container my-4">
@@ -284,3 +292,4 @@ const UserManagement = () => {
 };
 
 export default UserManagement;
+
