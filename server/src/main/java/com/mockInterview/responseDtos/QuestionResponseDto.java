@@ -8,14 +8,17 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class QuizResponseDto {
+public class QuestionResponseDto {
 
+    private Long questionId;
     private Long quizId;
-    private String title;
-    private String description;
-    private Integer timeLimitMin;
-    private Double totalMarks;
-    private Boolean isPublished;
+    private String questionText;
+    private String questionType;
+    private String difficulty;
+    private String topic;
+    private String explanation;
+    private Double maxMarks;
+    private Integer version;
     private Long createdBy;
     private Long updatedBy;
     private LocalDateTime createdAt;

@@ -1,32 +1,38 @@
 package com.mockInterview.requestDtos;
 
-import lombok.Data;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import java.util.List;
-import java.util.Map;
+import jakarta.validation.constraints.*;
+import lombok.*;
 
-@Data
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class QuizRequestDto {
 
-    @NotBlank(message = "Title is required")
+    private Long quizId;
+
+    @NotBlank(message = "Quiz title cannot be blank")
+    @Size(min = 3, max = 255, message = "Title must be between 3 and 255 characters")
     private String title;
 
+    @NotBlank(message = "Description cannot be blank")
     private String description;
 
-    private String difficulty;
+    @NotNull(message = "Time limit is required")
+    @Positive(message = "Time limit must be positive")
+    private Integer timeLimitMin;
 
-    private String duration;
+    @NotNull(message = "Total marks is required")
+    @Positive(message = "Total marks must be positive")
+    private Double totalMarks;
 
-    @NotNull(message = "Marks are required")
-    private Integer marks;
+    @Builder.Default
+    private Boolean isPublished = false;
 
-    @NotNull(message = "Negative marking flag is required")
-    private Boolean negativeMarking; 
+    // Required only for create
+    private Long createdBy;
 
-    @NotBlank(message = "Question type is required")
-    private String questionType; // single, multiple, manual, coding
-
-    @NotNull(message = "Questions are required")
-    private List<Map<String, Object>> questions; // Accept array of question objects
+    // Required only for update
+    private Long updatedBy;
 }
