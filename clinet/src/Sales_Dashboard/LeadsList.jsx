@@ -8,8 +8,8 @@ function LeadsList() {
   const [apiError, setApiError] = useState("");
   const [courses, setCourses] = useState([]);
   const [counselors, setCounselors] = useState([]);
-  const [sources, setSources] = useState([]); // Added for sources API
-  const [campaigns, setCampaigns] = useState([]); // Added for campaigns API
+  const [sources, setSources] = useState([]);
+  const [campaigns, setCampaigns] = useState([]);
   const [allUsers, setAllUsers] = useState([]);
   const [userRole, setUserRole] = useState("");
 
@@ -23,8 +23,8 @@ function LeadsList() {
   const [filterQualification, setFilterQualification] = useState("");
   const [filterCity, setFilterCity] = useState("");
   const [filterCourse, setFilterCourse] = useState("");
-  const [filterSource, setFilterSource] = useState(""); // Added filter for source
-  const [filterCampaign, setFilterCampaign] = useState(""); // Added filter for campaign
+  const [filterSource, setFilterSource] = useState("");
+  const [filterCampaign, setFilterCampaign] = useState("");
 
   const [selectedLead, setSelectedLead] = useState(null);
   const [selectedLeads, setSelectedLeads] = useState(new Set());
@@ -34,7 +34,16 @@ function LeadsList() {
   
   const [showViewModal, setShowViewModal] = useState(false);
   const [viewingLead, setViewingLead] = useState(null);
+  const [activityHistory, setActivityHistory] = useState([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
   
+  const [showReminderModal, setShowReminderModal] = useState(false);
+  const [selectedReminderLead, setSelectedReminderLead] = useState(null);
+  const [reminderForm, setReminderForm] = useState({
+    notes: "",
+    reminderTime: ""
+  });
+
   const [formData, setFormData] = useState({
     leadName: "",
     phone: "",
@@ -43,7 +52,7 @@ function LeadsList() {
     passedOutYear: "",
     qualification: "",
     courseId: "",
-    status: "",
+    status: "NEW",
     college: "",
     city: "",
     source: "",
@@ -61,20 +70,137 @@ function LeadsList() {
   const [loadingPage, setLoadingPage] = useState(false);
   const [backendStatusCounts, setBackendStatusCounts] = useState({});
 
+  const statusCategories = {
+    NEW: ["NEW"],
+    MESSAGE_STATUS: [
+      "Message Sent",
+      "Waiting for Reply",
+      "No Reply – 1st Attempt",
+      "No Reply – 2nd Attempt",
+      "No Reply – Final Attempt"
+    ],
+    ELIGIBILITY: [
+      "Eligible",
+      "Not Eligible"
+    ],
+    CALL_STATUS: [
+      "Call Connected",
+      "Call Not Picked – 1st",
+      "Call Not Picked – 2nd",
+      "Call Not Picked – Final",
+      "Not Reachable",
+      "Switched Off",
+      "Wrong Number"
+    ],
+    FOLLOW_UP: [
+      "Interested – Active",
+      "Follow-Up Scheduled",
+      "Reminder Sent",
+      "Follow-Up Missed",
+      "Future Prospect",
+      "Parent Approval Pending",
+      "Budget Issue",
+      "Considering Other Institute",
+      "Not Interested"
+    ],
+    DEMO_COUNSELLING: [
+      "Demo Scheduled",
+      "Demo Completed",
+      "Demo No-Show",
+      "Counselling Completed"
+    ],
+    REGISTRATION: [
+      "Registration Form Sent",
+      "Registration Completed",
+      "Payment Pending",
+      "Part Payment",
+      "Payment Completed",
+      "Payment Follow-Up",
+      "Payment Dropped"
+    ],
+    STUDENT_STAGE: [
+      "Enrolled",
+      "Added to LMS",
+      "Batch Assigned",
+      "Orientation Completed"
+    ],
+    CLOSED: [
+      "Closed – Not Interested",
+      "Closed – Not Eligible",
+      "Closed – No Response",
+      "Closed – Wrong Number"
+    ]
+  };
+
+  const statusProgression = [
+    {
+      title: "NEW",
+      statuses: ["NEW"],
+      icon: "🆕",
+      color: "#667eea"
+    },
+    {
+      title: "Message Status",
+      statuses: ["Message Sent", "Waiting for Reply", "No Reply – 1st Attempt", "No Reply – 2nd Attempt", "No Reply – Final Attempt"],
+      icon: "💬",
+      color: "#4facfe"
+    },
+    {
+      title: "Eligibility",
+      statuses: ["Eligible", "Not Eligible"],
+      icon: "✅",
+      color: "#43e97b"
+    },
+    {
+      title: "Call Status",
+      statuses: ["Call Connected", "Call Not Picked – 1st", "Call Not Picked – 2nd", "Call Not Picked – Final", "Not Reachable", "Switched Off", "Wrong Number"],
+      icon: "📱",
+      color: "#fa709a"
+    },
+    {
+      title: "Follow Up",
+      statuses: ["Interested – Active", "Follow-Up Scheduled", "Reminder Sent", "Follow-Up Missed", "Future Prospect", "Parent Approval Pending", "Budget Issue", "Considering Other Institute", "Not Interested"],
+      icon: "🔄",
+      color: "#ff9a9e"
+    },
+    {
+      title: "Demo/Counselling",
+      statuses: ["Demo Scheduled", "Demo Completed", "Demo No-Show", "Counselling Completed"],
+      icon: "🎓",
+      color: "#a18cd1"
+    },
+    {
+      title: "Registration",
+      statuses: ["Registration Form Sent", "Registration Completed", "Payment Pending", "Part Payment", "Payment Completed", "Payment Follow-Up", "Payment Dropped"],
+      icon: "📝",
+      color: "#fbc2eb"
+    },
+    {
+      title: "Student Stage",
+      statuses: ["Enrolled", "Added to LMS", "Batch Assigned", "Orientation Completed"],
+      icon: "🎯",
+      color: "#6a11cb"
+    },
+    {
+      title: "Closed",
+      statuses: ["Closed – Not Interested", "Closed – Not Eligible", "Closed – No Response", "Closed – Wrong Number"],
+      icon: "❌",
+      color: "#8e9eab"
+    }
+  ];
+
   const BASE_URL = "http://localhost:8080/api/saleCourse/leads";
   const COUNSELOR_URL = "http://localhost:8080/api/user/assignable-users";
   const USERS_URL = "http://localhost:8080/api/user/all";
-  const SOURCES_URL = "http://localhost:8080/api/sources"; // Sources API endpoint
-  const CAMPAIGNS_URL = "http://localhost:8080/api/campaigns"; // Campaigns API endpoint
+  const SOURCES_URL = "http://localhost:8080/api/sources";
+  const CAMPAIGNS_URL = "http://localhost:8080/api/campaigns";
+  const HISTORY_URL = "http://localhost:8080/api/history";
 
   const formatDateForInput = (dateString) => {
     if (!dateString) return '';
     try {
       const date = new Date(dateString);
-      if (isNaN(date.getTime())) {
-        console.warn('Invalid date string:', dateString);
-        return '';
-      }
+      if (isNaN(date.getTime())) return '';
       const year = date.getFullYear();
       const month = String(date.getMonth() + 1).padStart(2, '0');
       const day = String(date.getDate()).padStart(2, '0');
@@ -82,7 +208,6 @@ function LeadsList() {
       const minutes = String(date.getMinutes()).padStart(2, '0');
       return `${year}-${month}-${day}T${hours}:${minutes}`;
     } catch (error) {
-      console.error('Error formatting date:', error, dateString);
       return '';
     }
   };
@@ -91,30 +216,39 @@ function LeadsList() {
     if (!dateString) return 'Not set';
     try {
       const date = new Date(dateString);
-      if (isNaN(date.getTime())) {
-        return 'Invalid date';
-      }
+      if (isNaN(date.getTime())) return 'Invalid date';
       return date.toLocaleString('en-US', {
         year: 'numeric',
         month: 'short',
         day: 'numeric',
         hour: '2-digit',
-        minute: '2-digit'
+        minute: '2-digit',
+        hour12: true
       });
     } catch (error) {
-      console.error('Error formatting display date:', error, dateString);
       return 'Invalid date';
     }
+  };
+
+  const formatTimeAgo = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInSeconds = Math.floor((now - date) / 1000);
+    
+    if (diffInSeconds < 60) return 'Just now';
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+    if (diffInSeconds < 2592000) return `${Math.floor(diffInSeconds / 86400)}d ago`;
+    return formatDateForDisplay(dateString);
   };
 
   const getLoggedInUser = () => {
     try {
       const userData = localStorage.getItem('user');
-      if (userData) {
-        return JSON.parse(userData);
-      }
+      if (userData) return JSON.parse(userData);
     } catch (error) {
-      console.error("Error parsing user data from localStorage:", error);
+      console.error("Error parsing user data:", error);
     }
     return null;
   };
@@ -126,9 +260,7 @@ function LeadsList() {
 
   const getCurrentUserName = () => {
     const user = getLoggedInUser();
-    if (user) {
-      return user.firstName || user.name || user.username || 'Current User';
-    }
+    if (user) return user.firstName || user.name || user.username || 'Current User';
     return 'Current User';
   };
 
@@ -142,7 +274,15 @@ function LeadsList() {
   };
 
   const canEditLeads = () => {
-    return userRole === "MASTER_ADMIN" || userRole === "SALES_MANAGER" || userRole === "SA_SALES";
+    return userRole === "MASTER_ADMIN" || userRole === "SALES_MANAGER" || userRole.startsWith("SA_");
+  };
+
+  const isSARole = () => {
+    return userRole.startsWith("SA_");
+  };
+
+  const isManagerOrAdmin = () => {
+    return userRole === "MASTER_ADMIN" || userRole === "SALES_MANAGER";
   };
 
   useEffect(() => {
@@ -152,8 +292,8 @@ function LeadsList() {
     fetchCourses();
     fetchCounselors();
     fetchAllUsers();
-    fetchSources(); // Fetch sources
-    fetchCampaigns(); // Fetch campaigns
+    fetchSources();
+    fetchCampaigns();
   }, []);
 
   useEffect(() => {
@@ -174,8 +314,8 @@ function LeadsList() {
       (filterQualification && filterQualification.trim() !== "") ||
       (filterCity && filterCity.trim() !== "") ||
       (filterCourse && filterCourse.trim() !== "") ||
-      (filterSource && filterSource.trim() !== "") || // Added source filter
-      (filterCampaign && filterCampaign.trim() !== "") // Added campaign filter
+      (filterSource && filterSource.trim() !== "") ||
+      (filterCampaign && filterCampaign.trim() !== "")
     );
   };
 
@@ -204,7 +344,7 @@ function LeadsList() {
       setLoading(false);
     } catch (err) {
       console.error("fetchPage error", err);
-      setApiError("Failed to load leads (page)!");
+      setApiError("Failed to load leads!");
       setPaginatedLeads([]);
     } finally {
       setLoadingPage(false);
@@ -247,7 +387,6 @@ function LeadsList() {
   const fetchCounselors = async () => {
     try {
       const res = await axios.get(COUNSELOR_URL);
-      console.log("Counselors API Response:", res.data);
       const transformedCounselors = (res.data || []).map(user => {
         let name = 'Unknown User';
         if (user.name) name = user.name;
@@ -263,7 +402,6 @@ function LeadsList() {
           status: user.active !== false ? "Active" : "Inactive"
         };
       });
-      console.log("Transformed Counselors:", transformedCounselors);
       setCounselors(transformedCounselors);
     } catch (err) {
       console.error("Failed to load counselors", err);
@@ -274,14 +412,12 @@ function LeadsList() {
   const fetchAllUsers = async () => {
     try {
       const res = await axios.get(USERS_URL);
-      console.log("All Users API Response:", res.data);
       const transformedUsers = (res.data || []).map(user => ({
         id: user.userId || user.id,
         name: user.name || user.username || `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Unknown User',
         email: user.email || 'No email',
         role: user.role || user.roleName || 'Unknown Role'
       }));
-      console.log("Transformed Users:", transformedUsers);
       setAllUsers(transformedUsers);
     } catch (err) {
       console.error("Failed to load all users", err);
@@ -289,16 +425,13 @@ function LeadsList() {
     }
   };
 
-  // Fetch sources from API
   const fetchSources = async () => {
     try {
       const res = await axios.get(SOURCES_URL);
-      console.log("Sources API Response:", res.data);
       const transformedSources = (res.data || []).map(source => ({
         id: source.sourceId || source.id,
         name: source.sourceName || source.name || 'Unknown Source'
       }));
-      console.log("Transformed Sources:", transformedSources);
       setSources(transformedSources);
     } catch (err) {
       console.error("Failed to load sources", err);
@@ -306,20 +439,30 @@ function LeadsList() {
     }
   };
 
-  // Fetch campaigns from API
   const fetchCampaigns = async () => {
     try {
       const res = await axios.get(CAMPAIGNS_URL);
-      console.log("Campaigns API Response:", res.data);
       const transformedCampaigns = (res.data || []).map(campaign => ({
         id: campaign.campaignId || campaign.id,
         name: campaign.campaignName || campaign.name || 'Unknown Campaign'
       }));
-      console.log("Transformed Campaigns:", transformedCampaigns);
       setCampaigns(transformedCampaigns);
     } catch (err) {
       console.error("Failed to load campaigns", err);
       setCampaigns([]);
+    }
+  };
+
+  const fetchActivityHistory = async (leadId) => {
+    try {
+      setLoadingHistory(true);
+      const response = await axios.get(`${HISTORY_URL}/lead/${leadId}`);
+      setActivityHistory(response.data || []);
+      setLoadingHistory(false);
+    } catch (error) {
+      console.error("Error fetching activity history:", error);
+      setActivityHistory([]);
+      setLoadingHistory(false);
     }
   };
 
@@ -356,7 +499,8 @@ function LeadsList() {
 
   const getAssignedByName = (lead) => {
     if (lead.assignedBy) {
-      return getUserNameById(lead.assignedBy);
+      const user = allUsers.find(u => u.id.toString() === lead.assignedBy.toString());
+      return user ? user.name : lead.assignedBy;
     }
     return getCurrentUserName();
   };
@@ -365,9 +509,55 @@ function LeadsList() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleView = (lead) => {
+  const handleReminderChange = (e) => {
+    setReminderForm({ ...reminderForm, [e.target.name]: e.target.value });
+  };
+
+  const handleView = async (lead) => {
     setViewingLead(lead);
+    await fetchActivityHistory(lead.leadId);
     setShowViewModal(true);
+  };
+
+  const handleSetReminder = (lead) => {
+    setSelectedReminderLead(lead);
+    setReminderForm({
+      notes: "",
+      reminderTime: ""
+    });
+    setShowReminderModal(true);
+  };
+
+  const handleSubmitReminder = async () => {
+    if (!selectedReminderLead) return;
+    
+    try {
+      const loggedInUserId = getLoggedInUserId();
+      if (!loggedInUserId) {
+        alert("User not logged in. Please login again.");
+        return;
+      }
+
+      const reminderData = {
+        leadId: selectedReminderLead.leadId,
+        notes: reminderForm.notes,
+        reminderTime: reminderForm.reminderTime,
+        loggedInUserId: loggedInUserId
+      };
+
+      await axios.post(`${BASE_URL}/reminder`, reminderData);
+      
+      alert("Reminder set successfully!");
+      setShowReminderModal(false);
+      setSelectedReminderLead(null);
+      
+      fetchPage(page);
+      fetchAllLeadsForCounts();
+      
+    } catch (error) {
+      console.error("Error setting reminder:", error);
+      alert("Failed to set reminder: " + (error.response?.data?.message || error.message));
+    }
   };
 
   const handleEdit = (lead) => {
@@ -411,7 +601,7 @@ function LeadsList() {
           updateData.assignedTo = counselor.id;
         }
       } else {
-        delete updateData.assignedTo;
+        updateData.assignedTo = selectedLead.assignedTo || "";
       }
 
       const { assignedTo, ...dataToSend } = updateData;
@@ -424,7 +614,7 @@ function LeadsList() {
       const updatedLead = {
         ...selectedLead,
         ...formData,
-        assignedTo: canAssignLeads() ? formData.assignedTo : selectedLead.assignedTo,
+        assignedTo: formData.assignedTo || selectedLead.assignedTo,
       };
       
       setPaginatedLeads(prevLeads => 
@@ -524,44 +714,12 @@ function LeadsList() {
         throw new Error("User not logged in. Please login again.");
       }
 
-      const previousPaginatedLeads = [...paginatedLeads];
-      const previousAllLeads = [...allLeads];
-      
-      const currentUserName = getCurrentUserName();
-      setPaginatedLeads(prevLeads => 
-        prevLeads.map(lead => 
-          selectedLeadIds.includes(lead.leadId) 
-            ? { 
-                ...lead, 
-                assignedTo: selectedCounselor,
-                assignedBy: currentUserName
-              } 
-            : lead
-        )
-      );
-      
-      setAllLeads(prevLeads => 
-        prevLeads.map(lead => 
-          selectedLeadIds.includes(lead.leadId) 
-            ? { 
-                ...lead, 
-                assignedTo: selectedCounselor,
-                assignedBy: currentUserName
-              } 
-            : lead
-        )
-      );
-
-      console.log(`Assigning ${selectedLeadIds.length} leads to ${selectedCounselor} (ID: ${selectedCounselorObj.id}) by user ${loggedInUserId}`);
-      
       const bulkAssignRequest = {
         leadIds: selectedLeadIds,
         assignedUserId: selectedCounselorObj.id
       };
 
-      const response = await axios.post(`${BASE_URL}/assign/bulk?loggedInUserId=${loggedInUserId}`, bulkAssignRequest);
-      
-      console.log("Bulk assign response:", response.data);
+      await axios.post(`${BASE_URL}/assign/bulk?loggedInUserId=${loggedInUserId}`, bulkAssignRequest);
       
       alert(`Successfully assigned ${selectedLeads.size} lead(s) to ${selectedCounselor}!`);
       
@@ -581,9 +739,6 @@ function LeadsList() {
       }, 500);
       
     } catch (err) {
-      console.error("Bulk assignment error:", err);
-      setPaginatedLeads(previousPaginatedLeads);
-      setAllLeads(previousAllLeads);
       alert("Failed to assign leads: " + (err.response?.data?.message || err.message || "Unknown error"));
     } finally {
       setAssigning(false);
@@ -591,37 +746,38 @@ function LeadsList() {
   };
 
   const getStatusBadgeClass = (status) => {
-    switch (status) {
-      case "NEW":
-        return "bg-primary";
-      case "CONTACTED":
-        return "bg-info";
-      case "INTERESTED":
-        return "bg-success";
-      case "NOT_INTERESTED":
-        return "bg-danger";
-      case "ENROLLED":
-        return "bg-dark";
-      default:
-        return "bg-secondary";
-    }
+    if (status === "NEW") return "bg-primary";
+    if (statusCategories.MESSAGE_STATUS.includes(status)) return "bg-info";
+    if (status === "Eligible") return "bg-success";
+    if (status === "Not Eligible") return "bg-danger";
+    if (statusCategories.CALL_STATUS.includes(status)) return "bg-warning text-dark";
+    if (status === "Interested – Active") return "bg-success";
+    if (status === "Follow-Up Scheduled") return "bg-primary";
+    if (status === "Reminder Sent") return "bg-info";
+    if (status === "Follow-Up Missed") return "bg-warning text-dark";
+    if (status === "Future Prospect") return "bg-secondary";
+    if (status === "Parent Approval Pending") return "bg-warning text-dark";
+    if (status === "Budget Issue") return "bg-warning text-dark";
+    if (status === "Considering Other Institute") return "bg-warning text-dark";
+    if (status === "Not Interested") return "bg-danger";
+    if (status === "Demo Scheduled") return "bg-primary";
+    if (status === "Demo Completed") return "bg-success";
+    if (status === "Demo No-Show") return "bg-danger";
+    if (status === "Counselling Completed") return "bg-success";
+    if (status === "Registration Form Sent") return "bg-info";
+    if (status === "Registration Completed") return "bg-success";
+    if (status === "Payment Pending") return "bg-warning text-dark";
+    if (status === "Part Payment") return "bg-warning text-dark";
+    if (status === "Payment Completed") return "bg-success";
+    if (status === "Payment Follow-Up") return "bg-warning text-dark";
+    if (status === "Payment Dropped") return "bg-danger";
+    if (statusCategories.STUDENT_STAGE.includes(status)) return "bg-dark";
+    if (statusCategories.CLOSED.includes(status)) return "bg-secondary";
+    return "bg-secondary";
   };
 
   const getStatusDisplayText = (status) => {
-    switch (status) {
-      case "NEW":
-        return "NEW";
-      case "CONTACTED":
-        return "CONTACTED";
-      case "INTERESTED":
-        return "INTERESTED";
-      case "NOT_INTERESTED":
-        return "NOT INTERESTED";
-      case "ENROLLED":
-        return "ENROLLED";
-      default:
-        return status;
-    }
+    return status || "NEW";
   };
 
   const getAssignedBadgeClass = (assignedTo) => {
@@ -649,24 +805,46 @@ function LeadsList() {
     if (Object.keys(backendStatusCounts).length > 0) {
       return {
         NEW: backendStatusCounts.NEW || 0,
-        CONTACTED: backendStatusCounts.CONTACTED || 0,
+        MESSAGE_SENT: backendStatusCounts.MESSAGE_SENT || 0,
+        ELIGIBLE: backendStatusCounts.ELIGIBLE || 0,
+        NOT_ELIGIBLE: backendStatusCounts.NOT_ELIGIBLE || 0,
         INTERESTED: backendStatusCounts.INTERESTED || 0,
         NOT_INTERESTED: backendStatusCounts.NOT_INTERESTED || 0,
-        ENROLLED: backendStatusCounts.ENROLLED || 0
+        ENROLLED: backendStatusCounts.ENROLLED || 0,
+        CLOSED: backendStatusCounts.CLOSED || 0
       };
     }
     
     const counts = {
       NEW: 0,
-      CONTACTED: 0,
+      MESSAGE_SENT: 0,
+      ELIGIBLE: 0,
+      NOT_ELIGIBLE: 0,
       INTERESTED: 0,
       NOT_INTERESTED: 0,
-      ENROLLED: 0
+      ENROLLED: 0,
+      CLOSED: 0
     };
     
     allLeads.forEach(lead => {
-      if (lead.status && counts.hasOwnProperty(lead.status)) {
-        counts[lead.status]++;
+      if (lead.status) {
+        if (statusCategories.NEW.includes(lead.status)) {
+          counts.NEW++;
+        } else if (statusCategories.MESSAGE_STATUS.includes(lead.status)) {
+          counts.MESSAGE_SENT++;
+        } else if (lead.status === "Eligible") {
+          counts.ELIGIBLE++;
+        } else if (lead.status === "Not Eligible") {
+          counts.NOT_ELIGIBLE++;
+        } else if (lead.status === "Interested – Active") {
+          counts.INTERESTED++;
+        } else if (lead.status === "Not Interested") {
+          counts.NOT_INTERESTED++;
+        } else if (statusCategories.STUDENT_STAGE.includes(lead.status)) {
+          counts.ENROLLED++;
+        } else if (statusCategories.CLOSED.includes(lead.status)) {
+          counts.CLOSED++;
+        }
       }
     });
     
@@ -682,6 +860,96 @@ function LeadsList() {
       return course ? course.courseName : "N/A";
     }
     return "N/A";
+  };
+
+  const getCurrentProgressStage = (status) => {
+    for (let i = 0; i < statusProgression.length; i++) {
+      if (statusProgression[i].statuses.includes(status)) {
+        return i;
+      }
+    }
+    return 0;
+  };
+
+  const getProgressPercentage = (status) => {
+    const currentStage = getCurrentProgressStage(status);
+    const totalStages = statusProgression.length;
+    return ((currentStage + 1) / totalStages) * 100;
+  };
+
+  const getStatusDateFromHistory = (status) => {
+    if (!activityHistory || activityHistory.length === 0) return null;
+    
+    const statusActivities = activityHistory.filter(activity => 
+      activity.newStatus === status
+    ).sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+    
+    return statusActivities.length > 0 ? statusActivities[0].createdAt : null;
+  };
+
+  const getAllStatusDates = () => {
+    const statusDates = {};
+    if (!activityHistory || activityHistory.length === 0) return statusDates;
+    
+    activityHistory.forEach(activity => {
+      if (activity.newStatus && !statusDates[activity.newStatus]) {
+        statusDates[activity.newStatus] = activity.createdAt;
+      }
+    });
+    
+    return statusDates;
+  };
+
+  const getLeadTimeline = (lead) => {
+    const currentStage = getCurrentProgressStage(lead.status);
+    const timeline = [];
+    const statusDates = getAllStatusDates();
+    
+    for (let i = 0; i < statusProgression.length; i++) {
+      const stage = statusProgression[i];
+      const isCompleted = i < currentStage;
+      const isCurrent = i === currentStage;
+      const isFuture = i > currentStage;
+      
+      let stageStatus = "";
+      let statusDate = "";
+      let activityDetails = null;
+      
+      for (const status of stage.statuses) {
+        if (statusDates[status]) {
+          stageStatus = status;
+          statusDate = statusDates[status];
+          
+          const activity = activityHistory.find(act => 
+            act.newStatus === status && act.createdAt === statusDate
+          );
+          if (activity) {
+            activityDetails = activity;
+          }
+          break;
+        }
+      }
+      
+      if (!stageStatus && isCurrent && lead.status) {
+        stageStatus = lead.status;
+        statusDate = lead.updatedAt || new Date().toISOString();
+      }
+      
+      timeline.push({
+        stage: i,
+        title: stage.title,
+        status: stageStatus,
+        icon: stage.icon,
+        color: stage.color,
+        date: statusDate,
+        activity: activityDetails,
+        completed: isCompleted,
+        current: isCurrent,
+        future: isFuture
+      });
+    }
+    
+    return timeline;
   };
 
   const filteredLeads = (isFilteringActive()
@@ -728,7 +996,6 @@ function LeadsList() {
           filterCourse === "" ||
           getLeadCourseName(lead) === filterCourse;
 
-        // Added source and campaign filters
         const matchesSource =
           filterSource === "" || (lead.source && lead.source === filterSource);
 
@@ -738,7 +1005,7 @@ function LeadsList() {
         return matchesEmail && matchesYear && matchesStatus && matchesName && 
                matchesPhone && matchesAssignedTo && matchesGender && 
                matchesQualification && matchesCity && matchesCourse &&
-               matchesSource && matchesCampaign; // Added source and campaign conditions
+               matchesSource && matchesCampaign;
       })
     : paginatedLeads
   ) || [];
@@ -751,8 +1018,8 @@ function LeadsList() {
   const uniqueAssignedTo = [...new Set(allLeads
     .map((lead) => getAssignedDisplayText(lead))
     .filter(Boolean))].sort();
-  const uniqueSources = [...new Set(allLeads.map((lead) => lead.source).filter(Boolean))].sort(); // Get unique sources
-  const uniqueCampaigns = [...new Set(allLeads.map((lead) => lead.campaign).filter(Boolean))].sort(); // Get unique campaigns
+  const uniqueSources = [...new Set(allLeads.map((lead) => lead.source).filter(Boolean))].sort();
+  const uniqueCampaigns = [...new Set(allLeads.map((lead) => lead.campaign).filter(Boolean))].sort();
 
   const clearFilters = () => {
     setSearchEmail("");
@@ -765,8 +1032,8 @@ function LeadsList() {
     setFilterQualification("");
     setFilterCity("");
     setFilterCourse("");
-    setFilterSource(""); // Clear source filter
-    setFilterCampaign(""); // Clear campaign filter
+    setFilterSource("");
+    setFilterCampaign("");
     setPage(0);
     fetchPage(0);
   };
@@ -777,184 +1044,129 @@ function LeadsList() {
     setPage(p);
   };
 
-  // Main Stats Cards (unchanged)
   const statsCards = [
     { 
       title: "Total Leads", 
       value: totalLeadsCount, 
       icon: "📊",
-      bgGradient: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-      description: "All leads in system"
+      bgColor: "bg-primary"
     },
     { 
       title: "New Leads", 
       value: statusCounts.NEW, 
       icon: "🆕",
-      bgGradient: "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
-      description: "Leads to be contacted"
+      bgColor: "bg-danger"
     },
     { 
-      title: "Contacted", 
-      value: statusCounts.CONTACTED, 
+      title: "In Contact", 
+      value: statusCounts.MESSAGE_SENT, 
       icon: "📞",
-      bgGradient: "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)",
-      description: "Initial contact made"
+      bgColor: "bg-info"
+    },
+    { 
+      title: "Eligible", 
+      value: statusCounts.ELIGIBLE, 
+      icon: "✅",
+      bgColor: "bg-success"
     },
     { 
       title: "Interested", 
       value: statusCounts.INTERESTED, 
       icon: "⭐",
-      bgGradient: "linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)",
-      description: "Shown interest"
-    },
-    { 
-      title: "Not Interested", 
-      value: statusCounts.NOT_INTERESTED, 
-      icon: "❌",
-      bgGradient: "linear-gradient(135deg, #fa709a 0%, #fee140 100%)",
-      description: "Declined offers"
+      bgColor: "bg-warning"
     },
     { 
       title: "Enrolled", 
       value: statusCounts.ENROLLED, 
       icon: "🎓",
-      bgGradient: "linear-gradient(135deg, #6a11cb 0%, #2575fc 100%)",
-      description: "Successfully enrolled"
+      bgColor: "bg-dark"
     }
   ];
 
   const currentUserName = getCurrentUserName();
 
   return (
-    <div className="container-fluid p-4" style={{ background: "linear-gradient(180deg, #f8f9fc 0%, #eef2f7 100%)", minHeight: "100vh" }}>
+    <div className="container-fluid p-3 bg-light" style={{ minHeight: "100vh" }}>
       
-      {/* User Info Header */}
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <div>
-          <h2 className="fw-bold text-dark mb-1">🎯 Leads Management Dashboard</h2>
-          <p className="text-muted mb-0">Comprehensive overview of your leads and performance metrics</p>
-        </div>
-        <div className="text-end">
-          <div className="badge bg-primary fs-6 mb-2">Role: {userRole}</div>
-          <br />
-          <small className="text-muted">User: <strong>{currentUserName}</strong></small>
-          {canAssignLeads() && (
-            <small className="text-success d-block mt-1">
-              ✅ Can assign leads to counselors
-            </small>
-          )}
-          {canEditLeads() && (
-            <small className="text-info d-block mt-1">
-              ✏️ Can edit leads
-            </small>
-          )}
+      {/* Header */}
+      <div className="card shadow-sm mb-4 border-0">
+        <div className="card-body py-3">
+          <div className="d-flex justify-content-between align-items-center">
+            <div>
+              <h2 className="fw-bold text-dark mb-1">🎯 Leads Management</h2>
+              <p className="text-muted mb-0">Manage and track your leads efficiently</p>
+            </div>
+            <div className="text-end">
+              <div className="badge bg-primary fs-6 mb-2">Role: {userRole}</div>
+              <br />
+              <small className="text-muted">User: <strong>{currentUserName}</strong></small>
+            </div>
+          </div>
         </div>
       </div>
       
-      {/* Main Stats Cards Row */}
-      <div className="mb-4">
-        <h5 className="fw-bold mb-3 text-dark">📊 Lead Status Overview</h5>
-        <div className="row g-3">
-          {statsCards.map((card, index) => (
-            <div key={index} className="col-xl-2 col-lg-4 col-md-6">
-              <div 
-                className="card border-0 shadow-sm h-100"
-                style={{
-                  background: card.bgGradient,
-                  transition: "transform 0.3s ease, box-shadow 0.3s ease",
-                  cursor: "pointer"
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = "translateY(-5px)";
-                  e.currentTarget.style.boxShadow = "0 12px 24px rgba(0,0,0,0.15)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = "translateY(0)";
-                  e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.1)";
-                }}
-                onClick={() => {
-                  setFilterStatus(card.title.toUpperCase().replace(' ', '_'));
-                }}
-              >
-                <div className="card-body p-3">
-                  <div className="d-flex justify-content-between align-items-start">
-                    <div className="flex-grow-1">
-                      <h6 className="text-uppercase mb-2 fw-semibold" style={{ color: "#fff", opacity: 0.9, fontSize: "0.75rem", letterSpacing: "0.5px" }}>
-                        {card.title}
-                      </h6>
-                      <h3 className="fw-bold mb-1" style={{ color: "#fff", fontSize: "2rem" }}>
-                        {card.value}
-                      </h3>
-                      <p className="mb-0 fw-semibold" style={{ color: "#fff", opacity: 0.9, fontSize: "0.75rem" }}>
-                        {totalLeadsCount > 0 ? ((card.value / totalLeadsCount) * 100).toFixed(1) : 0}% of total
-                      </p>
-                    </div>
-                    <div style={{ fontSize: "2rem", opacity: 0.8 }}>
-                      {card.icon}
-                    </div>
+      {/* Stats Cards */}
+      <div className="row mb-4">
+        {statsCards.map((card, index) => (
+          <div key={index} className="col-xl-2 col-lg-4 col-md-6 mb-3">
+            <div className={`card ${card.bgColor} text-white border-0 shadow-sm`}>
+              <div className="card-body">
+                <div className="d-flex justify-content-between align-items-center">
+                  <div>
+                    <h6 className="card-subtitle mb-2 opacity-75">{card.title}</h6>
+                    <h2 className="card-title fw-bold mb-0">{card.value}</h2>
                   </div>
-                  <div className="mt-2">
-                    <small style={{ color: "#fff", opacity: 0.8 }}>{card.description}</small>
+                  <div className="display-4">
+                    {card.icon}
                   </div>
                 </div>
               </div>
             </div>
-          ))}
-        </div>
+          </div>
+        ))}
       </div>
 
       {/* Filters Section */}
       <div className="card shadow-sm mb-4 border-0">
-        <div className="card-body">
-          <div className="d-flex justify-content-between align-items-center mb-3">
-            <h5 className="fw-bold mb-0 text-dark">🔍 Advanced Filters</h5>
+        <div className="card-header bg-white border-bottom py-3">
+          <div className="d-flex justify-content-between align-items-center">
+            <h5 className="mb-0 fw-bold text-dark">🔍 Advanced Filters</h5>
             {isFilteringActive() && (
-              <button className="btn btn-sm btn-danger" onClick={clearFilters}>
-                ✕ Clear All Filters
+              <button className="btn btn-sm btn-outline-danger" onClick={clearFilters}>
+                Clear All Filters
               </button>
             )}
           </div>
-
-          <div className="row g-3">
+        </div>
+        <div className="card-body">
+          <div className="row g-2">
             <div className="col-md-3">
-              <label className="form-label fw-semibold small text-muted">Search by Name</label>
+              <label className="form-label small text-muted">Name</label>
               <input
                 type="text"
-                className="form-control"
-                placeholder="Enter name..."
+                className="form-control form-control-sm"
+                placeholder="Search by name..."
                 value={filterName}
                 onChange={(e) => setFilterName(e.target.value)}
               />
             </div>
 
             <div className="col-md-3">
-              <label className="form-label fw-semibold small text-muted">Search by Phone</label>
+              <label className="form-label small text-muted">Phone</label>
               <input
                 type="text"
-                className="form-control"
-                placeholder="Enter phone..."
+                className="form-control form-control-sm"
+                placeholder="Search by phone..."
                 value={filterPhone}
                 onChange={(e) => setFilterPhone(e.target.value)}
               />
             </div>
 
-            <div className="col-md-3">
-              <label className="form-label fw-semibold small text-muted">Search by Email</label>
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Enter email..."
-                value={searchEmail}
-                onChange={(e) => setSearchEmail(e.target.value)}
-              />
-            </div>
-
-            {/* Assigned To Filter */}
             {canAssignLeads() && (
               <div className="col-md-3">
-                <label className="form-label fw-semibold small text-muted">Assigned To</label>
+                <label className="form-label small text-muted">Assigned To</label>
                 <select
-                  className="form-select"
+                  className="form-select form-select-sm"
                   value={filterAssignedTo}
                   onChange={(e) => setFilterAssignedTo(e.target.value)}
                 >
@@ -971,9 +1183,9 @@ function LeadsList() {
             )}
 
             <div className="col-md-3">
-              <label className="form-label fw-semibold small text-muted">Gender</label>
+              <label className="form-label small text-muted">Gender</label>
               <select
-                className="form-select"
+                className="form-select form-select-sm"
                 value={filterGender}
                 onChange={(e) => setFilterGender(e.target.value)}
               >
@@ -985,9 +1197,9 @@ function LeadsList() {
             </div>
 
             <div className="col-md-3">
-              <label className="form-label fw-semibold small text-muted">Qualification</label>
+              <label className="form-label small text-muted">Qualification</label>
               <select
-                className="form-select"
+                className="form-select form-select-sm"
                 value={filterQualification}
                 onChange={(e) => setFilterQualification(e.target.value)}
               >
@@ -999,9 +1211,9 @@ function LeadsList() {
             </div>
 
             <div className="col-md-3">
-              <label className="form-label fw-semibold small text-muted">City</label>
+              <label className="form-label small text-muted">City</label>
               <select
-                className="form-select"
+                className="form-select form-select-sm"
                 value={filterCity}
                 onChange={(e) => setFilterCity(e.target.value)}
               >
@@ -1013,9 +1225,9 @@ function LeadsList() {
             </div>
 
             <div className="col-md-3">
-              <label className="form-label fw-semibold small text-muted">Course</label>
+              <label className="form-label small text-muted">Course</label>
               <select
-                className="form-select"
+                className="form-select form-select-sm"
                 value={filterCourse}
                 onChange={(e) => setFilterCourse(e.target.value)}
               >
@@ -1026,11 +1238,10 @@ function LeadsList() {
               </select>
             </div>
 
-            {/* Added Source Filter */}
             <div className="col-md-3">
-              <label className="form-label fw-semibold small text-muted">Source</label>
+              <label className="form-label small text-muted">Source</label>
               <select
-                className="form-select"
+                className="form-select form-select-sm"
                 value={filterSource}
                 onChange={(e) => setFilterSource(e.target.value)}
               >
@@ -1038,51 +1249,6 @@ function LeadsList() {
                 {uniqueSources.map((source) => (
                   <option key={source} value={source}>{source}</option>
                 ))}
-              </select>
-            </div>
-
-            {/* Added Campaign Filter */}
-            <div className="col-md-3">
-              <label className="form-label fw-semibold small text-muted">Campaign</label>
-              <select
-                className="form-select"
-                value={filterCampaign}
-                onChange={(e) => setFilterCampaign(e.target.value)}
-              >
-                <option value="">All Campaigns</option>
-                {uniqueCampaigns.map((campaign) => (
-                  <option key={campaign} value={campaign}>{campaign}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="col-md-3">
-              <label className="form-label fw-semibold small text-muted">Passed Out Year</label>
-              <select
-                className="form-select"
-                value={filterYear}
-                onChange={(e) => setFilterYear(e.target.value)}
-              >
-                <option value="">All Years</option>
-                {uniqueYears.map((year) => (
-                  <option key={year} value={year}>{year}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="col-md-3">
-              <label className="form-label fw-semibold small text-muted">Status</label>
-              <select
-                className="form-select"
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-              >
-                <option value="">All Statuses</option>
-                <option value="NEW">NEW</option>
-                <option value="CONTACTED">CONTACTED</option>
-                <option value="INTERESTED">INTERESTED</option>
-                <option value="NOT_INTERESTED">NOT INTERESTED</option>
-                <option value="ENROLLED">ENROLLED</option>
               </select>
             </div>
           </div>
@@ -1115,11 +1281,11 @@ function LeadsList() {
                   )}
                 </button>
                 <button 
-                  className="btn btn-sm btn-secondary"
+                  className="btn btn-sm btn-outline-secondary"
                   onClick={() => setSelectedLeads(new Set())}
                   disabled={assigning}
                 >
-                  ❌ Clear Selection
+                  Clear Selection
                 </button>
               </div>
             </div>
@@ -1141,8 +1307,9 @@ function LeadsList() {
 
       {/* Error State */}
       {apiError && (
-        <div className="alert alert-danger shadow-sm mb-3" role="alert">
-          <strong>⚠️ Error:</strong> {apiError}
+        <div className="alert alert-danger alert-dismissible fade show mb-3" role="alert">
+          <strong>Error:</strong> {apiError}
+          <button type="button" className="btn-close" onClick={() => setApiError("")}></button>
         </div>
       )}
 
@@ -1150,8 +1317,8 @@ function LeadsList() {
       {!loading && filteredLeads.length === 0 && (
         <div className="card shadow-sm border-0 mb-3">
           <div className="card-body text-center py-5">
-            <div style={{ fontSize: "4rem", opacity: 0.3 }}>📭</div>
-            <h5 className="fw-semibold mb-2 mt-3">No leads found</h5>
+            <div className="display-4 text-muted mb-3">📭</div>
+            <h5 className="fw-semibold mb-2">No leads found</h5>
             <p className="text-muted mb-0">
               {isFilteringActive() ? "Try adjusting your filters" : "Start by adding new leads"}
             </p>
@@ -1165,7 +1332,6 @@ function LeadsList() {
           <div className="card-header bg-white border-bottom py-3">
             <div className="d-flex justify-content-between align-items-center">
               <h5 className="mb-0 fw-bold text-dark">📋 Leads List ({filteredLeads.length} records)</h5>
-              {/* Select All checkbox */}
               {canAssignLeads() && (
                 <div className="form-check">
                   <input
@@ -1184,26 +1350,33 @@ function LeadsList() {
             </div>
           </div>
           <div className="table-responsive">
-            <table className="table table-hover mb-0 align-middle">
-              <thead style={{ background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)", color: "#fff" }}>
+            <table className="table table-hover mb-0">
+              <thead className="table-dark">
                 <tr>
                   {canAssignLeads() && (
-                    <th className="fw-semibold" style={{ width: '40px' }}>#</th>
+                    <th style={{ width: '40px' }}>
+                      <input
+                        type="checkbox"
+                        className="form-check-input"
+                        checked={selectedLeads.size === filteredLeads.length && filteredLeads.length > 0}
+                        onChange={toggleSelectAll}
+                        disabled={assigning}
+                      />
+                    </th>
                   )}
-                  <th className="fw-semibold">ID</th>
-                  <th className="fw-semibold">Name</th>
-                  <th className="fw-semibold">Phone</th>
-                  <th className="fw-semibold">Email</th>
-                  <th className="fw-semibold">Status</th>
-                  <th className="fw-semibold">Assigned To</th>
-                  <th className="fw-semibold">Assigned By</th>
-                  <th className="fw-semibold text-center">Actions</th>
+                  <th>Name</th>
+                  <th>Phone</th>
+                  <th>Status</th>
+                  <th>Assigned To</th>
+                  <th>Assigned By</th>
+                  <th>Reminder</th>
+                  <th className="text-center">Actions</th>
                 </tr>
               </thead>
 
               <tbody>
                 {filteredLeads.map((lead, idx) => (
-                  <tr key={lead.leadId} style={{ background: idx % 2 === 0 ? "#fff" : "#f8f9fa" }}>
+                  <tr key={lead.leadId}>
                     {canAssignLeads() && (
                       <td>
                         <input
@@ -1215,48 +1388,61 @@ function LeadsList() {
                         />
                       </td>
                     )}
-                    <td className="fw-medium">{lead.leadId}</td>
-                    <td className="fw-semibold text-dark">{lead.leadName}</td>
+                    <td className="fw-semibold">{lead.leadName}</td>
                     <td>{lead.phone}</td>
-                    <td>{lead.email || <span className="text-muted">-</span>}</td>
                     <td>
-                      <span className={`badge ${getStatusBadgeClass(lead.status)} rounded-pill px-3 py-2`}>
+                      <span className={`badge ${getStatusBadgeClass(lead.status)} rounded-pill`}>
                         {getStatusDisplayText(lead.status)}
                       </span>
                     </td>
                     <td>
-                      <span className={`badge ${getAssignedBadgeClass(getAssignedDisplayText(lead))} rounded-pill px-3 py-2`}>
+                      <span className={`badge ${getAssignedBadgeClass(getAssignedDisplayText(lead))} rounded-pill`}>
                         {getAssignedDisplayText(lead)}
                       </span>
                     </td>
                     <td>
-                      <span className="text-muted fw-medium">
-                        {getAssignedByName(lead)}
-                      </span>
+                      <small className="text-muted">{getAssignedByName(lead)}</small>
                     </td>
                     <td>
-                      <div className="d-flex gap-2 justify-content-center">
+                      {lead.reminderTime ? (
+                        <small className="text-success">⏰ {formatDateForDisplay(lead.reminderTime)}</small>
+                      ) : (
+                        <span className="text-muted">-</span>
+                      )}
+                    </td>
+                    <td>
+                      <div className="btn-group btn-group-sm" role="group">
                         <button 
-                          className="btn btn-sm btn-outline-info" 
+                          className="btn btn-outline-info"
                           onClick={() => handleView(lead)} 
                           disabled={assigning}
-                          title="View Lead History"
+                          title="View Lead"
                         >
                           👁️
                         </button>
                         
                         {canEditLeads() && (
-                          <button 
-                            className="btn btn-sm btn-outline-primary" 
-                            onClick={() => handleEdit(lead)} 
-                            disabled={assigning}
-                            title="Edit Lead"
-                          >
-                            ✏️
-                          </button>
+                          <>
+                            <button 
+                              className="btn btn-outline-primary"
+                              onClick={() => handleEdit(lead)} 
+                              disabled={assigning}
+                              title="Edit Lead"
+                            >
+                              ✏️
+                            </button>
+                            <button 
+                              className="btn btn-outline-warning"
+                              onClick={() => handleSetReminder(lead)} 
+                              disabled={assigning}
+                              title="Set Reminder"
+                            >
+                              ⏰
+                            </button>
+                          </>
                         )}
                         <button 
-                          className="btn btn-sm btn-outline-danger" 
+                          className="btn btn-outline-danger"
                           onClick={() => deleteLead(lead.leadId)} 
                           disabled={assigning}
                           title="Delete Lead"
@@ -1275,166 +1461,240 @@ function LeadsList() {
 
       {/* Pagination */}
       {!isFilteringActive() && totalPages > 0 && (
-        <div className="d-flex justify-content-between align-items-center mt-3">
-          <div className="text-muted">
-            Showing page <strong className="text-dark">{currentPage + 1}</strong> of <strong className="text-dark">{totalPages}</strong>
-            {" · "}Total records: <strong className="text-dark">{totalElements}</strong>
-          </div>
-
-          <nav>
-            <ul className="pagination mb-0">
-              <li className={`page-item ${currentPage === 0 ? "disabled" : ""}`}>
-                <button className="page-link" onClick={() => goToPage(currentPage - 1)} disabled={assigning}>Previous</button>
-              </li>
-
-              {Array.from({ length: totalPages }).map((_, idx) => {
-                if (
-                  idx === 0 ||
-                  idx === totalPages - 1 ||
-                  (idx >= currentPage - 2 && idx <= currentPage + 2)
-                ) {
-                  return (
-                    <li key={idx} className={`page-item ${idx === currentPage ? "active" : ""}`}>
-                      <button className="page-link" onClick={() => goToPage(idx)} disabled={assigning}>{idx + 1}</button>
-                    </li>
-                  );
-                }
-                const shouldShowLeftEllipsis = idx === 1 && currentPage > 3;
-                const shouldShowRightEllipsis = idx === totalPages - 2 && currentPage < totalPages - 4;
-                if (shouldShowLeftEllipsis || shouldShowRightEllipsis) {
-                  return (
-                    <li key={`dots-${idx}`} className="page-item disabled">
-                      <span className="page-link">...</span>
-                    </li>
-                  );
-                }
-                return null;
-              })}
-
-              <li className={`page-item ${currentPage >= totalPages - 1 ? "disabled" : ""}`}>
-                <button className="page-link" onClick={() => goToPage(currentPage + 1)} disabled={assigning}>Next</button>
-              </li>
-            </ul>
-          </nav>
-        </div>
+        <nav aria-label="Page navigation">
+          <ul className="pagination justify-content-center">
+            <li className={`page-item ${currentPage === 0 ? "disabled" : ""}`}>
+              <button className="page-link" onClick={() => goToPage(currentPage - 1)} disabled={assigning}>
+                Previous
+              </button>
+            </li>
+            
+            {Array.from({ length: totalPages }).map((_, idx) => {
+              if (idx === 0 || idx === totalPages - 1 || (idx >= currentPage - 2 && idx <= currentPage + 2)) {
+                return (
+                  <li key={idx} className={`page-item ${idx === currentPage ? "active" : ""}`}>
+                    <button className="page-link" onClick={() => goToPage(idx)} disabled={assigning}>
+                      {idx + 1}
+                    </button>
+                  </li>
+                );
+              }
+              return null;
+            })}
+            
+            <li className={`page-item ${currentPage >= totalPages - 1 ? "disabled" : ""}`}>
+              <button className="page-link" onClick={() => goToPage(currentPage + 1)} disabled={assigning}>
+                Next
+              </button>
+            </li>
+          </ul>
+        </nav>
       )}
 
       {/* View Lead Modal */}
       {showViewModal && viewingLead && (
-        <div className="modal show fade" style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}>
-          <div className="modal-dialog modal-dialog-centered modal-lg">
-            <div className="modal-content shadow-lg border-0">
-              <div className="modal-header" style={{ background: "linear-gradient(135deg, #6a11cb 0%, #2575fc 100%)", color: "#fff" }}>
-                <div>
-                  <h5 className="modal-title fw-bold mb-0">👁️ View Lead History</h5>
-                  <small className="opacity-75">Lead ID: {viewingLead.leadId}</small>
-                </div>
+        <div className="modal fade show" style={{ display: "block" }} tabIndex="-1">
+          <div className="modal-dialog modal-xl modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-header bg-primary text-white">
+                <h5 className="modal-title">📊 Lead Progress Timeline</h5>
                 <button type="button" className="btn-close btn-close-white" onClick={() => {
                   setShowViewModal(false);
                   setViewingLead(null);
+                  setActivityHistory([]);
                 }}></button>
               </div>
 
-              <div className="modal-body p-4">
-                <div className="row">
-                  <div className="col-md-6">
-                    <h6 className="fw-semibold border-bottom pb-2 mb-3">📋 Personal Information</h6>
-                    <div className="mb-3">
-                      <label className="form-label fw-medium text-muted">Full Name</label>
-                      <p className="fw-semibold">{viewingLead.leadName || "N/A"}</p>
-                    </div>
-                    
-                    <div className="mb-3">
-                      <label className="form-label fw-medium text-muted">Phone</label>
-                      <p className="fw-semibold">{viewingLead.phone || "N/A"}</p>
-                    </div>
-                    
-                    <div className="mb-3">
-                      <label className="form-label fw-medium text-muted">Email</label>
-                      <p className="fw-semibold">{viewingLead.email || "N/A"}</p>
-                    </div>
-                    
-                    <div className="mb-3">
-                      <label className="form-label fw-medium text-muted">Gender</label>
-                      <p className="fw-semibold">{viewingLead.gender || "N/A"}</p>
-                    </div>
-                    
-                    <div className="mb-3">
-                      <label className="form-label fw-medium text-muted">City</label>
-                      <p className="fw-semibold">{viewingLead.city || "N/A"}</p>
-                    </div>
-                    
-                    <div className="mb-3">
-                      <label className="form-label fw-medium text-muted">College</label>
-                      <p className="fw-semibold">{viewingLead.college || "N/A"}</p>
-                    </div>
-                  </div>
-                  
-                  <div className="col-md-6">
-                    <h6 className="fw-semibold border-bottom pb-2 mb-3">🎓 Academic Information</h6>
-                    <div className="mb-3">
-                      <label className="form-label fw-medium text-muted">Qualification</label>
-                      <p className="fw-semibold">{viewingLead.qualification || "N/A"}</p>
-                    </div>
-                    
-                    <div className="mb-3">
-                      <label className="form-label fw-medium text-muted">Passed Out Year</label>
-                      <p className="fw-semibold">{viewingLead.passedOutYear || "N/A"}</p>
-                    </div>
-                    
-                    <div className="mb-3">
-                      <label className="form-label fw-medium text-muted">Course Interested</label>
-                      <p className="fw-semibold">{getLeadCourseName(viewingLead)}</p>
-                    </div>
-                    
-                    <h6 className="fw-semibold border-bottom pb-2 mb-3 mt-4">📊 Status & Assignment</h6>
-                    <div className="mb-3">
-                      <label className="form-label fw-medium text-muted">Status</label>
-                      <span className={`badge ${getStatusBadgeClass(viewingLead.status)} rounded-pill px-3 py-2`}>
-                        {getStatusDisplayText(viewingLead.status)}
-                      </span>
-                    </div>
-                    
-                    <div className="mb-3">
-                      <label className="form-label fw-medium text-muted">Assigned To</label>
-                      <p className="fw-semibold">
-                        <span className={`badge ${getAssignedBadgeClass(getAssignedDisplayText(viewingLead))} rounded-pill px-3 py-2`}>
-                          {getAssignedDisplayText(viewingLead)}
+              <div className="modal-body">
+                {/* Current Status Overview */}
+                <div className="card mb-4">
+                  <div className="card-body">
+                    <div className="d-flex justify-content-between align-items-center mb-3">
+                      <div>
+                        <h6 className="card-title">Current Status</h6>
+                        <span className={`badge ${getStatusBadgeClass(viewingLead.status)} fs-6`}>
+                          {getStatusDisplayText(viewingLead.status)}
                         </span>
-                      </p>
+                      </div>
+                      <div className="text-end">
+                        <small className="text-muted">Last Updated</small>
+                        <p className="mb-0 fw-semibold">{formatDateForDisplay(viewingLead.updatedAt)}</p>
+                      </div>
                     </div>
                     
-                    <div className="mb-3">
-                      <label className="form-label fw-medium text-muted">Assigned By</label>
-                      <p className="fw-semibold">{getAssignedByName(viewingLead)}</p>
+                    {/* Progress Bar */}
+                    <div className="mb-4">
+                      <div className="d-flex justify-content-between align-items-center mb-2">
+                        <span className="fw-medium">Overall Progress</span>
+                        <span className="fw-bold text-primary">
+                          {getProgressPercentage(viewingLead.status).toFixed(0)}%
+                        </span>
+                      </div>
+                      <div className="progress">
+                        <div 
+                          className="progress-bar" 
+                          style={{ 
+                            width: `${getProgressPercentage(viewingLead.status)}%`
+                          }}
+                        ></div>
+                      </div>
                     </div>
                   </div>
                 </div>
-                
-                <div className="row mt-3">
-                  <div className="col-md-6">
-                    <h6 className="fw-semibold border-bottom pb-2 mb-3">📈 Lead Source</h6>
-                    <div className="mb-3">
-                      <label className="form-label fw-medium text-muted">Source</label>
-                      <p className="fw-semibold">{viewingLead.source || "N/A"}</p>
+
+                {/* Sequential Progress Timeline */}
+                <div className="card mb-4">
+                  <div className="card-header">
+                    <h6 className="mb-0">🕒 Sequential Progress Timeline</h6>
+                  </div>
+                  <div className="card-body">
+                    <div className="row">
+                      {getLeadTimeline(viewingLead).map((stage, index) => (
+                        <div key={index} className="col-12 mb-3">
+                          <div className="card border">
+                            <div className="card-body">
+                              <div className="d-flex justify-content-between align-items-start">
+                                <div>
+                                  <div className="d-flex align-items-center mb-2">
+                                    <span className="fs-4 me-2">{stage.icon}</span>
+                                    <h6 className="mb-0 fw-semibold">
+                                      {stage.title}
+                                      {stage.current && (
+                                        <span className="badge bg-warning text-dark ms-2">Current</span>
+                                      )}
+                                    </h6>
+                                  </div>
+                                  
+                                  {/* Status Options */}
+                                  <div className="mt-2">
+                                    {statusProgression[index].statuses.map((statusOption, statusIndex) => {
+                                      const isSelected = viewingLead.status === statusOption;
+                                      const statusDate = getStatusDateFromHistory(statusOption);
+                                      
+                                      return (
+                                        <div 
+                                          key={statusIndex} 
+                                          className={`d-flex justify-content-between align-items-center p-2 mb-1 rounded ${isSelected ? 'bg-primary text-white' : 'bg-light'}`}
+                                        >
+                                          <span>{statusOption}</span>
+                                          {statusDate && (
+                                            <div className="text-end">
+                                              <small>{formatDateForDisplay(statusDate)}</small>
+                                              <br />
+                                              <small className="text-muted">{formatTimeAgo(statusDate)}</small>
+                                            </div>
+                                          )}
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                                
+                                <div className="text-end">
+                                  {stage.completed ? (
+                                    <span className="badge bg-success">✓ Completed</span>
+                                  ) : stage.current ? (
+                                    <span className="badge bg-warning text-dark">● In Progress</span>
+                                  ) : (
+                                    <span className="badge bg-secondary">○ Pending</span>
+                                  )}
+                                  {stage.date && (
+                                    <div className="mt-1">
+                                      <small className="text-muted">
+                                        {formatDateForDisplay(stage.date)}
+                                      </small>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                    
-                    <div className="mb-3">
-                      <label className="form-label fw-medium text-muted">Campaign</label>
-                      <p className="fw-semibold">{viewingLead.campaign || "N/A"}</p>
+                  </div>
+                </div>
+
+                {/* Lead Details */}
+                <div className="row">
+                  <div className="col-md-6">
+                    <div className="card h-100">
+                      <div className="card-header">
+                        <h6 className="mb-0">📋 Personal Information</h6>
+                      </div>
+                      <div className="card-body">
+                        <div className="row">
+                          <div className="col-6 mb-2">
+                            <small className="text-muted">Full Name</small>
+                            <p className="fw-semibold mb-0">{viewingLead.leadName || "N/A"}</p>
+                          </div>
+                          
+                          <div className="col-6 mb-2">
+                            <small className="text-muted">Phone</small>
+                            <p className="fw-semibold mb-0">{viewingLead.phone || "N/A"}</p>
+                          </div>
+                          
+                          <div className="col-6 mb-2">
+                            <small className="text-muted">Email</small>
+                            <p className="fw-semibold mb-0">{viewingLead.email || "N/A"}</p>
+                          </div>
+                          
+                          <div className="col-6 mb-2">
+                            <small className="text-muted">Gender</small>
+                            <p className="fw-semibold mb-0">{viewingLead.gender || "N/A"}</p>
+                          </div>
+                          
+                          <div className="col-6 mb-2">
+                            <small className="text-muted">City</small>
+                            <p className="fw-semibold mb-0">{viewingLead.city || "N/A"}</p>
+                          </div>
+                          
+                          <div className="col-6 mb-2">
+                            <small className="text-muted">College</small>
+                            <p className="fw-semibold mb-0">{viewingLead.college || "N/A"}</p>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                   
                   <div className="col-md-6">
-                    <h6 className="fw-semibold border-bottom pb-2 mb-3">🗒️ Additional Information</h6>
-                    <div className="mb-3">
-                      <label className="form-label fw-medium text-muted">Notes</label>
-                      <p className="fw-semibold">{viewingLead.notes || "No notes available"}</p>
-                    </div>
-                    
-                    <div className="mb-3">
-                      <label className="form-label fw-medium text-muted">Reminder Time</label>
-                      <p className="fw-semibold">{formatDateForDisplay(viewingLead.reminderTime)}</p>
+                    <div className="card h-100">
+                      <div className="card-header">
+                        <h6 className="mb-0">🎓 Academic Information</h6>
+                      </div>
+                      <div className="card-body">
+                        <div className="row">
+                          <div className="col-6 mb-2">
+                            <small className="text-muted">Qualification</small>
+                            <p className="fw-semibold mb-0">{viewingLead.qualification || "N/A"}</p>
+                          </div>
+                          
+                          <div className="col-6 mb-2">
+                            <small className="text-muted">Passed Out Year</small>
+                            <p className="fw-semibold mb-0">{viewingLead.passedOutYear || "N/A"}</p>
+                          </div>
+                          
+                          <div className="col-12 mb-2">
+                            <small className="text-muted">Course Interested</small>
+                            <p className="fw-semibold mb-0">{getLeadCourseName(viewingLead)}</p>
+                          </div>
+                          
+                          <div className="col-6 mb-2">
+                            <small className="text-muted">Assigned To</small>
+                            <p className="fw-semibold mb-0">
+                              <span className={`badge ${getAssignedBadgeClass(getAssignedDisplayText(viewingLead))}`}>
+                                {getAssignedDisplayText(viewingLead)}
+                              </span>
+                            </p>
+                          </div>
+                          
+                          <div className="col-6 mb-2">
+                            <small className="text-muted">Assigned By</small>
+                            <p className="fw-semibold mb-0">{getAssignedByName(viewingLead)}</p>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1444,10 +1704,13 @@ function LeadsList() {
                 <button type="button" className="btn btn-secondary" onClick={() => {
                   setShowViewModal(false);
                   setViewingLead(null);
+                  setActivityHistory([]);
                 }}>Close</button>
                 {canEditLeads() && (
                   <button type="button" className="btn btn-primary" onClick={() => {
                     setShowViewModal(false);
+                    setViewingLead(null);
+                    setActivityHistory([]);
                     handleEdit(viewingLead);
                   }}>✏️ Edit Lead</button>
                 )}
@@ -1457,14 +1720,84 @@ function LeadsList() {
         </div>
       )}
 
-      {/* Assign to Counselor Modal */}
-      {canAssignLeads() && showAssignModal && (
-        <div className="modal show fade" style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}>
+      {/* Reminder Modal */}
+      {showReminderModal && selectedReminderLead && (
+        <div className="modal fade show" style={{ display: "block" }} tabIndex="-1">
           <div className="modal-dialog modal-dialog-centered">
-            <div className="modal-content shadow-lg border-0">
-              <div className="modal-header" style={{ background: "linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)", color: "#fff" }}>
-                <h5 className="modal-title fw-bold mb-0">
-                  {assigning ? "🔄 Assigning Leads..." : "👥 Assign Leads to Counselor"}
+            <div className="modal-content">
+              <div className="modal-header bg-warning text-dark">
+                <h5 className="modal-title">⏰ Set Reminder</h5>
+                <button type="button" className="btn-close" onClick={() => {
+                  setShowReminderModal(false);
+                  setSelectedReminderLead(null);
+                }}></button>
+              </div>
+
+              <div className="modal-body">
+                <p className="fw-semibold">
+                  Setting reminder for: <span className="text-primary">{selectedReminderLead.leadName}</span>
+                </p>
+                <p className="text-muted small mb-3">
+                  Lead ID: {selectedReminderLead.leadId} • Phone: {selectedReminderLead.phone}
+                </p>
+
+                <div className="mb-3">
+                  <label className="form-label">Reminder Notes</label>
+                  <textarea
+                    name="notes"
+                    className="form-control"
+                    rows="3"
+                    value={reminderForm.notes}
+                    onChange={handleReminderChange}
+                    placeholder="Enter reminder notes..."
+                  />
+                </div>
+
+                <div className="mb-3">
+                  <label className="form-label">Reminder Date & Time</label>
+                  <input
+                    type="datetime-local"
+                    name="reminderTime"
+                    className="form-control"
+                    value={reminderForm.reminderTime}
+                    onChange={handleReminderChange}
+                  />
+                </div>
+              </div>
+
+              <div className="modal-footer">
+                <button 
+                  type="button" 
+                  className="btn btn-secondary" 
+                  onClick={() => {
+                    setShowReminderModal(false);
+                    setSelectedReminderLead(null);
+                  }}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="button" 
+                  className="btn btn-warning" 
+                  onClick={handleSubmitReminder}
+                  disabled={!reminderForm.reminderTime}
+                >
+                  Set Reminder
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Assign Modal */}
+      {canAssignLeads() && showAssignModal && (
+        <div className="modal fade show" style={{ display: "block" }} tabIndex="-1">
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-header bg-success text-white">
+                <h5 className="modal-title">
+                  {assigning ? "Assigning Leads..." : "Assign Leads to Counselor"}
                 </h5>
                 <button type="button" className="btn-close btn-close-white" onClick={() => {
                   setShowAssignModal(false);
@@ -1472,18 +1805,13 @@ function LeadsList() {
                 }} disabled={assigning}></button>
               </div>
 
-              <div className="modal-body p-4">
-                <div className="mb-4">
-                  <p className="fw-semibold">
-                    Assigning <span className="text-primary">{selectedLeads.size}</span> selected lead(s) to:
-                  </p>
-                  <p className="text-muted small">
-                    Current User: <strong>{currentUserName}</strong> (ID: {getLoggedInUserId()})
-                  </p>
-                </div>
+              <div className="modal-body">
+                <p className="fw-semibold">
+                  Assigning <span className="text-primary">{selectedLeads.size}</span> selected lead(s)
+                </p>
 
                 <div className="mb-3">
-                  <label className="form-label fw-semibold">Select Counselor</label>
+                  <label className="form-label">Select Counselor</label>
                   <select
                     className="form-select"
                     value={selectedCounselor}
@@ -1495,43 +1823,10 @@ function LeadsList() {
                       .filter(counselor => counselor.status === "Active")
                       .map((counselor) => (
                         <option key={counselor.id} value={counselor.name}>
-                          {counselor.name} {counselor.email && `(${counselor.email})`} {counselor.phone && `- 📞 ${counselor.phone}`}
+                          {counselor.name}
                         </option>
                       ))}
                   </select>
-                  <div className="form-text">
-                    Only active counselors are shown in the list.
-                  </div>
-                </div>
-
-                {counselors.filter(c => c.status === "Active").length === 0 && (
-                  <div className="alert alert-warning">
-                    <strong>⚠️ No Active Counselors</strong><br />
-                    Please add active counselors before assigning leads.
-                  </div>
-                )}
-
-                <div className="mt-4">
-                  <h6 className="fw-semibold mb-3">Available Counselors:</h6>
-                  <div className="row g-2">
-                    {counselors.map((counselor) => (
-                      <div key={counselor.id} className="col-12">
-                        <div className={`card border ${counselor.status === "Active" ? "border-success" : "border-danger"}`}>
-                          <div className="card-body py-2">
-                            <div className="d-flex justify-content-between align-items-center">
-                              <div>
-                                <span className="fw-semibold">{counselor.name}</span>
-                                <span className={`ms-2 ${getCounselorStatusBadge(counselor)}`}>
-                                  {counselor.status}
-                                </span>
-                              </div>
-                              <small className="text-muted">{counselor.email}</small>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
                 </div>
               </div>
 
@@ -1551,7 +1846,7 @@ function LeadsList() {
                   type="button" 
                   className="btn btn-success" 
                   onClick={handleAssignLeads}
-                  disabled={!selectedCounselor || counselors.filter(c => c.status === "Active").length === 0 || assigning}
+                  disabled={!selectedCounselor || assigning}
                 >
                   {assigning ? (
                     <>
@@ -1559,7 +1854,7 @@ function LeadsList() {
                       Assigning...
                     </>
                   ) : (
-                    "✅ Assign Leads"
+                    "Assign Leads"
                   )}
                 </button>
               </div>
@@ -1568,38 +1863,36 @@ function LeadsList() {
         </div>
       )}
 
-      {/* Edit Modal */}
+      {/* Edit Modal - UPDATED with all fields */}
       {selectedLead && canEditLeads() && (
-        <div className="modal show fade" style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}>
-          <div className="modal-dialog modal-dialog-centered modal-lg">
-            <div className="modal-content shadow-lg border-0">
-              <div className="modal-header" style={{ background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)", color: "#fff" }}>
-                <div>
-                  <h5 className="modal-title fw-bold mb-0">✏️ Edit Lead Information</h5>
-                  <small className="opacity-75">Update lead details and status</small>
-                </div>
+        <div className="modal fade show" style={{ display: "block" }} tabIndex="-1">
+          <div className="modal-dialog modal-lg modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-header bg-primary text-white">
+                <h5 className="modal-title">✏️ Edit Lead</h5>
                 <button type="button" className="btn-close btn-close-white" onClick={() => setSelectedLead(null)}></button>
               </div>
 
-              <div className="modal-body p-4">
+              <div className="modal-body">
                 <div className="row g-3">
+                  {/* Basic Information */}
                   <div className="col-md-6">
-                    <label className="form-label fw-semibold">Full Name</label>
-                    <input type="text" name="leadName" className="form-control" value={formData.leadName} onChange={handleChange} />
+                    <label className="form-label">Full Name *</label>
+                    <input type="text" name="leadName" className="form-control" value={formData.leadName} onChange={handleChange} required />
                   </div>
 
                   <div className="col-md-6">
-                    <label className="form-label fw-semibold">Phone</label>
-                    <input type="text" name="phone" className="form-control" value={formData.phone} onChange={handleChange} />
+                    <label className="form-label">Phone *</label>
+                    <input type="text" name="phone" className="form-control" value={formData.phone} onChange={handleChange} required />
                   </div>
 
                   <div className="col-md-6">
-                    <label className="form-label fw-semibold">Email</label>
+                    <label className="form-label">Email</label>
                     <input type="email" name="email" className="form-control" value={formData.email} onChange={handleChange} />
                   </div>
 
                   <div className="col-md-6">
-                    <label className="form-label fw-semibold">Gender</label>
+                    <label className="form-label">Gender</label>
                     <select name="gender" className="form-select" value={formData.gender} onChange={handleChange}>
                       <option value="">Select Gender</option>
                       <option value="Male">Male</option>
@@ -1608,29 +1901,88 @@ function LeadsList() {
                     </select>
                   </div>
 
+                  {/* Academic Information */}
                   <div className="col-md-6">
-                    <label className="form-label fw-semibold">Passed Out Year</label>
+                    <label className="form-label">Passed Out Year</label>
                     <input type="text" name="passedOutYear" className="form-control" value={formData.passedOutYear} onChange={handleChange} />
                   </div>
 
                   <div className="col-md-6">
-                    <label className="form-label fw-semibold">Qualification</label>
+                    <label className="form-label">Qualification</label>
                     <input type="text" name="qualification" className="form-control" value={formData.qualification} onChange={handleChange} />
                   </div>
 
                   <div className="col-md-6">
-                    <label className="form-label fw-semibold">College</label>
+                    <label className="form-label">College</label>
                     <input type="text" name="college" className="form-control" value={formData.college} onChange={handleChange} />
                   </div>
 
                   <div className="col-md-6">
-                    <label className="form-label fw-semibold">City</label>
+                    <label className="form-label">City</label>
                     <input type="text" name="city" className="form-control" value={formData.city} onChange={handleChange} />
                   </div>
 
-                  {/* Updated Source dropdown to use API data */}
+                  {/* Course Information */}
                   <div className="col-md-6">
-                    <label className="form-label fw-semibold">Source</label>
+                    <label className="form-label">Course</label>
+                    <select name="courseId" className="form-select" value={formData.courseId} onChange={handleChange}>
+                      <option value="">-- Select Course --</option>
+                      {courses.map((c) => (
+                        <option key={c.courseId} value={c.courseId}>{c.courseName}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="col-md-6">
+                    <label className="form-label">Status</label>
+                    <select name="status" className="form-select" value={formData.status} onChange={handleChange}>
+                      <option value="">Select Status</option>
+                      <optgroup label="Message Status">
+                        {statusCategories.MESSAGE_STATUS.map(status => (
+                          <option key={status} value={status}>{status}</option>
+                        ))}
+                      </optgroup>
+                      <optgroup label="Eligibility">
+                        {statusCategories.ELIGIBILITY.map(status => (
+                          <option key={status} value={status}>{status}</option>
+                        ))}
+                      </optgroup>
+                      <optgroup label="Call Status">
+                        {statusCategories.CALL_STATUS.map(status => (
+                          <option key={status} value={status}>{status}</option>
+                        ))}
+                      </optgroup>
+                      <optgroup label="Follow-Up">
+                        {statusCategories.FOLLOW_UP.map(status => (
+                          <option key={status} value={status}>{status}</option>
+                        ))}
+                      </optgroup>
+                      <optgroup label="Demo/Counselling">
+                        {statusCategories.DEMO_COUNSELLING.map(status => (
+                          <option key={status} value={status}>{status}</option>
+                        ))}
+                      </optgroup>
+                      <optgroup label="Registration">
+                        {statusCategories.REGISTRATION.map(status => (
+                          <option key={status} value={status}>{status}</option>
+                        ))}
+                      </optgroup>
+                      <optgroup label="Student Stage">
+                        {statusCategories.STUDENT_STAGE.map(status => (
+                          <option key={status} value={status}>{status}</option>
+                        ))}
+                      </optgroup>
+                      <optgroup label="Closed">
+                        {statusCategories.CLOSED.map(status => (
+                          <option key={status} value={status}>{status}</option>
+                        ))}
+                      </optgroup>
+                    </select>
+                  </div>
+
+                  {/* Source & Campaign */}
+                  <div className="col-md-6">
+                    <label className="form-label">Source</label>
                     <select name="source" className="form-select" value={formData.source} onChange={handleChange}>
                       <option value="">Select Source</option>
                       {sources.map((source) => (
@@ -1641,9 +1993,8 @@ function LeadsList() {
                     </select>
                   </div>
 
-                  {/* Updated Campaign dropdown to use API data */}
                   <div className="col-md-6">
-                    <label className="form-label fw-semibold">Campaign</label>
+                    <label className="form-label">Campaign</label>
                     <select name="campaign" className="form-select" value={formData.campaign} onChange={handleChange}>
                       <option value="">Select Campaign</option>
                       {campaigns.map((campaign) => (
@@ -1654,38 +2005,17 @@ function LeadsList() {
                     </select>
                   </div>
 
-                  <div className="col-md-6">
-                    <label className="form-label fw-semibold">Course</label>
-                    <select name="courseId" className="form-select" value={formData.courseId} onChange={handleChange}>
-                      <option value="">-- Select Course --</option>
-                      {courses.map((c) => (
-                        <option key={c.courseId} value={c.courseId}>{c.courseName}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="col-md-6">
-                    <label className="form-label fw-semibold">Status</label>
-                    <select name="status" className="form-select" value={formData.status} onChange={handleChange}>
-                      <option value="">Select Status</option>
-                      <option value="NEW">NEW</option>
-                      <option value="CONTACTED">CONTACTED</option>
-                      <option value="INTERESTED">INTERESTED</option>
-                      <option value="NOT_INTERESTED">NOT INTERESTED</option>
-                      <option value="ENROLLED">ENROLLED</option>
-                    </select>
-                  </div>
-
-                  {canAssignLeads() && (
+                  {/* Counselor Assignment - Only for Managers/Admins */}
+                  {isManagerOrAdmin() && (
                     <div className="col-md-6">
-                      <label className="form-label fw-semibold">Assigned To</label>
+                      <label className="form-label">Assigned Counselor</label>
                       <select 
                         name="assignedTo" 
                         className="form-select" 
                         value={formData.assignedTo} 
                         onChange={handleChange}
                       >
-                        <option value="">Un-Assigned</option>
+                        <option value="">-- Select Counselor --</option>
                         {counselors
                           .filter(counselor => counselor.status === "Active")
                           .map((counselor) => (
@@ -1697,8 +2027,31 @@ function LeadsList() {
                     </div>
                   )}
 
+                  {/* For SA roles, show read-only assigned counselor info */}
+                  {isSARole() && (
+                    <div className="col-md-6">
+                      <label className="form-label">Currently Assigned To</label>
+                      <div className="form-control bg-light">
+                        {formData.assignedTo || "Unassigned"}
+                      </div>
+                      <small className="text-muted">Assignment can only be changed by managers or administrators</small>
+                    </div>
+                  )}
+
+                  {/* Notes & Reminder */}
+                  <div className="col-md-6">
+                    <label className="form-label">Reminder Time</label>
+                    <input 
+                      type="datetime-local" 
+                      name="reminderTime" 
+                      className="form-control" 
+                      value={formData.reminderTime || ''} 
+                      onChange={handleChange}
+                    />
+                  </div>
+
                   <div className="col-12">
-                    <label className="form-label fw-semibold">Notes</label>
+                    <label className="form-label">Notes</label>
                     <textarea 
                       name="notes" 
                       className="form-control" 
@@ -1707,32 +2060,23 @@ function LeadsList() {
                       onChange={handleChange}
                       placeholder="Add any additional notes about the lead..."
                     />
-                    <small className="text-muted">Add any important notes or comments about this lead.</small>
-                  </div>
-
-                  <div className="col-md-6">
-                    <label className="form-label fw-semibold">Reminder Time</label>
-                    <input 
-                      type="datetime-local" 
-                      name="reminderTime" 
-                      className="form-control" 
-                      value={formData.reminderTime || ''} 
-                      onChange={handleChange}
-                    />
-                    <small className="text-muted">Set a reminder for follow-up (Date and Time)</small>
                   </div>
                 </div>
               </div>
 
               <div className="modal-footer">
                 <button type="button" className="btn btn-secondary" onClick={() => setSelectedLead(null)}>Cancel</button>
-                <button type="button" className="btn btn-primary" onClick={handleUpdate}>💾 Save Changes</button>
+                <button type="button" className="btn btn-primary" onClick={handleUpdate}>Save Changes</button>
               </div>
             </div>
           </div>
         </div>
       )}
 
+      {/* Modal Backdrop */}
+      {(showViewModal || showReminderModal || showAssignModal || (selectedLead && canEditLeads())) && (
+        <div className="modal-backdrop fade show"></div>
+      )}
     </div>
   );
 }
