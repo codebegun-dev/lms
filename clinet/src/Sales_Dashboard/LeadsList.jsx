@@ -52,7 +52,7 @@ function LeadsList() {
     passedOutYear: "",
     qualification: "",
     courseId: "",
-    status: "NEW",
+    status: "New",
     college: "",
     city: "",
     source: "",
@@ -71,7 +71,7 @@ function LeadsList() {
   const [backendStatusCounts, setBackendStatusCounts] = useState({});
 
   const statusCategories = {
-    NEW: ["NEW"],
+    New: ["New"],
     MESSAGE_STATUS: [
       "Message Sent",
       "Waiting for Reply",
@@ -134,58 +134,67 @@ function LeadsList() {
 
   const statusProgression = [
     {
-      title: "NEW",
-      statuses: ["NEW"],
+      title: "New",
+      statuses: ["New"],
       icon: "🆕",
-      color: "#667eea"
+      color: "#667eea",
+      description: "Lead created"
     },
     {
       title: "Message Status",
       statuses: ["Message Sent", "Waiting for Reply", "No Reply – 1st Attempt", "No Reply – 2nd Attempt", "No Reply – Final Attempt"],
       icon: "💬",
-      color: "#4facfe"
+      color: "#4facfe",
+      description: "Initial contact"
     },
     {
       title: "Eligibility",
       statuses: ["Eligible", "Not Eligible"],
       icon: "✅",
-      color: "#43e97b"
+      color: "#43e97b",
+      description: "Eligibility check"
     },
     {
       title: "Call Status",
       statuses: ["Call Connected", "Call Not Picked – 1st", "Call Not Picked – 2nd", "Call Not Picked – Final", "Not Reachable", "Switched Off", "Wrong Number"],
       icon: "📱",
-      color: "#fa709a"
+      color: "#fa709a",
+      description: "Phone communication"
     },
     {
       title: "Follow Up",
       statuses: ["Interested – Active", "Follow-Up Scheduled", "Reminder Sent", "Follow-Up Missed", "Future Prospect", "Parent Approval Pending", "Budget Issue", "Considering Other Institute", "Not Interested"],
       icon: "🔄",
-      color: "#ff9a9e"
+      color: "#ff9a9e",
+      description: "Follow-up activities"
     },
     {
       title: "Demo/Counselling",
       statuses: ["Demo Scheduled", "Demo Completed", "Demo No-Show", "Counselling Completed"],
       icon: "🎓",
-      color: "#a18cd1"
+      color: "#a18cd1",
+      description: "Demo session"
     },
     {
       title: "Registration",
       statuses: ["Registration Form Sent", "Registration Completed", "Payment Pending", "Part Payment", "Payment Completed", "Payment Follow-Up", "Payment Dropped"],
       icon: "📝",
-      color: "#fbc2eb"
+      color: "#fbc2eb",
+      description: "Registration process"
     },
     {
       title: "Student Stage",
       statuses: ["Enrolled", "Added to LMS", "Batch Assigned", "Orientation Completed"],
       icon: "🎯",
-      color: "#6a11cb"
+      color: "#6a11cb",
+      description: "Student onboarding"
     },
     {
       title: "Closed",
       statuses: ["Closed – Not Interested", "Closed – Not Eligible", "Closed – No Response", "Closed – Wrong Number"],
       icon: "❌",
-      color: "#8e9eab"
+      color: "#8e9eab",
+      description: "Lead closure"
     }
   ];
 
@@ -570,7 +579,7 @@ function LeadsList() {
       passedOutYear: lead.passedOutYear || "",
       qualification: lead.qualification || "",
       courseId: lead.courseId || "",
-      status: lead.status || "NEW",
+      status: lead.status || "New",
       college: lead.college || "",
       city: lead.city || "",
       source: lead.source || "",
@@ -746,7 +755,7 @@ function LeadsList() {
   };
 
   const getStatusBadgeClass = (status) => {
-    if (status === "NEW") return "bg-primary";
+    if (status === "New") return "bg-primary";
     if (statusCategories.MESSAGE_STATUS.includes(status)) return "bg-info";
     if (status === "Eligible") return "bg-success";
     if (status === "Not Eligible") return "bg-danger";
@@ -777,7 +786,7 @@ function LeadsList() {
   };
 
   const getStatusDisplayText = (status) => {
-    return status || "NEW";
+    return status || "New";
   };
 
   const getAssignedBadgeClass = (assignedTo) => {
@@ -804,7 +813,7 @@ function LeadsList() {
   const getStatusCounts = () => {
     if (Object.keys(backendStatusCounts).length > 0) {
       return {
-        NEW: backendStatusCounts.NEW || 0,
+        New: backendStatusCounts.New || 0,
         MESSAGE_SENT: backendStatusCounts.MESSAGE_SENT || 0,
         ELIGIBLE: backendStatusCounts.ELIGIBLE || 0,
         NOT_ELIGIBLE: backendStatusCounts.NOT_ELIGIBLE || 0,
@@ -816,7 +825,7 @@ function LeadsList() {
     }
     
     const counts = {
-      NEW: 0,
+      New: 0,
       MESSAGE_SENT: 0,
       ELIGIBLE: 0,
       NOT_ELIGIBLE: 0,
@@ -828,8 +837,8 @@ function LeadsList() {
     
     allLeads.forEach(lead => {
       if (lead.status) {
-        if (statusCategories.NEW.includes(lead.status)) {
-          counts.NEW++;
+        if (statusCategories.New.includes(lead.status)) {
+          counts.New++;
         } else if (statusCategories.MESSAGE_STATUS.includes(lead.status)) {
           counts.MESSAGE_SENT++;
         } else if (lead.status === "Eligible") {
@@ -938,6 +947,7 @@ function LeadsList() {
       timeline.push({
         stage: i,
         title: stage.title,
+        description: stage.description,
         status: stageStatus,
         icon: stage.icon,
         color: stage.color,
@@ -1053,7 +1063,7 @@ function LeadsList() {
     },
     { 
       title: "New Leads", 
-      value: statusCounts.NEW, 
+      value: statusCounts.New, 
       icon: "🆕",
       bgColor: "bg-danger"
     },
@@ -1506,111 +1516,160 @@ function LeadsList() {
               </div>
 
               <div className="modal-body">
-                {/* Current Status Overview */}
+                {/* Current Status Section */}
                 <div className="card mb-4">
                   <div className="card-body">
-                    <div className="d-flex justify-content-between align-items-center mb-3">
-                      <div>
-                        <h6 className="card-title">Current Status</h6>
-                        <span className={`badge ${getStatusBadgeClass(viewingLead.status)} fs-6`}>
-                          {getStatusDisplayText(viewingLead.status)}
-                        </span>
+                    <div className="row">
+                      <div className="col-md-6">
+                        <h6 className="card-title mb-3">🕒 Lead Created Time</h6>
+                        <div className="d-flex align-items-center">
+                          <span className="fs-4 me-3">📅</span>
+                          <div>
+                            <p className="mb-0 fw-semibold fs-5">
+                              {formatDateForDisplay(viewingLead.createdAt || viewingLead.updatedAt)}
+                            </p>
+                            <p className="mb-0 text-muted">
+                              {formatTimeAgo(viewingLead.createdAt || viewingLead.updatedAt)}
+                            </p>
+                          </div>
+                        </div>
                       </div>
-                      <div className="text-end">
-                        <small className="text-muted">Last Updated</small>
-                        <p className="mb-0 fw-semibold">{formatDateForDisplay(viewingLead.updatedAt)}</p>
-                      </div>
-                    </div>
-                    
-                    {/* Progress Bar */}
-                    <div className="mb-4">
-                      <div className="d-flex justify-content-between align-items-center mb-2">
-                        <span className="fw-medium">Overall Progress</span>
-                        <span className="fw-bold text-primary">
-                          {getProgressPercentage(viewingLead.status).toFixed(0)}%
-                        </span>
-                      </div>
-                      <div className="progress">
-                        <div 
-                          className="progress-bar" 
-                          style={{ 
-                            width: `${getProgressPercentage(viewingLead.status)}%`
-                          }}
-                        ></div>
+                      <div className="col-md-6">
+                        <h6 className="card-title mb-3">🎯 Current Status</h6>
+                        <div className="d-flex align-items-center">
+                          <span className="fs-4 me-3">📊</span>
+                          <div>
+                            <p className="mb-0">
+                              <span className={`badge ${getStatusBadgeClass(viewingLead.status)} fs-6`}>
+                                {getStatusDisplayText(viewingLead.status)}
+                              </span>
+                            </p>
+                            <p className="mb-0 text-muted small">
+                              Stage {getCurrentProgressStage(viewingLead.status) + 1} of {statusProgression.length}
+                            </p>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Sequential Progress Timeline */}
+                {/* Progress Timeline Section */}
                 <div className="card mb-4">
                   <div className="card-header">
-                    <h6 className="mb-0">🕒 Sequential Progress Timeline</h6>
+                    <h6 className="mb-0">📈 Progress Timeline</h6>
                   </div>
                   <div className="card-body">
-                    <div className="row">
-                      {getLeadTimeline(viewingLead).map((stage, index) => (
-                        <div key={index} className="col-12 mb-3">
-                          <div className="card border">
-                            <div className="card-body">
-                              <div className="d-flex justify-content-between align-items-start">
-                                <div>
-                                  <div className="d-flex align-items-center mb-2">
-                                    <span className="fs-4 me-2">{stage.icon}</span>
-                                    <h6 className="mb-0 fw-semibold">
-                                      {stage.title}
-                                      {stage.current && (
-                                        <span className="badge bg-warning text-dark ms-2">Current</span>
-                                      )}
-                                    </h6>
+                    <div className="progress-timeline">
+                      <div className="timeline-container" style={{ position: 'relative' }}>
+                        {/* Progress line background */}
+                        <div 
+                          className="progress-line" 
+                          style={{
+                            position: 'absolute',
+                            top: '40px',
+                            left: '0',
+                            right: '0',
+                            height: '6px',
+                            backgroundColor: '#e9ecef',
+                            zIndex: 1,
+                            borderRadius: '3px'
+                          }}
+                        ></div>
+                        
+                        {/* Active progress line */}
+                        <div 
+                          className="progress-line-active" 
+                          style={{
+                            position: 'absolute',
+                            top: '40px',
+                            left: '0',
+                            width: `${getProgressPercentage(viewingLead.status)}%`,
+                            height: '6px',
+                            backgroundColor: '#0d6efd',
+                            zIndex: 2,
+                            transition: 'width 0.5s ease',
+                            borderRadius: '3px'
+                          }}
+                        ></div>
+                        
+                        <div className="row g-0">
+                          {getLeadTimeline(viewingLead).map((stage, index) => {
+                            const isActive = stage.completed || stage.current;
+                            const hasDate = stage.date;
+                            
+                            return (
+                              <div key={index} className="col" style={{ position: 'relative', zIndex: 3 }}>
+                                <div className="text-center px-2">
+                                  {/* Stage dot */}
+                                  <div 
+                                    className="stage-dot mx-auto mb-3"
+                                    style={{
+                                      width: '40px',
+                                      height: '40px',
+                                      borderRadius: '50%',
+                                      backgroundColor: isActive ? stage.color : '#e9ecef',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      color: isActive ? '#fff' : '#6c757d',
+                                      fontSize: '18px',
+                                      fontWeight: 'bold',
+                                      transition: 'all 0.3s ease',
+                                      border: '3px solid #fff',
+                                      boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                                    }}
+                                  >
+                                    {stage.icon}
                                   </div>
                                   
-                                  {/* Status Options */}
-                                  <div className="mt-2">
-                                    {statusProgression[index].statuses.map((statusOption, statusIndex) => {
-                                      const isSelected = viewingLead.status === statusOption;
-                                      const statusDate = getStatusDateFromHistory(statusOption);
-                                      
-                                      return (
-                                        <div 
-                                          key={statusIndex} 
-                                          className={`d-flex justify-content-between align-items-center p-2 mb-1 rounded ${isSelected ? 'bg-primary text-white' : 'bg-light'}`}
-                                        >
-                                          <span>{statusOption}</span>
-                                          {statusDate && (
-                                            <div className="text-end">
-                                              <small>{formatDateForDisplay(statusDate)}</small>
-                                              <br />
-                                              <small className="text-muted">{formatTimeAgo(statusDate)}</small>
-                                            </div>
-                                          )}
-                                        </div>
-                                      );
-                                    })}
+                                  {/* Stage title */}
+                                  <div className="mb-2">
+                                    <small className="fw-semibold d-block" style={{ color: isActive ? stage.color : '#6c757d' }}>
+                                      {stage.title}
+                                    </small>
+                                    <small className="text-muted d-block">{stage.description}</small>
                                   </div>
-                                </div>
-                                
-                                <div className="text-end">
-                                  {stage.completed ? (
-                                    <span className="badge bg-success">✓ Completed</span>
-                                  ) : stage.current ? (
-                                    <span className="badge bg-warning text-dark">● In Progress</span>
-                                  ) : (
-                                    <span className="badge bg-secondary">○ Pending</span>
+                                  
+                                  {/* Current status */}
+                                  {stage.current && stage.status && (
+                                    <div className="mb-2">
+                                      <span className="badge bg-primary">{stage.status}</span>
+                                    </div>
                                   )}
-                                  {stage.date && (
-                                    <div className="mt-1">
-                                      <small className="text-muted">
+                                  
+                                  {/* Date information */}
+                                  {hasDate ? (
+                                    <div className="mb-2">
+                                      <small className="text-muted d-block">
                                         {formatDateForDisplay(stage.date)}
+                                      </small>
+                                      <small className="text-muted d-block">
+                                        {formatTimeAgo(stage.date)}
+                                      </small>
+                                    </div>
+                                  ) : (
+                                    <div className="mb-2">
+                                      <small className="text-muted d-block">
+                                        {stage.completed ? '✓ Completed' : stage.current ? '● In Progress' : '○ Pending'}
+                                      </small>
+                                    </div>
+                                  )}
+                                  
+                                  {/* Activity details */}
+                                  {stage.activity && stage.activity.actionBy && (
+                                    <div className="mb-1">
+                                      <small className="text-muted d-block">
+                                        By: {getUserNameById(stage.activity.actionBy)}
                                       </small>
                                     </div>
                                   )}
                                 </div>
                               </div>
-                            </div>
-                          </div>
+                            );
+                          })}
                         </div>
-                      ))}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1937,6 +1996,9 @@ function LeadsList() {
                     <label className="form-label">Status</label>
                     <select name="status" className="form-select" value={formData.status} onChange={handleChange}>
                       <option value="">Select Status</option>
+                      <optgroup label="New">
+                        <option value="New">New</option>
+                      </optgroup>
                       <optgroup label="Message Status">
                         {statusCategories.MESSAGE_STATUS.map(status => (
                           <option key={status} value={status}>{status}</option>
@@ -2081,4 +2143,4 @@ function LeadsList() {
   );
 }
 
-export default LeadsList;
+export default LeadsList; 
