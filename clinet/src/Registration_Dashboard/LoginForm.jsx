@@ -37,8 +37,13 @@ function LoginForm() {
     if (!validateForm()) return;
 
     try {
-      const res = await axios.post("http://localhost:8080/api/user/login", formData);
+      const res = await axios.post(
+        `${import.meta.env.VITE_API_BASE_URL}/api/user/login`,
+        formData
+      );
+
       const user = res.data;
+
 
       if (!user || !user.role) {
         setGeneralError("User role not found. Please contact admin.");
@@ -47,11 +52,11 @@ function LoginForm() {
 
       const roleName = user.role.trim().toUpperCase();
 
-       localStorage.setItem("user", JSON.stringify(user));
-       localStorage.setItem("userId", user.userId); // required for lead APIs
+      localStorage.setItem("user", JSON.stringify(user));
+      localStorage.setItem("userId", user.userId); // required for lead APIs
 
 
-       if (roleName === "MASTER_ADMIN") {
+      if (roleName === "MASTER_ADMIN") {
         localStorage.setItem("masterAdminId", user.userId);
       }
 

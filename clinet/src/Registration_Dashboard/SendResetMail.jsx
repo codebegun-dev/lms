@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import axios from "axios";
 import { Link } from "react-router-dom";
-import registrationImage from "../assets/registrationImage.png"; 
+import registrationImage from "../assets/registrationImage.png";
 
 function SendResetMail() {
   const [formData, setFormData] = useState({
@@ -33,10 +33,11 @@ function SendResetMail() {
 
     try {
       const response = await axios.post(
-        "http://localhost:8080/api/user/forgot-password",
+        `${import.meta.env.VITE_API_BASE_URL}/api/user/forgot-password`,
         formData
       );
-      setSuccess(response.data); 
+
+      setSuccess(response.data);
       setFormData({ emailOrPhone: "" });
     } catch (error) {
       if (error.response && error.response.data) {
@@ -62,7 +63,7 @@ function SendResetMail() {
           <p className="mb-2 text-secondary">
             Enter your registered email or phone number to receive a secure link to reset your password.
           </p>
-           
+
         </div>
 
         {/* Right Side: Form */}

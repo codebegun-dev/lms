@@ -4,9 +4,15 @@ const Dashboard = () => {
   const [fullName, setFullName] = useState("");
 
   useEffect(() => {
-    const user = JSON.parse(localStorage.getItem("user")) || {};
-    const name = `${user.firstName || ""} ${user.lastName || ""}`.trim();
-    setFullName(name || "Student");
+    try {
+      const storedUser = localStorage.getItem("user");
+      const user = storedUser ? JSON.parse(storedUser) : {};
+
+      const name = `${user.firstName || ""} ${user.lastName || ""}`.trim();
+      setFullName(name || "Student");
+    } catch (err) {
+      setFullName("Student");
+    }
   }, []);
 
   return (
@@ -18,8 +24,8 @@ const Dashboard = () => {
             Hi, welcome {fullName}!
           </h2>
           <p className="card-text text-muted fs-5 mb-4">
-            This is your dashboard. Here you can view your scheduled interviews, start mock interviews, 
-            track your progress, and manage your profile.
+            This is your dashboard. Here you can view your scheduled interviews, 
+            start mock interviews, track your progress, and manage your profile.
           </p>
         </div>
       </div>

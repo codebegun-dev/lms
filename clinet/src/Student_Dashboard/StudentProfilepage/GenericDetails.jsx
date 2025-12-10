@@ -2,6 +2,9 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 
+const API = import.meta.env.VITE_API_BASE_URL; 
+
+
 const indianStates = [
   "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh",
   "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka",
@@ -51,7 +54,7 @@ const GenericDetails = ({ onCompletionChange = () => { } }) => {
     const fetchData = async () => {
       try {
         const resp = await axios.get(
-          `http://localhost:8080/api/student-generic-details/${userId}`
+          `${API}/api/student-generic-details/${userId}`
         );
 
         if (resp.data) {
@@ -168,7 +171,7 @@ const GenericDetails = ({ onCompletionChange = () => { } }) => {
       const payload = { ...editingData, userId };
 
       const resp = await axios.put(
-        `http://localhost:8080/api/student-generic-details/update`,
+        `${API}/api/student-generic-details/update`,
         payload
       );
 
@@ -204,7 +207,7 @@ const GenericDetails = ({ onCompletionChange = () => { } }) => {
 
     try {
       const resp = await axios.post(
-        `http://localhost:8080/api/student-generic-details/upload/${userId}`,
+        `${API}/api/student-generic-details/upload/${userId}`,
         fd,
         {
           headers: { "Content-Type": "multipart/form-data" }
@@ -248,7 +251,7 @@ const GenericDetails = ({ onCompletionChange = () => { } }) => {
   // ================= VIEW DOCUMENT =================
   const viewDocument = (type) => {
     const corrected = type.toLowerCase(); // IMPORTANT FIX
-    const url = `http://localhost:8080/api/student-generic-details/${userId}/document/${corrected}`;
+    const url = `${API}/api/student-generic-details/${userId}/document/${corrected}`;
     window.open(url, "_blank");
   };
 
@@ -268,8 +271,7 @@ const GenericDetails = ({ onCompletionChange = () => { } }) => {
     </div>
   );
 
-  // ========================== UI ==========================
-  return (
+   return (
     <div className="card mb-4 shadow-sm">
       <div className="card-header d-flex justify-content-between align-items-center bg-light">
         <h5 className="mb-0">Generic Details</h5>
