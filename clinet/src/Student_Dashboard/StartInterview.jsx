@@ -7,6 +7,8 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { FaVideo, FaVideoSlash, FaMicrophone, FaMicrophoneSlash } from "react-icons/fa";
 import { FiClock } from "react-icons/fi";
 
+const API = import.meta.env.VITE_API_BASE_URL; 
+
 export default function StartInterview() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -267,7 +269,7 @@ export default function StartInterview() {
       if (videoBlob) formData.append("videoFile", videoBlob, "interview_video.webm");
       if (audioBlob) formData.append("audioFile", audioBlob, "interview_audio.webm");
 
-      const res = await axios.post("http://localhost:8080/api/interviews/end", formData, {
+      const res = await axios.post(`${API}/api/interviews/end`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
       console.log("upload response", res.data);
@@ -285,7 +287,7 @@ export default function StartInterview() {
     try {
       setLoadingQuestion(true);
       const res = await axios.get(
-        `http://localhost:8080/api/interviews/${interviewId}/next-question`
+        `${API}/api/interviews/${interviewId}/next-question`
       );
       const newQ = res.data?.title || res.data?.question || res.data;
       if (newQ) {
@@ -312,7 +314,7 @@ export default function StartInterview() {
         const user = JSON.parse(localStorage.getItem("user")) || {};
         const requestDto = { studentId: user.userId || 1, categoryId: passedCategoryId };
 
-        const res = await axios.post("http://localhost:8080/api/interviews/start", requestDto);
+        const res = await axios.post(`${API}/api/interviews/start`, requestDto);
         activeInterviewId = res.data?.interview?.interviewId;
         setInterviewId(activeInterviewId);
 
@@ -323,7 +325,7 @@ export default function StartInterview() {
         setQuestion(firstQ);
       } else {
         const res = await axios.get(
-          `http://localhost:8080/api/interviews/${activeInterviewId}/next-question`
+          `${API}/api/interviews/${activeInterviewId}/next-question`
         );
         const firstQ = res.data?.title || res.data?.question || res.data;
         setQuestion(firstQ || "First question not available.");
@@ -356,7 +358,7 @@ export default function StartInterview() {
     return `${m}:${sec < 10 ? "0" : ""}${sec}`;
   };
 
-  // ✅ Camera auto starts here
+  //  Camera auto starts here
   useEffect(() => {
     startCamera();
 

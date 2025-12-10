@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+const API = import.meta.env.VITE_API_BASE_URL; 
+
 
 const PGDetails = ({ onCompletionChange }) => {
   const storedUser = JSON.parse(localStorage.getItem("user"));
@@ -30,11 +32,11 @@ const PGDetails = ({ onCompletionChange }) => {
     "Other": ["Computer Science","Information Technology","Electronics","Electrical","Mechanical","Civil","Chemical","Data Science","AI/ML","Other"],
   };
 
-  // ✅ Fetch PG details on mount
+  //  Fetch PG details on mount
   useEffect(() => {
     if (userId) {
       axios
-        .get(`http://localhost:8080/api/student/pg-details/${userId}`)
+        .get(`${API}/api/student/pg-details/${userId}`)
         .then((res) => {
           if (res.data) {
             const data = res.data;
@@ -89,7 +91,7 @@ const PGDetails = ({ onCompletionChange }) => {
     };
 
     axios
-      .put("http://localhost:8080/api/student/pg-details/update", payload)
+      .put(`${API}/api/student/pg-details/update`, payload)
       .then(() => {
         setIsEditing(false);
         alert("PG Details saved successfully");

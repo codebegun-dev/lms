@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 
+const API = import.meta.env.VITE_API_BASE_URL; 
+
 const TenthGrade = ({ onCompletionChange }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [alertMsg, setAlertMsg] = useState(null); // ✅ Bootstrap alert message
@@ -18,7 +20,7 @@ const TenthGrade = ({ onCompletionChange }) => {
 
   const boards = ["CBSE", "ICSE", "State Board", "IB", "NIOS", "Other"];
 
-  // ✅ Load userId & fetch 10th data
+  //  Load userId & fetch 10th data
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem("user"));
     if (!user?.userId) {
@@ -29,7 +31,7 @@ const TenthGrade = ({ onCompletionChange }) => {
     setFormData((prev) => ({ ...prev, userId: user.userId }));
 
     axios
-      .get(`http://localhost:8080/api/tenth-grade/${user.userId}`)
+      .get(`${API}/api/tenth-grade/${user.userId}`)
       .then((res) => {
         if (res.data) {
           setFormData(res.data);
@@ -44,8 +46,7 @@ const TenthGrade = ({ onCompletionChange }) => {
     calculateCompletion(formData);
   }, [formData]);
 
-  // -------------------------------
-
+ 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -65,18 +66,17 @@ const TenthGrade = ({ onCompletionChange }) => {
     onCompletionChange(Math.round((filled / fields.length) * 100));
   };
 
-  // -------------------------------
-
+ 
   const showAlert = (msg, type) => {
     setAlertMsg(msg);
     setAlertType(type);
 
-    setTimeout(() => setAlertMsg(null), 3000); // hide after 3 seconds
+    setTimeout(() => setAlertMsg(null), 3000);  
   };
 
   const handleSave = async () => {
     try {
-      await axios.put(`http://localhost:8080/api/tenth-grade`, formData);
+      await axios.put(`${API}/api/tenth-grade`, formData);
 
       showAlert("10th Grade details saved successfully!", "success");
 
@@ -93,8 +93,7 @@ const TenthGrade = ({ onCompletionChange }) => {
     showAlert("Cancelled changes", "warning");
   };
 
-  // -------------------------------
-
+ 
   return (
     <div className="card shadow-sm border-0 my-3">
 

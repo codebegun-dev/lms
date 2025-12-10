@@ -6,7 +6,7 @@ import registrationImage from "../assets/registrationImage.png";
 
 const ForgotPasswordForm = () => {
   const [formData, setFormData] = useState({
-     newPassword: "",
+    newPassword: "",
     confirmPassword: "",
   });
 
@@ -23,7 +23,6 @@ const ForgotPasswordForm = () => {
   const token = searchParams.get("token");
 
   useEffect(() => {
-    // Retrieve email/phone stored in localStorage from SendResetMail
     const storedData = localStorage.getItem("resetEmailOrPhone");
     if (storedData) setFormData((prev) => ({ ...prev, emailOrPhone: storedData }));
   }, []);
@@ -40,7 +39,7 @@ const ForgotPasswordForm = () => {
 
   const validateForm = () => {
     const tempErrors = {};
-     if (!formData.newPassword.trim()) tempErrors.newPassword = "New password is required";
+    if (!formData.newPassword.trim()) tempErrors.newPassword = "New password is required";
     if (formData.newPassword !== formData.confirmPassword)
       tempErrors.confirmPassword = "Passwords do not match";
     setErrors(tempErrors);
@@ -60,13 +59,15 @@ const ForgotPasswordForm = () => {
     }
 
     try {
+
       const response = await axios.post(
-        "http://localhost:8080/api/user/reset-password",
+        `${import.meta.env.VITE_API_BASE_URL}/api/user/reset-password`,
         {
           token: token,
           newPassword: formData.newPassword,
         }
       );
+
       setSuccess(response.data);
       setFormData({ ...formData, newPassword: "", confirmPassword: "" });
 
@@ -97,7 +98,7 @@ const ForgotPasswordForm = () => {
           <p className="mb-2 text-secondary">
             Please reset the password for your account.
           </p>
-           
+
         </div>
 
         {/* Right Side: Form */}
@@ -118,7 +119,7 @@ const ForgotPasswordForm = () => {
           )}
 
           <form onSubmit={handleSubmit}>
-            
+
 
             {/* New Password */}
             <div className="mb-3 position-relative">

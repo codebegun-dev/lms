@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 
+const API = import.meta.env.VITE_API_BASE_URL; 
+
 const Projects = ({ onCompletionChange }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [projects, setProjects] = useState([]);
@@ -21,7 +23,7 @@ const Projects = ({ onCompletionChange }) => {
     "Other"
   ];
 
-  // ✅ Fetch projects
+  //  Fetch projects
   useEffect(() => {
     if (!userId) return;
     fetchProjects();
@@ -30,7 +32,7 @@ const Projects = ({ onCompletionChange }) => {
   const fetchProjects = async () => {
     try {
       setLoading(true);
-      const res = await axios.get(`http://localhost:8080/api/student/projects/${userId}`);
+      const res = await axios.get(`${API}/api/student/projects/${userId}`);
       setProjects(res.data.length ? res.data : [
         { id: 0, projectTitle: "", usedTechnologies: "", role: "", description: "", userId }
       ]);
@@ -41,14 +43,14 @@ const Projects = ({ onCompletionChange }) => {
     }
   };
 
-  // ✅ Handle field change
+  //  Handle field change
   const handleChange = (index, field, value) => {
     const updated = [...projects];
     updated[index][field] = value;
     setProjects(updated);
   };
 
-  // ✅ Add project UI
+  //  Add project UI
   const addProject = () => {
     setProjects([
       ...projects,
@@ -56,33 +58,33 @@ const Projects = ({ onCompletionChange }) => {
     ]);
   };
 
-  // ✅ Save/Update project list
+  //  Save/Update project list
   const handleSave = async () => {
     try {
       for (const project of projects) {
-        await axios.post(`http://localhost:8080/api/student/projects`, {
+        await axios.post(`${API}/api/student/projects`, {
           ...project,
           userId
         });
       }
       setIsEditing(false);
       fetchProjects();
-      alert("Projects saved successfully ✅");
+      alert("Projects saved successfully ");
     } catch (err) {
       console.error(err);
-      alert("Failed to save projects ❌");
+      alert("Failed to save projects ");
     }
   };
 
-  // ✅ Remove project
+  //  Remove project
   const removeProject = async (index, projectId) => {
     if (projectId > 0) {
-      await axios.delete(`http://localhost:8080/api/student/projects/${projectId}`);
+      await axios.delete(`${API}/api/student/projects/${projectId}`);
     }
     setProjects(projects.filter((_, i) => i !== index));
   };
 
-  // ✅ Calculate section completion
+  // Calculate section completion
   useEffect(() => {
     let total = 0, filled = 0;
     projects.forEach(p => {

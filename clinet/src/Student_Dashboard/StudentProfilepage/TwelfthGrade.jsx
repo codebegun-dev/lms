@@ -2,6 +2,9 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
+const API = import.meta.env.VITE_API_BASE_URL; 
+
+
 const TwelfthGrade = ({ onCompletionChange }) => {
   const navigate = useNavigate();
 
@@ -52,7 +55,7 @@ const TwelfthGrade = ({ onCompletionChange }) => {
     }
 
     axios
-      .get(`http://localhost:8080/api/twelfth-grade/${userId}`)
+      .get(`${API}/api/twelfth-grade/${userId}`)
       .then((res) => {
         if (res?.data) {
           setFormData({ ...res.data, userId });
@@ -83,7 +86,7 @@ const TwelfthGrade = ({ onCompletionChange }) => {
     try {
       const payload = { ...formData, userId };
 
-      await axios.put("http://localhost:8080/api/twelfth-grade", payload);
+      await axios.put(`${API}/api/twelfth-grade`, payload);
 
       setBackupData(payload);
       setIsEditing(false);

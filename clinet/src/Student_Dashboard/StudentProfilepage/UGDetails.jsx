@@ -2,6 +2,9 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
+const API = import.meta.env.VITE_API_BASE_URL; 
+
+
 const UGDetails = ({ onCompletionChange }) => {
   const navigate = useNavigate();
 
@@ -34,7 +37,7 @@ const UGDetails = ({ onCompletionChange }) => {
     'Other': ['Other']
   };
 
-  // ✅ Load UG data from backend
+  //  Load UG data from backend
   useEffect(() => {
     if (!userId) {
       alert("Session expired. Please login again.");
@@ -42,7 +45,7 @@ const UGDetails = ({ onCompletionChange }) => {
       return;
     }
 
-    axios.get(`http://localhost:8080/api/student/ug-details/${userId}`)
+    axios.get(`${API}/api/student/ug-details/${userId}`)
       .then(res => {
         if (res?.data) {
           setFormData({ ...res.data, userId });
@@ -51,7 +54,7 @@ const UGDetails = ({ onCompletionChange }) => {
       .catch(() => {});
   }, [userId, navigate]);
 
-  // ✅ Update completion %
+  // Update completion %
   useEffect(() => {
     calculateCompletion();
   }, [formData]);
@@ -75,12 +78,12 @@ const UGDetails = ({ onCompletionChange }) => {
   const handleSave = async () => {
     try {
       const payload = { ...formData, userId };
-      await axios.put("http://localhost:8080/api/student/ug-details/update", payload);
+      await axios.put(`${API}/api/student/ug-details/update`, payload);
 
       setIsEditing(false);
-      alert("UG details saved successfully ✅");
+      alert("UG details saved successfully ");
     } catch (err) {
-      alert("Failed to save UG details ❌");
+      alert("Failed to save UG details ");
     }
   };
 

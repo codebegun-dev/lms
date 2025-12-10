@@ -16,7 +16,7 @@ import Dashboard from './Student_Dashboard/Dashboard';
 import StartInterview from './Student_Dashboard/StartInterview';
 import MockInterview from './Student_Dashboard/MockInterview';
 import StudentNavbar from './Student_Dashboard/StudentNavbar';
-import StudentProfile from './Student_Dashboard/Studentprofile';
+import StudentProfile from './Student_Dashboard/StudentProfile';
 
 
 // Admin Dashboard

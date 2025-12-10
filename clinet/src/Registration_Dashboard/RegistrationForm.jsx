@@ -1,11 +1,10 @@
- 
-
 
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Eye, EyeOff } from "react-feather";
 import registrationImage from "../assets/registrationImage.png";
+
 
 function RegistrationForm() {
   const navigate = useNavigate();
@@ -53,18 +52,18 @@ function RegistrationForm() {
   const validateForm = () => {
     const tempErrors = {};
 
-if (formData.firstName.trim().length < 3)
-  tempErrors.firstName = "First name must be at least 3 characters";
+    if (formData.firstName.trim().length < 3)
+      tempErrors.firstName = "First name must be at least 3 characters";
 
-if (formData.lastName.trim().length < 3)
-  tempErrors.lastName = "Last name must be at least 3 characters";
+    if (formData.lastName.trim().length < 3)
+      tempErrors.lastName = "Last name must be at least 3 characters";
 
 
     if (!formData.email.trim()) tempErrors.email = "Email is required";
-else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email))
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email))
 
-    if (!formData.phone.trim()) tempErrors.phone = "Phone is required";
-    else if (!/^\d{10}$/.test(formData.phone)) tempErrors.phone = "Phone must be 10 digits";
+      if (!formData.phone.trim()) tempErrors.phone = "Phone is required";
+      else if (!/^\d{10}$/.test(formData.phone)) tempErrors.phone = "Phone must be 10 digits";
 
     if (!isAdminRegistration) {
       if (!formData.password.trim()) tempErrors.password = "Password is required";
@@ -95,10 +94,9 @@ else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email))
         status: "ACTIVE",
       };
 
-      const res = await axios.post("http://localhost:8080/api/user", payload);
-
-      // SUCCESS
-      setSuccess(res.data.message || "Registered successfully!");
+      const res = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/user`, payload);
+ 
+       setSuccess(res.data.message || "Registered successfully!");
 
       if (res.data.user) {
         localStorage.setItem("user", JSON.stringify(res.data.user));
