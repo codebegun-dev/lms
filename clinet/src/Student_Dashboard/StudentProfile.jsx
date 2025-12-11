@@ -8,8 +8,7 @@ import TwelfthGrade from "./StudentProfilepage/TwelfthGrade";
 import UGDetails from "./StudentProfilepage/UGDetails";
 import PGDetails from "./StudentProfilepage/PGDetails";
 import Projects from "./StudentProfilepage/Projects";
-import CourseDetails from "./StudentProfilepage/CourseDetails";
-import FeeDetails from "./StudentProfilepage/FeeDetails";
+import CourseAndFeeDetails from "./StudentProfilepage/CourseAndFeeDetails"; // Changed
 
 const StudentProfile = () => {
   const navigate = useNavigate();
@@ -22,7 +21,7 @@ const StudentProfile = () => {
     ug: 0,
     pg: 0,
     projects: 0,
-    course: 0,
+    courseAndFee: 0, // Changed from 'course'
   });
 
   const updateSectionCompletion = (section, percentage) => {
@@ -34,14 +33,14 @@ const StudentProfile = () => {
 
   return (
     <>
-      {/*  Navbar always visible at top */}
+      {/* Navbar always visible at top */}
       <StudentNavbar />
 
-      {/*  Profile main container */}
+      {/* Profile main container */}
       <div className="container py-4">
         <div className="bg-white p-4 rounded shadow-sm">
           
-          {/*  Header with right-aligned Back button */}
+          {/* Header with right-aligned Back button */}
           <div className="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
             <h4 className="mb-0 fw-bold">My Profile</h4>
             <button
@@ -52,7 +51,7 @@ const StudentProfile = () => {
             </button>
           </div>
 
-          {/*  All profile sections */}
+          {/* All profile sections */}
           <div className="d-flex flex-column gap-3">
             <PersonalInformation
               onCompletionChange={(p) => updateSectionCompletion("personal", p)}
@@ -75,10 +74,10 @@ const StudentProfile = () => {
             <Projects
               onCompletionChange={(p) => updateSectionCompletion("projects", p)}
             />
-            <CourseDetails
-              onCompletionChange={(p) => updateSectionCompletion("course", p)}
+            {/* Replace CourseDetails and FeeDetails with combined component */}
+            <CourseAndFeeDetails
+              onCompletionChange={(p) => updateSectionCompletion("courseAndFee", p)}
             />
-            <FeeDetails />
           </div>
         </div>
       </div>
