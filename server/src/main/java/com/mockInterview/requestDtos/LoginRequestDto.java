@@ -1,6 +1,6 @@
 package com.mockInterview.requestDtos;
 
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -8,10 +8,10 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class LoginRequestDto {
-	
-	@NotNull(message="email or phone number must be required")
-	private String emailOrPhone;
-	@NotNull(message="password is required")
-	private String password;
+	@NotBlank(message = "Email or phone is required")
+    private String emailOrPhone;
+
+    @NotBlank(message = "Password is required")
+    private String password;
 
 }
