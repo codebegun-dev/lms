@@ -1,11 +1,18 @@
 package com.mockInterview.responseDtos;
 
-import lombok.Data;
-import java.util.List;
+import lombok.*;
 
-@Data
+
+import java.util.Set;
+
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class RoleResponseDto {
     private Long id;
     private String name;
-    private List<String> permissions;
+    private String description;
+    private Set<String> permissions;
 }

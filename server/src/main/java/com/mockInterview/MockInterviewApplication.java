@@ -7,7 +7,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
 @EnableAsync 
-@EnableScheduling   
+@EnableScheduling 
 public class MockInterviewApplication {
 
 	public static void main(String[] args) {
@@ -15,4 +15,4 @@ public class MockInterviewApplication {
 		System.out.println("MY APPLICATION STARTED....");
 	}
 
-}
+} 

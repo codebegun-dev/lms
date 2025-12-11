@@ -1,14 +1,20 @@
 package com.mockInterview.dataInitializer;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.CommandLineRunner;
-import org.springframework.stereotype.Component;
 
 import com.mockInterview.entity.Role;
 import com.mockInterview.entity.User;
+
 import com.mockInterview.repository.RoleRepository;
 import com.mockInterview.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.CommandLineRunner;
+
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Component;
+
+
+
 
 @Component
 public class DataInitializer implements CommandLineRunner {
@@ -19,6 +25,10 @@ public class DataInitializer implements CommandLineRunner {
     @Autowired
     private UserRepository userRepository;
 
+    
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
     @Value("${master.admin.email}")
     private String MASTER_ADMIN_EMAIL;
 
@@ -27,54 +37,54 @@ public class DataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-
-        initializeRoles();
-        initializeMasterAdmin();
+        
+        ensureDefaultRoles();
+        createMasterAdmin();
     }
 
-    // ========================= ROLE SETUP =========================
-    private void initializeRoles() {
+   
+    // ====================== Ensure fallback roles ======================
+    private void ensureDefaultRoles() {
+        createRoleIfAbsent("STUDENT");
+        createRoleIfAbsent("DEFAULT");
+        createRoleIfAbsent("MASTER_ADMIN");
+        System.out.println("✔ Default roles ensured.");
+    }
 
-        if (roleRepository.count() > 0) {
-            return; // Roles already exist → skip
+    private void createRoleIfAbsent(String roleName) {
+        Role role = roleRepository.findByName(roleName);
+        if (role == null) {
+            role = new Role();
+            role.setName(roleName);
+            roleRepository.save(role);
+            System.out.println("→ Created fallback role: " + roleName);
         }
-
-        Role student = new Role();
-        student.setName("STUDENT");
-        roleRepository.save(student);
-
-        Role master = new Role();
-        master.setName("MASTER_ADMIN");
-        roleRepository.save(master);
-
-        Role defaultRole = new Role();
-        defaultRole.setName("DEFAULT");
-        roleRepository.save(defaultRole);
-
-        System.out.println("✔ Default roles initialized.");
     }
 
-    // ========================= MASTER ADMIN SETUP =========================
-    private void initializeMasterAdmin() {
-
-        // Check with lightweight existence check (no full row fetch)
+    private void createMasterAdmin() {
         if (userRepository.existsByEmail(MASTER_ADMIN_EMAIL)) {
-            return; // Already exists → skip
+            System.out.println("✔ Master Admin already exists, skipping creation.");
+            return;
         }
 
+        // Ensure MASTER_ADMIN role exists
         Role masterRole = roleRepository.findByName("MASTER_ADMIN");
+        if (masterRole == null) {
+            masterRole = new Role();
+            masterRole.setName("MASTER_ADMIN");
+            roleRepository.save(masterRole);
+        }
 
         User masterAdmin = new User();
-        masterAdmin.setFirstName("Master"); 
+        masterAdmin.setFirstName("Master");
         masterAdmin.setLastName("Admin");
         masterAdmin.setEmail(MASTER_ADMIN_EMAIL);
-        masterAdmin.setPassword(MASTER_ADMIN_PASSWORD);
+        masterAdmin.setPassword(passwordEncoder.encode(MASTER_ADMIN_PASSWORD));
         masterAdmin.setPhone("9999999999");
         masterAdmin.setRole(masterRole);
         masterAdmin.setStatus("ACTIVE");
 
         userRepository.save(masterAdmin);
-
-        System.out.println("✔ Master Admin created.");
-    }
+        System.out.println("✔ Master Admin created successfully.");
+    }  
 }

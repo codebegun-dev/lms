@@ -1,12 +1,15 @@
 package com.mockInterview.requestDtos;
 
-import lombok.Data;
-import java.util.List;
+import lombok.*;
 
-@Data
+import java.util.Set;
+
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public class RoleRequestDto {
     private String name;
-    private List<String> permissions;
-    private Long adminAuthId; 
-    
+    private String description;
+    private Set<Long> permissionIds; // assign permissions by ID
 }
