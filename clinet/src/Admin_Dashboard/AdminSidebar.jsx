@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { FaBook, FaUsers, FaLayerGroup, FaClipboardList, FaFolderPlus, FaRegListAlt, FaUserCog } from "react-icons/fa";
+import { FaBook, FaUsers, FaLayerGroup, FaClipboardList, FaFolderPlus, FaRegListAlt, FaUserCog,FaQuestionCircle } from "react-icons/fa";
 
 const AdminSidebar = () => {
   return (
@@ -109,12 +109,12 @@ const AdminSidebar = () => {
 
         <li className="mb-3">
           <NavLink
-            to="quiz"
+            to="quizzes"
             className={({ isActive }) =>
               `d-flex align-items-center text-decoration-none ${isActive ? "fw-bold text-primary" : "text-dark"}`
             }
           >
-            <FaUsers className="me-2" />Quiz
+            <FaQuestionCircle className="me-2" />Quiz
           </NavLink>
         </li>
 
