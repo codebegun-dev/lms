@@ -1,8 +1,6 @@
 package com.mockInterview.scheduler;
 
-
-
-import java.time.LocalDateTime;
+import java.util.Date;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -16,12 +14,11 @@ public class TokenCleanupScheduler {
     @Autowired
     private PasswordResetTokenRepository tokenRepository;
 
-    @Scheduled(cron = "0 0 0 * * ?") // Runs daily at midnight
+    // Runs daily at midnight
+    @Scheduled(cron = "0 0 0 * * ?")
     public void cleanupExpiredTokens() {
-        LocalDateTime now = LocalDateTime.now();
-        int deletedCount = tokenRepository.deleteExpiredTokens(now);
+        Date now = new Date();
+        int deletedCount = tokenRepository.deleteExpiredTokens(now, tokenRepository);
         System.out.println("🧹 Cleaned up " + deletedCount + " expired/used tokens at: " + now);
     }
-
 }
-

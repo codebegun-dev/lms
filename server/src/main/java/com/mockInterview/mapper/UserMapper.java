@@ -20,7 +20,13 @@ public class UserMapper {
     @Autowired
     private RoleRepository roleRepository;
 
-    public User toEntity(UserRequestDto dto) {
+    /**
+     * Convert DTO to Entity (for both create and update)
+     * @param dto UserRequestDto
+     * @param isPublicStudent true if registration is public/student
+     * @return User entity
+     */
+    public User toEntity(UserRequestDto dto, boolean isPublicStudent) {
         User user = new User();
         user.setFirstName(dto.getFirstName());
         user.setLastName(dto.getLastName());
@@ -28,15 +34,19 @@ public class UserMapper {
         user.setPhone(dto.getPhone());
         user.setPassword(dto.getPassword());
 
-        Role role = null;
-        if (dto.getRoleId() != null) {
-            role = roleRepository.findById(dto.getRoleId())
-                    .orElseThrow(() -> new RuntimeException("Role not found with id " + dto.getRoleId()));
-        } else {
-            // Assign default STUDENT role
+        Role role;
+        if (isPublicStudent) {
+            // Public registration → STUDENT role
             role = roleRepository.findByName("STUDENT");
-            if (role == null) {
-                throw new RuntimeException("Default STUDENT role not initialized");
+            if (role == null) throw new RuntimeException("STUDENT role not initialized");
+        } else {
+            // Admin registration → can choose role, default STUDENT
+            if (dto.getRoleId() != null) {
+                role = roleRepository.findById(dto.getRoleId())
+                        .orElseThrow(() -> new RuntimeException("Role not found with id " + dto.getRoleId()));
+            } else {
+                role = roleRepository.findByName("STUDENT");
+                if (role == null) throw new RuntimeException("Default STUDENT role not initialized");
             }
         }
 
@@ -44,6 +54,9 @@ public class UserMapper {
         return user;
     }
 
+    /**
+     * Convert User entity to Response DTO
+     */
     public UserResponseDto toResponse(User user) {
         UserResponseDto dto = new UserResponseDto();
         dto.setUserId(user.getUserId());
@@ -53,9 +66,14 @@ public class UserMapper {
         dto.setPhone(user.getPhone());
         dto.setRole(user.getRole() != null ? user.getRole().getName() : null);
         dto.setStatus(user.getStatus());
-      
 
+        // Auditing fields
+        dto.setCreatedBy(user.getCreatedBy());
+        dto.setUpdatedBy(user.getUpdatedBy());
+        dto.setCreatedDate(user.getCreatedDate());
+        dto.setUpdatedDate(user.getUpdatedDate());
 
+        // Profile picture logic
         String baseUrl = ServletUriComponentsBuilder.fromCurrentContextPath().toUriString();
         StudentPersonalInfo info = studentPersonalInfoRepository.findByUser_UserId(user.getUserId());
 

@@ -1,39 +1,30 @@
 package com.mockInterview.requestDtos;
 
-import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
-@AllArgsConstructor
 @NoArgsConstructor
+@AllArgsConstructor
 public class UserRequestDto {
 
     @Size(min = 3, max = 30, message = "firstName should be min 3 and max 30 characters")
-    private String firstName;
+    private String firstName;  
 
     @Size(min = 3, max = 30, message = "lastName should be min 3 and max 30 characters")
-    private String lastName;
-
+    private String lastName;   
     @Pattern(
         regexp = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,6}$",
         message = "Invalid email format"
     )
-    private String email;
-
+    private String email;     
     @Pattern(regexp = "^[0-9]{10}$", message = "Phone number must be 10 digits")
-    private String phone;
+    private String phone;     
 
-    
     @Size(min = 8, message = "Password must be at least 8 characters")
-    @Pattern(
-        regexp = "^(?=.*[A-Z])(?=.*[a-z])(?=.*\\d)(?=.*[@$!%*?&#])[A-Za-z\\d@$!%*?&#]{8,}$",
-        message = "Password must contain at least 1 uppercase, 1 lowercase, 1 number, 1 special character and be at least 8 characters long"
-    )
-    private String password;
+    private String password;  
 
-    private Long roleId;          // optional; required for admin-created users
-    private Long adminAuthId;
+    private Long roleId;       
 }

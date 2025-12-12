@@ -2,21 +2,26 @@ package com.mockInterview.entity;
 
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
+import org.springframework.data.annotation.*;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import jakarta.persistence.*;
+import jakarta.persistence.Id;
 import jakarta.validation.constraints.*;
 import lombok.*;
+import java.time.LocalDateTime;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name="users")
+@Table(name = "users")
+@EntityListeners(AuditingEntityListener.class)
 public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private long userId;
+    private Long userId;
 
     @NotNull
     @Size(min = 3, max = 30)
@@ -35,31 +40,32 @@ public class User {
     private String phone;
 
     @Size(min = 8, message = "Password must be at least 8 characters")
-//    @Pattern(
-//        regexp = "^(?=.*[A-Z])(?=.*[a-z])(?=.*\\d)(?=.*[@$!%*?&#])[A-Za-z\\d@$!%*?&#]{8,}$", 
-//        message = "Password must contain at least 1 uppercase, 1 lowercase, 1 number, 1 special character and be at least 8 characters long"
-//    )
     private String password;
-
 
     @ManyToOne(fetch = FetchType.EAGER, optional = true)
     @JoinColumn(name = "role_id", referencedColumnName = "id", foreignKey = @ForeignKey(name = "FK_user_role"))
     @OnDelete(action = OnDeleteAction.SET_NULL)
     private Role role;
 
-
-
-
     private String resetToken;
-    
+
     @Column(nullable = false)
     private String status = "ACTIVE";
 
-    
+    // =================== Auditing Fields ===================
+    @CreatedBy
+    private Long createdBy;
+
+    @CreatedDate
+    private LocalDateTime createdDate;
+
+    @LastModifiedBy
+    private Long updatedBy;
+
+    @LastModifiedDate
+    private LocalDateTime updatedDate;
+
     public String getName() {
         return firstName + " " + lastName;
     }
-    
-    
-
 }
