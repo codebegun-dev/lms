@@ -110,6 +110,7 @@ import com.mockInterview.entity.Role;
 import com.mockInterview.entity.User;
 import com.mockInterview.repository.PermissionRepository;
 import com.mockInterview.repository.UserRepository;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -125,10 +126,9 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Component
-public class JwtAuthenticationFilter extends OncePerRequestFilter {
+public class JwtAuthenticationFilter extends OncePerRequestFilter { 
 
     @Autowired
     private JwtUtil jwtUtil;
@@ -137,7 +137,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private UserRepository userRepository;
 
     @Autowired
-    private PermissionRepository permissionRepository; // needed for MASTER_ADMIN all perms
+    private PermissionRepository permissionRepository;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -149,40 +149,46 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             String token = getJwtFromRequest(request);
 
             if (token != null && jwtUtil.validateToken(token)) {
+
                 Long userId = jwtUtil.getUserIdFromToken(token);
 
-                // load user from DB (to check status, role id etc)
                 User user = userRepository.findById(userId).orElse(null);
+
                 if (user != null && "ACTIVE".equalsIgnoreCase(user.getStatus())) {
 
-                    // 1) try to read permissions directly from token
-                    Set<String> permissionNames = new HashSet<>(jwtUtil.getPermissionsFromToken(token));
+                    // ===================== LOAD PERMISSIONS FROM DB =====================
+                    Set<String> permissionNames = new HashSet<String>();
 
-                    // 2) if token did not contain permissions (empty), fallback to DB role permissions
-                    if (permissionNames.isEmpty()) {
-                        Role role = user.getRole();
-                        if (role != null && role.getPermissions() != null) {
-                            for (Permission p : role.getPermissions()) {
-                                if (p != null && p.getName() != null) permissionNames.add(p.getName());
+                    Role role = user.getRole();
+                    if (role != null && role.getPermissions() != null) {
+
+                        for (Permission p : role.getPermissions()) {
+                            if (p != null && p.getName() != null) {
+                                permissionNames.add(p.getName());
                             }
-                        }
-                        // if master admin role, add all perms from DB (defensive)
-                        if (role != null && "MASTER_ADMIN".equalsIgnoreCase(role.getName())) {
-                            List<Permission> all = permissionRepository.findAll();
-                            for (Permission p : all) if (p != null && p.getName() != null) permissionNames.add(p.getName());
-                            permissionNames.add("ALL_PERMISSIONS");
-                        }
-                    } else {
-                        // token had permissions — ensure master admin still gets wildcard if role is master
-                        Role role = user.getRole();
-                        if (role != null && "MASTER_ADMIN".equalsIgnoreCase(role.getName())) {
-                            permissionNames.add("ALL_PERMISSIONS");
                         }
                     }
 
-                    List<SimpleGrantedAuthority> authorities = permissionNames.stream()
-                            .map(SimpleGrantedAuthority::new)
-                            .collect(Collectors.toList());
+                    // ===================== MASTER_ADMIN WILDCARD =====================
+                    if (role != null && "MASTER_ADMIN".equalsIgnoreCase(role.getName())) {
+
+                        permissionNames.add("ALL_PERMISSIONS"); // wildcard
+
+                        // load all DB permissions (safe defensive logic)
+                        List<Permission> all = permissionRepository.findAll();
+                        for (Permission p : all) {
+                            if (p != null && p.getName() != null) {
+                                permissionNames.add(p.getName());
+                            }
+                        }
+                    }
+
+                    // ===================== CONVERT TO AUTHORITIES =====================
+                    List<SimpleGrantedAuthority> authorities = new ArrayList<SimpleGrantedAuthority>();
+
+                    for (String perm : permissionNames) {
+                        authorities.add(new SimpleGrantedAuthority(perm));
+                    }
 
                     CustomUserDetails userDetails = new CustomUserDetails(
                             user.getUserId(),
@@ -192,13 +198,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     );
 
                     UsernamePasswordAuthenticationToken authentication =
-                            new UsernamePasswordAuthenticationToken(userDetails, null, authorities);
+                            new UsernamePasswordAuthenticationToken(
+                                    userDetails,
+                                    null,
+                                    authorities
+                            );
 
                     SecurityContextHolder.getContext().setAuthentication(authentication);
                 }
             }
+
         } catch (Exception ex) {
-            System.err.println("JWT Authentication failed: " + ex.getMessage());
+            System.out.println("JWT Auth Error: " + ex.getMessage());
         }
 
         filterChain.doFilter(request, response);
@@ -206,7 +217,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private String getJwtFromRequest(HttpServletRequest request) {
         String bearer = request.getHeader("Authorization");
-        if (StringUtils.hasText(bearer) && bearer.startsWith("Bearer ")) return bearer.substring(7);
+
+        if (StringUtils.hasText(bearer) && bearer.startsWith("Bearer ")) {
+            return bearer.substring(7);
+        }
         return null;
     }
 }

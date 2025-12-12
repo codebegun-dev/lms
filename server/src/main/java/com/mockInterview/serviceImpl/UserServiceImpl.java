@@ -319,11 +319,13 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional
     public void deleteUser(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         if ("MASTER_ADMIN".equalsIgnoreCase(user.getRole() != null ? user.getRole().getName() : ""))
             throw new UnauthorizedActionException("Master Admin cannot be deleted");
+        tokenRepository.deleteByUser(user);
         userRepository.delete(user);
     }
 
