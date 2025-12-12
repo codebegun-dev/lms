@@ -111,11 +111,11 @@
 
 package com.mockInterview.controller;
 
-import com.mockInterview.entity.Permission;
+
 import com.mockInterview.entity.Role;
 import com.mockInterview.entity.User;
 import com.mockInterview.exception.ResourceNotFoundException;
-import com.mockInterview.repository.PermissionRepository;
+
 import com.mockInterview.repository.UserRepository;
 import com.mockInterview.security.JwtUtil;
 import com.mockInterview.requestDtos.LoginRequestDto;
@@ -128,7 +128,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.*;
+
 
 @RestController
 @RequestMapping("/api/users")
@@ -139,9 +139,7 @@ public class AuthController {
     @Autowired
     private UserRepository userRepository;
 
-    @Autowired
-    private PermissionRepository permissionRepository;
-
+    
     @Autowired
     private JwtUtil jwtUtil;
 
@@ -158,47 +156,24 @@ public class AuthController {
                 loginRequest.getEmailOrPhone()
         );
 
-        if (user == null) {
-            logger.warn("Login failed: user not found -> {}", loginRequest.getEmailOrPhone());
-            throw new ResourceNotFoundException("Invalid email or phone");
-        }
+        if (user == null) throw new ResourceNotFoundException("Invalid email or phone");
+        if (!"ACTIVE".equalsIgnoreCase(user.getStatus())) throw new ResourceNotFoundException("User is inactive");
 
-        if (!"ACTIVE".equalsIgnoreCase(user.getStatus())) {
-            logger.warn("Login failed: inactive user -> {}", loginRequest.getEmailOrPhone());
-            throw new ResourceNotFoundException("User is inactive");
-        }
-
-        if (!passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())) {
-            logger.warn("Login failed: wrong password -> {}", loginRequest.getEmailOrPhone());
+        if (!passwordEncoder.matches(loginRequest.getPassword(), user.getPassword()))
             throw new ResourceNotFoundException("Incorrect password");
-        }
 
-        // ==================== ROLE & PERMISSIONS ====================
         Role role = user.getRole();
         if (role == null) throw new ResourceNotFoundException("User role not found");
 
-        Set<String> permissionNames = new HashSet<>();
-        if (role.getPermissions() != null) {
-            for (Permission p : role.getPermissions()) {
-                if (p != null && p.getName() != null) permissionNames.add(p.getName());
-            }
-        }
-
-        if ("MASTER_ADMIN".equalsIgnoreCase(role.getName())) {
-            List<Permission> all = permissionRepository.findAll();
-            for (Permission p : all) if (p != null && p.getName() != null) permissionNames.add(p.getName());
-            permissionNames.add("ALL_PERMISSIONS");
-        }
-
-        List<String> permissions = new ArrayList<>(permissionNames);
-
-        // ==================== GENERATE JWT ====================
-        String token = jwtUtil.generateToken(user.getUserId(), user.getEmail(),
-                Collections.singletonList(role.getName()), permissions);
+        // 🔥 DO NOT PUT PERMISSIONS INSIDE TOKEN
+        String token = jwtUtil.generateToken(
+                user.getUserId(),
+                user.getEmail(),
+                role.getName()
+        );
 
         logger.info("Login successful: userId={}, email={}", user.getUserId(), user.getEmail());
 
-        // Only return token in response
         return ResponseEntity.ok(new LoginResponseDto(token));
     }
 
