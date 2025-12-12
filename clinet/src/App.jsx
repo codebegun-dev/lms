@@ -62,6 +62,8 @@ import CreateCompaign from './Sales_Dashboard/CreateCompaign';
 import SalesCounselorDashboard from './Sales_Dashboard/Sales_Counselor/SalesCounselorDashboard';
 import CounselorProfile from "./Sales_Dashboard/Sales_Counselor/CounselorProfile";
 import GetApiTest from './Admin_Dashboard/QuizManagement/Quiz/GetApiTest';
+import Quiz from './Admin_Dashboard/QuizManagement/Quiz/Quiz';
+import QuestionManagement from './Admin_Dashboard/QuizManagement/Quiz/QuestionManagement';
 
 
 function App() {
@@ -109,7 +111,13 @@ function App() {
           <Route path="syllabus/:courseName" element={<Syllabus />} />
           <Route path="edit-article" element={<EditArticle />} />
           {/* QuizManagement */}
-          <Route path="quiz" element={<QuizForm />} />
+          {/* <Route path="quiz" element={<QuizForm />} /> */}
+          {/* <Route path="quizes" element={<Quiz />} /> */}
+
+          <Route path="quizzes" element={<Quiz />} />
+          <Route path="quizzes/:quizId/questions" element={<QuestionManagement />} />
+
+
         </Route>
 
 
