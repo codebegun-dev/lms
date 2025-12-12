@@ -3,39 +3,40 @@ package com.mockInterview.service;
 import java.util.List;
 import java.util.Map;
 
-import com.mockInterview.requestDtos.LoginRequestDto;
 import com.mockInterview.requestDtos.UserRequestDto;
-import com.mockInterview.requestDtos.UserUpdateRequestDto;
 import com.mockInterview.responseDtos.UserResponseDto;
 
 public interface UserService {
-	
-	UserResponseDto createUser(UserRequestDto dto);
 
-	
+    // ---------- CREATE ----------
+	public UserResponseDto createUser(UserRequestDto dto);
 
-public UserResponseDto login(LoginRequestDto loginDto);
+    // ---------- PASSWORD MANAGEMENT ----------
+    String forgotPassword(String emailOrPhone);
+    String resetPassword(String token, String newPassword);
 
-public String forgotPassword(String emailOrPhone);
+    // ---------- USER RETRIEVAL ----------
+    List<UserResponseDto> getAllActiveUsers();
+    List<UserResponseDto> getAllUsersWithStatus();
+    UserResponseDto getUserById(Long userId);
 
-public String resetPassword(String token, String newPassword);
+    public UserResponseDto updateUser(Long userId, UserRequestDto dto);
 
-List<UserResponseDto> getAllActiveUsers();
-public List<UserResponseDto> getAllUsersWithStatus();
+    // ---------- STATUS MANAGEMENT ----------
+    void deactivateUser(Long userId);
+    void activateUser(Long userId);
+    void deleteUser(Long userId);
 
-UserResponseDto getUserById(Long userId);
+    // ---------- SPECIAL ADMIN OPERATIONS ----------
+    void syncPasswordsWithMasterAdmin();
+    public UserResponseDto assignRoleToUser(Long userId, Long roleId);
 
-UserResponseDto updateUser(Long userId, UserUpdateRequestDto dto);
+    // Master Admin can bulk change user roles (JWT will be used to check)
+    void bulkChangeUsersRoleByAdmin(Long fromRoleId, Long toRoleId);
 
-void deactivateUser(Long userId);
-void activateUser(Long userId);
-public void deleteUser(Long userId);
+    // ---------- DASHBOARD ----------
+    Map<String, Object> getDashboardCounts();
 
-public void syncPasswordsWithMasterAdmin();
-
-public void bulkChangeUsersRoleByAdmin(Long adminId, Long fromRoleId, Long toRoleId);
-
-public Map<String, Object> getDashboardCounts();
-
-public List<UserResponseDto> getAssignableUsers();
+    // ---------- UTILITY ----------
+    List<UserResponseDto> getAssignableUsers();
 }

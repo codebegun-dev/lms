@@ -31,42 +31,47 @@ public class PermissionScanner implements ApplicationRunner {
 
         for (var entry : handlerMapping.getHandlerMethods().entrySet()) {
 
-            HandlerMethod method = entry.getValue();
+            HandlerMethod handlerMethod = entry.getValue();
 
-            PreAuthorize pre = method.getMethodAnnotation(PreAuthorize.class);
-
-            if (pre == null) 
-                continue;
-
-            String exp = pre.value(); // ex: "hasAuthority('DELETE_ROLE')"
-
-            // Extract permissions
-            if (exp.contains("hasAuthority")) {
-
-                String perm = exp.substring(exp.indexOf("'") + 1, exp.lastIndexOf("'"));
-
-                savePermission(perm);
+            // Scan method-level
+            PreAuthorize methodPre = handlerMethod.getMethodAnnotation(PreAuthorize.class);
+            if (methodPre != null) {
+                extractAndSave(methodPre.value());
             }
 
-            // Support hasAnyAuthority('A','B','C')
-            if (exp.contains("hasAnyAuthority")) {
-                String inside = exp.substring(exp.indexOf("(") + 1, exp.indexOf(")"));
-                String[] perms = inside.replace("'", "").split(",");
-
-                for (String perm : perms) {
-                    savePermission(perm.trim());
-                }
+            // Scan class-level
+            PreAuthorize classPre = handlerMethod.getBeanType().getAnnotation(PreAuthorize.class);
+            if (classPre != null) {
+                extractAndSave(classPre.value());
             }
         }
 
         System.out.println("✅ Permission scan complete.");
     }
 
+    private void extractAndSave(String expr) {
+
+        // hasAuthority('X')
+        if (expr.contains("hasAuthority")) {
+            String perm = expr.substring(expr.indexOf("'") + 1, expr.lastIndexOf("'"));
+            savePermission(perm);
+        }
+
+        // hasAnyAuthority('A', 'B')
+        if (expr.contains("hasAnyAuthority")) {
+            String inside = expr.substring(expr.indexOf("(") + 1, expr.indexOf(")"));
+            String[] perms = inside.replace("'", "").split(",");
+            for (String perm : perms) {
+                savePermission(perm.trim());
+            }
+        }
+    }
+
     private void savePermission(String perm) {
         if (permissionRepository.findByName(perm) == null) {
-            Permission newPerm = new Permission();
-            newPerm.setName(perm);
-            permissionRepository.save(newPerm);
+            Permission p = new Permission();
+            p.setName(perm);
+            permissionRepository.save(p);
             System.out.println("→ Added Permission: " + perm);
         }
     }

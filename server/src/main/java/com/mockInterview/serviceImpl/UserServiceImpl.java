@@ -1,37 +1,33 @@
 package com.mockInterview.serviceImpl;
 
 import java.security.SecureRandom;
-import java.time.LocalDateTime;
-import java.util.Base64;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import com.mockInterview.entity.PasswordResetToken;
 import com.mockInterview.entity.Role;
 import com.mockInterview.entity.User;
+import com.mockInterview.entity.PasswordResetToken;
 import com.mockInterview.exception.DuplicateFieldException;
 import com.mockInterview.exception.ResourceNotFoundException;
 import com.mockInterview.exception.UnauthorizedActionException;
 import com.mockInterview.mapper.UserMapper;
-import com.mockInterview.repository.PasswordResetTokenRepository;
 import com.mockInterview.repository.RoleRepository;
 import com.mockInterview.repository.StudentPersonalInfoRepository;
 import com.mockInterview.repository.UserRepository;
-import com.mockInterview.requestDtos.LoginRequestDto;
+import com.mockInterview.repository.PasswordResetTokenRepository;
 import com.mockInterview.requestDtos.UserRequestDto;
-import com.mockInterview.requestDtos.UserUpdateRequestDto;
 import com.mockInterview.responseDtos.UserResponseDto;
+import com.mockInterview.security.SecurityUtils;
 import com.mockInterview.service.EmailService;
 import com.mockInterview.service.UserService;
 import com.mockInterview.util.EmailUtils;
-
-import jakarta.transaction.Transactional;
 
 @Service
 public class UserServiceImpl implements UserService {
@@ -40,293 +36,272 @@ public class UserServiceImpl implements UserService {
     private UserRepository userRepository;
 
     @Autowired
-    private EmailService emailService;
-
-    @Autowired
-    private PasswordResetTokenRepository tokenRepository;
+    private RoleRepository roleRepository;
 
     @Autowired
     private StudentPersonalInfoRepository studentPersonalInfoRepository;
 
     @Autowired
-    private RoleRepository roleRepository;
+    private EmailService emailService;
 
     @Autowired
     private UserMapper userMapper;
 
-    @Value("${app.frontend.base-url}")
-    private String FRONTEND_BASE_URL;
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
-    @Value("${master.admin.email}")
-    private String MASTER_ADMIN_EMAIL;
+    @Autowired
+    private PasswordResetTokenRepository tokenRepository;
 
     private static final SecureRandom secureRandom = new SecureRandom();
 
-    // ================= CREATE USER =================
+    @Value("${app.frontend.base-url}")
+    private String FRONTEND_BASE_URL;
+
+// // ================= CREATE USER =================
+//    @Override
+//    @Transactional
+//    public UserResponseDto createUser(UserRequestDto dto, boolean isPublicStudent) {
+//        if (dto == null) 
+//            throw new UnauthorizedActionException("User data is empty");
+//
+//        // =================== DUPLICATE CHECK ===================
+//        if (dto.getEmail() != null && userRepository.findByEmail(dto.getEmail()) != null)
+//            throw new DuplicateFieldException("Email already exists!");
+//        if (dto.getPhone() != null &&
+//            (userRepository.findByPhone(dto.getPhone()) != null ||
+//             studentPersonalInfoRepository.findByParentMobileNumber(dto.getPhone()) != null))
+//            throw new DuplicateFieldException("Phone already exists!");
+//
+//        // =================== MAP DTO TO ENTITY ===================
+//        User user = userMapper.toEntity(dto, isPublicStudent);
+//
+//        // =================== ROLE ASSIGNMENT ===================
+//        if (isPublicStudent) {
+//            // Public registration → STUDENT role only
+//            Role studentRole = roleRepository.findByName("STUDENT");
+//            if (studentRole == null) 
+//                throw new ResourceNotFoundException("STUDENT role not found");
+//            user.setRole(studentRole);
+//
+//            // Public users → createdBy / updatedBy = null
+//            user.setCreatedBy(null);
+//            user.setUpdatedBy(null);
+//        } else {
+//            // Admin registration → can assign any role
+//            if (user.getRole() == null) {
+//                Role studentRole = roleRepository.findByName("STUDENT");
+//                if (studentRole == null) 
+//                    throw new ResourceNotFoundException("STUDENT role not found");
+//                user.setRole(studentRole); // default STUDENT if role not provided
+//            }
+//            // Admin registration → createdBy / updatedBy handled by Auditor
+//        }
+//
+//        // =================== PASSWORD ===================
+//        if (dto.getPassword() == null || dto.getPassword().isEmpty())
+//            throw new UnauthorizedActionException("Password is required");
+//        validatePassword(dto.getPassword());
+//        user.setPassword(passwordEncoder.encode(dto.getPassword()));
+//
+//        user.setStatus("ACTIVE");
+//
+//        // =================== SAVE USER ===================
+//        User savedUser = userRepository.save(user);
+//
+//        // =================== SEND WELCOME EMAIL ===================
+//        emailService.sendWelcomeEmail(savedUser.getEmail(), savedUser.getFirstName());
+//
+//        return userMapper.toResponse(savedUser);
+//    }
+//    
+//    
+    
     @Override
     @Transactional
     public UserResponseDto createUser(UserRequestDto dto) {
-        if (dto == null) throw new UnauthorizedActionException("User data is empty");
 
-        // Duplicate checks
+        if (dto == null)
+            throw new UnauthorizedActionException("User data is empty");
+
+        // ===================== DUPLICATE VALIDATION ======================
         if (dto.getEmail() != null && userRepository.findByEmail(dto.getEmail()) != null)
             throw new DuplicateFieldException("Email already exists!");
         if (dto.getPhone() != null &&
-            (userRepository.findByPhone(dto.getPhone()) != null ||
-             studentPersonalInfoRepository.findByParentMobileNumber(dto.getPhone()) != null))
+                (userRepository.findByPhone(dto.getPhone()) != null ||
+                 studentPersonalInfoRepository.findByParentMobileNumber(dto.getPhone()) != null))
             throw new DuplicateFieldException("Phone already exists!");
 
-        // Map DTO → Entity
-        User user = userMapper.toEntity(dto);
-        Role role;
-
-        if (dto.getAdminAuthId() != null) {
-            // Admin-created user
-            User masterAdmin = userRepository.findById(dto.getAdminAuthId())
-                    .orElseThrow(() -> new UnauthorizedActionException("Unauthorized: Invalid admin ID"));
-
-            if (dto.getRoleId() == null)
-                throw new UnauthorizedActionException("Role is required when created by admin");
-
-            role = roleRepository.findById(dto.getRoleId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Role not found with ID: " + dto.getRoleId()));
-
-            // Prevent assigning MASTER_ADMIN or STUDENT
-            if ("MASTER_ADMIN".equalsIgnoreCase(role.getName())) {
-                throw new UnauthorizedActionException("You cannot assign MASTER_ADMIN role");
-            }
-
-            // Non-student password synced with Master Admin
-            if (!"STUDENT".equalsIgnoreCase(role.getName())) {
-                user.setPassword(masterAdmin.getPassword());
-            }
-
-        } else {
-            // Student self-registration
-            role = roleRepository.findByName("STUDENT");
-            if (role == null) throw new ResourceNotFoundException("Default STUDENT role not found.");
-            if (dto.getPassword() == null || dto.getPassword().isEmpty())
-                throw new UnauthorizedActionException("Password is required for self-registration");
-            validatePassword(dto.getPassword());
-            user.setPassword(dto.getPassword());
+        // ===================== CHECK LOGGED-IN USER =====================
+        Long currentUserId = SecurityUtils.getCurrentUserId();
+        User currentUser = null;
+        if (currentUserId != null) {
+            currentUser = userRepository.findById(currentUserId)
+                    .orElseThrow(() -> new UnauthorizedActionException("Invalid logged-in user"));
         }
 
-        user.setRole(role);
+        // ---------------- PUBLIC STUDENT ----------------
+        if (currentUser == null) {
+            // No user logged in → public student
+            if (dto.getPassword() == null || dto.getPassword().isEmpty())
+                throw new UnauthorizedActionException("Password is required for student registration");
+
+            validatePassword(dto.getPassword());
+
+            // Map DTO to entity as public student
+            User user = userMapper.toEntity(dto, true);
+            user.setPassword(passwordEncoder.encode(dto.getPassword()));
+            user.setStatus("ACTIVE");
+
+            User saved = userRepository.save(user);
+
+            // Send welcome email
+            emailService.sendWelcomeEmail(saved.getEmail(), saved.getFirstName());
+
+            return userMapper.toResponse(saved);
+        }
+
+        // ---------------- MASTER_ADMIN USER CREATION ----------------
+        if (!"MASTER_ADMIN".equalsIgnoreCase(currentUser.getRole().getName())) {
+            throw new UnauthorizedActionException("Only MASTER_ADMIN can create users");
+        }
+
+        // Map DTO to entity as admin creation (mapper handles roleId)
+        User user = userMapper.toEntity(dto, false);
+
+        // Use MASTER_ADMIN's password
+        user.setPassword(currentUser.getPassword());
         user.setStatus("ACTIVE");
 
         User savedUser = userRepository.save(user);
 
-        // Send emails
-        if ("STUDENT".equalsIgnoreCase(role.getName()) && dto.getAdminAuthId() == null) {
-            emailService.sendWelcomeEmail(savedUser.getEmail(), savedUser.getFirstName());
-        } else {
-            String resetToken = generateResetToken(savedUser.getEmail());
-            String resetLink = FRONTEND_BASE_URL + "/reset-password?token=" + resetToken;
-            emailService.sendNonStudentWelcomeEmail(
-                    savedUser.getEmail(),
-                    savedUser.getFirstName(),
-                    savedUser.getPassword(),
-                    resetLink
-            );
-        }
+        // Send password reset link to the created user
+        String token = generateToken();
+        PasswordResetToken resetToken = PasswordResetToken.builder()
+                .token(token)
+                .user(savedUser)
+                .expiryDate(new Date(System.currentTimeMillis() + 3600 * 1000)) // 1 hour expiry
+                .build();
+        tokenRepository.save(resetToken);
+
+        String resetLink = FRONTEND_BASE_URL + "/reset-password?token=" + token;
+        emailService.sendResetPasswordEmail(savedUser.getEmail(), resetLink);
 
         return userMapper.toResponse(savedUser);
     }
 
+
+   
+
     // ================= UPDATE USER =================
     @Override
     @Transactional
-    public UserResponseDto updateUser(Long userId, UserUpdateRequestDto dto) {
+    public UserResponseDto updateUser(Long userId, UserRequestDto dto) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        Role currentRole = user.getRole();
-
-        // MASTER ADMIN IMMUTABLE CHECK
-        if (currentRole != null && "MASTER_ADMIN".equalsIgnoreCase(currentRole.getName())) {
+        // Prevent editing MASTER_ADMIN
+        if (user.getRole() != null && "MASTER_ADMIN".equalsIgnoreCase(user.getRole().getName()))
             throw new UnauthorizedActionException("Master Admin details cannot be edited");
-        }
 
         // Duplicate checks
         if (dto.getEmail() != null && !dto.getEmail().equals(user.getEmail()) &&
-            userRepository.findByEmail(dto.getEmail()) != null) {
+            userRepository.findByEmail(dto.getEmail()) != null)
             throw new DuplicateFieldException("Email already exists!");
-        }
         if (dto.getPhone() != null && !dto.getPhone().equals(user.getPhone()) &&
             (userRepository.findByPhone(dto.getPhone()) != null ||
-             studentPersonalInfoRepository.findByParentMobileNumber(dto.getPhone()) != null)) {
+             studentPersonalInfoRepository.findByParentMobileNumber(dto.getPhone()) != null))
             throw new DuplicateFieldException("Phone already exists!");
-        }
 
-        // Update basic info
+        // Update fields if provided
         if (dto.getFirstName() != null) user.setFirstName(dto.getFirstName());
         if (dto.getLastName() != null) user.setLastName(dto.getLastName());
         if (dto.getEmail() != null) user.setEmail(dto.getEmail());
         if (dto.getPhone() != null) user.setPhone(dto.getPhone());
+        if (dto.getPassword() != null && !dto.getPassword().isEmpty()) {
+            validatePassword(dto.getPassword());
+            user.setPassword(passwordEncoder.encode(dto.getPassword()));
+        }
 
-        // Update role only if provided
+        // Optional role update
         if (dto.getRoleId() != null) {
-            if (dto.getAdminAuthId() == null)
-                throw new UnauthorizedActionException("Admin credentials required to change role");
-
-            User masterAdmin = userRepository.findById(dto.getAdminAuthId())
-                    .orElseThrow(() -> new UnauthorizedActionException("Unauthorized: Invalid admin ID"));
-
-            Role newRole = roleRepository.findById(dto.getRoleId())
+            Role role = roleRepository.findById(dto.getRoleId())
                     .orElseThrow(() -> new ResourceNotFoundException("Role not found"));
-
-            // Prevent MASTER_ADMIN or STUDENT assignment
-            if ("MASTER_ADMIN".equalsIgnoreCase(newRole.getName())) {
-                throw new UnauthorizedActionException("You cannot assign MASTER_ADMIN role");
-            }
-
-            // Sync password for non-students
-            if (!"STUDENT".equalsIgnoreCase(newRole.getName())) {
-                user.setPassword(masterAdmin.getPassword());
-            }
-
-            user.setRole(newRole);
+            user.setRole(role);
         }
 
         User updatedUser = userRepository.save(user);
         return userMapper.toResponse(updatedUser);
     }
-    
+
+    // ================= MASTER_ADMIN ASSIGN ROLE =================
     @Override
     @Transactional
-    public void bulkChangeUsersRoleByAdmin(Long adminId, Long fromRoleId, Long toRoleId) {
+    public UserResponseDto assignRoleToUser(Long userId, Long roleId) {
+        String currentUserEmail = (String) SecurityContextHolder.getContext().getAuthentication().getName();
+        User masterAdmin = userRepository.findByEmail(currentUserEmail);
+        if (masterAdmin == null || masterAdmin.getRole() == null || 
+            !"MASTER_ADMIN".equalsIgnoreCase(masterAdmin.getRole().getName()))
+            throw new UnauthorizedActionException("Only Master Admin can assign roles");
 
-        // Validate Admin
-        validateAdmin(adminId);
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        Role fromRole = roleRepository.findById(fromRoleId)
-                .orElseThrow(() -> new RuntimeException("From Role not found!"));
+        Role roleToAssign = roleRepository.findById(roleId)
+                .orElseThrow(() -> new ResourceNotFoundException("Role not found"));
 
-        Role toRole = roleRepository.findById(toRoleId)
-                .orElseThrow(() -> new RuntimeException("To Role not found!"));
+        if ("MASTER_ADMIN".equalsIgnoreCase(roleToAssign.getName()) ||
+            "STUDENT".equalsIgnoreCase(roleToAssign.getName()))
+            throw new UnauthorizedActionException("Cannot assign MASTER_ADMIN or STUDENT role");
 
-        // Fetch all users with source role
-        List<User> users = userRepository.findByRole(fromRole);
+        user.setRole(roleToAssign);
+        userRepository.save(user);
 
-        if (users.isEmpty()) {
-            throw new RuntimeException("No users found with the specified role");
-        }
-
-        for (User u : users) {
-            u.setRole(toRole);
-        }
-
-        userRepository.saveAll(users);
-    }
-
-
-    // ================= SYNC PASSWORDS =================
-    @Transactional
-    public void syncPasswordsWithMasterAdmin() {
-        User masterAdmin = userRepository.findByEmail(MASTER_ADMIN_EMAIL);
-        if (masterAdmin == null) throw new ResourceNotFoundException("Master Admin not found");
-
-        List<User> nonStudentUsers = userRepository.findByRole_NameNotInWithPaging(List.of("STUDENT"), Pageable.unpaged());
-        nonStudentUsers.forEach(u -> u.setPassword(masterAdmin.getPassword()));
-        userRepository.saveAll(nonStudentUsers);
-    }
-
-    // ================= LOGIN =================
-    @Override
-    public UserResponseDto login(LoginRequestDto loginDto) {
-        User user = userRepository.findByEmailOrPhone(loginDto.getEmailOrPhone(), loginDto.getEmailOrPhone());
-        if (user == null) throw new ResourceNotFoundException("Invalid Credentials");
-        if ("INACTIVE".equalsIgnoreCase(user.getStatus())) throw new UnauthorizedActionException("Account inactive");
-        if (!user.getPassword().equals(loginDto.getPassword())) throw new ResourceNotFoundException("Invalid Credentials");
         return userMapper.toResponse(user);
     }
 
-    // ================= FORGOT PASSWORD =================
+    // ================= SYNC PASSWORDS WITH MASTER_ADMIN =================
     @Override
     @Transactional
-    public String forgotPassword(String emailOrPhone) {
-        tokenRepository.deleteExpiredTokens(LocalDateTime.now());
+    public void syncPasswordsWithMasterAdmin() {
+        User masterAdmin = userRepository.findByRole_Name("MASTER_ADMIN");
+        if (masterAdmin == null) throw new ResourceNotFoundException("Master Admin not found");
 
-        User user = userRepository.findByEmailOrPhone(emailOrPhone, emailOrPhone);
-        if (user == null || user.getEmail() == null) throw new ResourceNotFoundException("User not found");
-
-        byte[] randomBytes = new byte[48];
-        secureRandom.nextBytes(randomBytes);
-        String token = Base64.getUrlEncoder().withoutPadding().encodeToString(randomBytes);
-
-        PasswordResetToken resetToken = new PasswordResetToken();
-        resetToken.setToken(token);
-        resetToken.setUserEmail(user.getEmail());
-        resetToken.setExpiryTime(LocalDateTime.now().plusMinutes(15));
-        resetToken.setUsed(false);
-        tokenRepository.save(resetToken);
-
-        String resetLink = FRONTEND_BASE_URL + "/reset-password?token=" + token;
-        emailService.sendResetPasswordEmail(user.getEmail(), resetLink);
-
-        String masked = emailOrPhone.contains("@") ? EmailUtils.maskEmail(user.getEmail())
-                                                   : EmailUtils.maskPhone(user.getPhone());
-        return "Password reset link sent successfully to " + masked;
-    }
-
-    // ================= RESET PASSWORD =================
-    @Override
-    @Transactional
-    public String resetPassword(String token, String newPassword) {
-        tokenRepository.deleteExpiredTokens(LocalDateTime.now());
-
-        PasswordResetToken resetToken = tokenRepository.findByToken(token);
-        if (resetToken == null || resetToken.isUsed() || resetToken.getExpiryTime().isBefore(LocalDateTime.now()))
-            throw new ResourceNotFoundException("Invalid or expired token");
-
-        User user = userRepository.findByEmailOrPhone(resetToken.getUserEmail(), resetToken.getUserEmail());
-        if (user == null) throw new ResourceNotFoundException("User not found");
-
-        user.setPassword(newPassword);
-        userRepository.save(user);
-
-        resetToken.setUsed(true);
-        tokenRepository.save(resetToken);
-        tokenRepository.deleteExpiredTokens(LocalDateTime.now());
-
-        return "Password reset successfully";
+        List<User> nonStudentUsers = userRepository.findByRole_NameNot("STUDENT");
+        String encryptedPassword = masterAdmin.getPassword();
+        nonStudentUsers.forEach(u -> u.setPassword(encryptedPassword));
+        userRepository.saveAll(nonStudentUsers);
     }
 
     // ================= GET USERS =================
     @Override
     public List<UserResponseDto> getAllActiveUsers() {
         return userRepository.findByStatusAndRole_NameNot("ACTIVE", "MASTER_ADMIN")
-                             .stream()
-                             .map(userMapper::toResponse)
-                             .toList();
+                .stream().map(userMapper::toResponse).toList();
     }
 
     @Override
     public List<UserResponseDto> getAllUsersWithStatus() {
         return userRepository.findByRole_NameNot("MASTER_ADMIN")
-                             .stream()
-                             .map(userMapper::toResponse)
-                             .toList();
+                .stream().map(userMapper::toResponse).toList();
     }
 
     @Override
     public UserResponseDto getUserById(Long userId) {
         User user = userRepository.findById(userId)
-                                  .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        // Optional: Only allow certain roles to fetch Master Admin if needed
-        if ("MASTER_ADMIN".equalsIgnoreCase(user.getRole() != null ? user.getRole().getName() : "")) {
+        if ("MASTER_ADMIN".equalsIgnoreCase(user.getRole() != null ? user.getRole().getName() : ""))
             throw new UnauthorizedActionException("Master Admin details cannot be accessed");
-        }
 
         return userMapper.toResponse(user);
     }
 
-    // ================= DEACTIVATE / ACTIVATE =================
+    // ================= STATUS MANAGEMENT =================
     @Override
     public void deactivateUser(Long userId) {
         User user = userRepository.findById(userId)
-                                  .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         if ("MASTER_ADMIN".equalsIgnoreCase(user.getRole() != null ? user.getRole().getName() : ""))
             throw new UnauthorizedActionException("Master Admin cannot be deactivated");
         user.setStatus("INACTIVE");
@@ -336,108 +311,133 @@ public class UserServiceImpl implements UserService {
     @Override
     public void activateUser(Long userId) {
         User user = userRepository.findById(userId)
-                                  .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-        if ("ACTIVE".equalsIgnoreCase(user.getStatus())) 
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        if ("ACTIVE".equalsIgnoreCase(user.getStatus()))
             throw new UnauthorizedActionException("User already active");
         user.setStatus("ACTIVE");
         userRepository.save(user);
     }
 
-    // ================= DELETE USER =================
     @Override
     public void deleteUser(Long userId) {
         User user = userRepository.findById(userId)
-                                  .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         if ("MASTER_ADMIN".equalsIgnoreCase(user.getRole() != null ? user.getRole().getName() : ""))
             throw new UnauthorizedActionException("Master Admin cannot be deleted");
         userRepository.delete(user);
     }
 
-    // ================= GENERATE RESET TOKEN =================
-    private String generateResetToken(String userEmail) {
-        tokenRepository.deleteExpiredTokens(LocalDateTime.now());
-
-        byte[] randomBytes = new byte[48];
-        secureRandom.nextBytes(randomBytes);
-        String token = Base64.getUrlEncoder().withoutPadding().encodeToString(randomBytes);
-
-        PasswordResetToken resetToken = new PasswordResetToken();
-        resetToken.setToken(token);
-        resetToken.setUserEmail(userEmail);
-        resetToken.setExpiryTime(LocalDateTime.now().plusMinutes(15));
-        resetToken.setUsed(false);
-        tokenRepository.save(resetToken);
-
-        return token;
-    }
-    
-    private void validateAdmin(Long adminId) {
-
-        if (adminId == null) {
-            throw new UnauthorizedActionException("Admin ID is required");
-        }
-
-        User admin = userRepository.findById(adminId)
-                .orElseThrow(() -> new UnauthorizedActionException("Admin user not found"));
-
-        if (admin.getRole() == null ||
-            !"MASTER_ADMIN".equalsIgnoreCase(admin.getRole().getName())) {
-
-            throw new UnauthorizedActionException("Only Master Admin is allowed to perform this action");
-        }
-    }
-    
+    // ================= DASHBOARD =================
     @Override
     public Map<String, Object> getDashboardCounts() {
-
         Map<String, Object> response = new HashMap<>();
+        response.put("TOTAL_USERS", userRepository.count());
+        response.put("ACTIVE_USERS", userRepository.countByStatus("ACTIVE"));
+        response.put("INACTIVE_USERS", userRepository.countByStatus("INACTIVE"));
 
-        long totalUsers = userRepository.count();
-        long activeUsers = userRepository.countByStatus("ACTIVE");
-        long inactiveUsers = userRepository.countByStatus("INACTIVE");
-
-        response.put("TOTAL_USERS", totalUsers);
-        response.put("ACTIVE_USERS", activeUsers);
-        response.put("INACTIVE_USERS", inactiveUsers);
-
-        // Dynamic role counts
         List<Object[]> roleCounts = userRepository.findRoleWiseCounts();
         Map<String, Long> roleMap = new HashMap<>();
-
-        for (Object[] row : roleCounts) {
-            String roleName = (String) row[0];
-            Long count = (Long) row[1];
-            roleMap.put(roleName, count);
-        }
-
+        for (Object[] row : roleCounts) roleMap.put((String) row[0], (Long) row[1]);
         response.put("ROLE_COUNTS", roleMap);
 
         return response;
     }
 
+    // ================= ASSIGNABLE USERS =================
+    @Override
+    public List<UserResponseDto> getAssignableUsers() {
+        List<Role> assignableRoles = roleRepository.findAll().stream()
+                .filter(r -> !"MASTER_ADMIN".equalsIgnoreCase(r.getName()) &&
+                             !"STUDENT".equalsIgnoreCase(r.getName()))
+                .collect(Collectors.toList());
 
+        List<User> users = userRepository.findByRoleInAndStatus(assignableRoles, "ACTIVE");
+        return users.stream().map(userMapper::toResponse).toList();
+    }
 
     // ================= PASSWORD VALIDATION =================
     private void validatePassword(String password) {
         String pattern = "^(?=.*[A-Z])(?=.*[a-z])(?=.*\\d)(?=.*[@$!%*?&#]).{8,}$";
-        if (!password.matches(pattern)) {
+        if (!password.matches(pattern))
             throw new UnauthorizedActionException(
                 "Password must contain at least 1 uppercase, 1 lowercase, 1 number, 1 special character and be at least 8 characters long"
             );
-        }
     }
-    
-    
+
+    // ================= BULK CHANGE ROLES =================
     @Override
-    public List<UserResponseDto> getAssignableUsers() {
+    @Transactional
+    public void bulkChangeUsersRoleByAdmin(Long fromRoleId, Long toRoleId) {
+        Role fromRole = roleRepository.findById(fromRoleId)
+                .orElseThrow(() -> new ResourceNotFoundException("From Role not found"));
+        Role toRole = roleRepository.findById(toRoleId)
+                .orElseThrow(() -> new ResourceNotFoundException("To Role not found"));
 
-        List<User> users = userRepository
-                .findByRole_NameStartingWithAndStatus("SA_", "ACTIVE");
+        if ("MASTER_ADMIN".equalsIgnoreCase(toRole.getName()) ||
+            "STUDENT".equalsIgnoreCase(toRole.getName()))
+            throw new UnauthorizedActionException("Cannot assign MASTER_ADMIN or STUDENT role");
 
-        return users.stream()
-                .map(userMapper::toResponse)
-                .toList();
+        List<User> users = userRepository.findByRole(fromRole);
+        if (users.isEmpty()) throw new ResourceNotFoundException("No users found with fromRole");
+
+        users.forEach(u -> u.setRole(toRole));
+        userRepository.saveAll(users);
+    }
+    
+   
+ // ================= FORGOT PASSWORD =================
+    @Override
+    @Transactional
+    public String forgotPassword(String emailOrPhone) {
+        User user = userRepository.findByEmailOrPhone(emailOrPhone, emailOrPhone);
+        if (user == null) throw new ResourceNotFoundException("User not found");
+
+        // Generate token
+        String token = generateToken();
+        PasswordResetToken resetToken = PasswordResetToken.builder()
+                .token(token)
+                .user(user)
+                .expiryDate(new Date(System.currentTimeMillis() + 3600 * 1000)) // 1 hour expiry
+                .build();
+        tokenRepository.save(resetToken);
+
+        String resetLink = FRONTEND_BASE_URL + "/reset-password?token=" + token;
+
+        // Mask email/phone before sending
+        String maskedEmail = EmailUtils.maskEmail(user.getEmail());
+//        String maskedPhone = EmailUtils.maskPhone(user.getPhone());
+
+        // You can choose what to display in the message
+        String message = "Password reset link sent to your email: " + maskedEmail;
+                         
+
+        // Send email
+        emailService.sendResetPasswordEmail(user.getEmail(), resetLink);
+
+        return message;
     }
 
+    private String generateToken() {
+        byte[] bytes = new byte[20];
+        secureRandom.nextBytes(bytes);
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+    }
 
+    // ================= RESET PASSWORD =================
+    @Override
+    @Transactional
+    public String resetPassword(String token, String newPassword) {
+        validatePassword(newPassword);
+
+        PasswordResetToken resetToken = tokenRepository.findByToken(token)
+            .orElseThrow(() -> new ResourceNotFoundException("Invalid token"));
+
+        User user = resetToken.getUser();
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+
+        tokenRepository.delete(resetToken);
+
+        return "Password updated successfully";
+    }
 }
