@@ -1,7 +1,7 @@
 package com.mockInterview.serviceImpl;
 
 import java.util.List;
-import java.util.Optional;
+
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -20,52 +20,34 @@ public class CampaignServiceImpl implements CampaignService {
 
     @Override
     public Campaign createCampaign(Campaign campaign) {
-
         if (campaignRepository.existsByCampaignName(campaign.getCampaignName())) {
             throw new DuplicateFieldException("Campaign name already exists");
         }
-
         return campaignRepository.save(campaign);
     }
 
     @Override
     public Campaign updateCampaign(Long id, Campaign campaign) {
+        Campaign existing = campaignRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Campaign not found with ID: " + id));
 
-        Optional<Campaign> optional = campaignRepository.findById(id);
-
-        if (!optional.isPresent()) {
-            throw new ResourceNotFoundException("Campaign not found with ID: " + id);
-        }
-
-        Campaign existing = optional.get();
         existing.setCampaignName(campaign.getCampaignName());
-
         return campaignRepository.save(existing);
     }
 
     @Override
     public String deleteCampaign(Long id) {
+        Campaign existing = campaignRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Campaign not found with ID: " + id));
 
-        Optional<Campaign> optional = campaignRepository.findById(id);
-
-        if (!optional.isPresent()) {
-            throw new ResourceNotFoundException("Campaign not found with ID: " + id);
-        }
-
-        campaignRepository.delete(optional.get());
+        campaignRepository.delete(existing);
         return "Campaign deleted successfully";
     }
 
     @Override
     public Campaign getCampaignById(Long id) {
-
-        Optional<Campaign> optional = campaignRepository.findById(id);
-
-        if (!optional.isPresent()) {
-            throw new ResourceNotFoundException("Campaign not found with ID: " + id);
-        }
-
-        return optional.get();
+        return campaignRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Campaign not found with ID: " + id));
     }
 
     @Override

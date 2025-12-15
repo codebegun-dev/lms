@@ -2,6 +2,14 @@ package com.mockInterview.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+
+import org.springframework.data.annotation.CreatedBy;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedBy;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
@@ -11,6 +19,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@EntityListeners(AuditingEntityListener.class)
 public class Category {
 
     @Id
@@ -18,8 +27,24 @@ public class Category {
     private Long id;
 
     @Column(nullable = false, unique = true)
-    private String name; // e.g. Technical, HR, Behavioral, Communication
+    private String name; // Technical, HR, Behavioral, Communication
 
     @OneToMany(mappedBy = "category", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Topic> topics;
+
+    // ================= AUDIT FIELDS =================
+
+    @CreatedBy
+    @Column(updatable = false)
+    private Long createdBy;
+
+    @LastModifiedBy
+    private Long updatedBy;
+
+    @CreatedDate
+    @Column(updatable = false)
+    private LocalDateTime createdDate;
+
+    @LastModifiedDate
+    private LocalDateTime updatedDate;
 }

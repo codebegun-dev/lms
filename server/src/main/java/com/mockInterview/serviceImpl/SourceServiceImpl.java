@@ -1,7 +1,7 @@
 package com.mockInterview.serviceImpl;
 
 import java.util.List;
-import java.util.Optional;
+
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -20,56 +20,42 @@ public class SourceServiceImpl implements SourceService {
 
     @Override
     public Source createSource(Source source) {
-
         if (sourceRepository.existsBySourceName(source.getSourceName())) {
             throw new DuplicateFieldException("Source name already exists");
         }
-
-        return sourceRepository.save(source);
+        return sourceRepository.save(source); // auditing will handle createdBy & createdDate
     }
 
     @Override
     public Source updateSource(Long id, Source source) {
+        Source existing = sourceRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Source not found with ID: " + id));
 
-        Optional<Source> optionalSource = sourceRepository.findById(id);
-
-        if (!optionalSource.isPresent()) {
-            throw new ResourceNotFoundException("Source not found with ID: " + id);
+        if (sourceRepository.existsBySourceNameAndSourceIdNot(source.getSourceName(), id)) {
+            throw new DuplicateFieldException("Source name already exists");
         }
 
-        Source existing = optionalSource.get();
         existing.setSourceName(source.getSourceName());
-
-        return sourceRepository.save(existing);
+        return sourceRepository.save(existing); // auditing will handle updatedBy & updatedDate
     }
 
     @Override
     public String deleteSource(Long id) {
-
-        Optional<Source> optionalSource = sourceRepository.findById(id);
-
-        if (!optionalSource.isPresent()) {
-            throw new ResourceNotFoundException("Source not found with ID: " + id);
-        }
-
-        sourceRepository.delete(optionalSource.get());
+        Source existing = sourceRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Source not found with ID: " + id));
+        sourceRepository.delete(existing);
         return "Source deleted successfully";
     }
 
     @Override
     public Source getSourceById(Long id) {
-
-        Optional<Source> optionalSource = sourceRepository.findById(id);
-
-        if (!optionalSource.isPresent()) {
-            throw new ResourceNotFoundException("Source not found with ID: " + id);
-        }
-
-        return optionalSource.get();
+        return sourceRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Source not found with ID: " + id));
     }
 
     @Override
     public List<Source> getAllSources() {
         return sourceRepository.findAll();
     }
+
 }

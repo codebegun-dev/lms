@@ -103,10 +103,11 @@
 
 
 
-package com.mockInterview.security;
+package com.mockInterview.security; 
 
 import com.mockInterview.entity.Permission;
 import com.mockInterview.entity.Role;
+import com.mockInterview.entity.RoleModulePermission;
 import com.mockInterview.entity.User;
 import com.mockInterview.repository.PermissionRepository;
 import com.mockInterview.repository.UserRepository;
@@ -160,14 +161,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     Set<String> permissionNames = new HashSet<String>();
 
                     Role role = user.getRole();
-                    if (role != null && role.getPermissions() != null) {
+                    if (role != null && role.getModulePermissions() != null) {
 
-                        for (Permission p : role.getPermissions()) {
+                        for (RoleModulePermission rmp : role.getModulePermissions()) {
+                            Permission p = rmp.getPermission();  // get the Permission object
                             if (p != null && p.getName() != null) {
                                 permissionNames.add(p.getName());
                             }
                         }
                     }
+
 
                     // ===================== MASTER_ADMIN WILDCARD =====================
                     if (role != null && "MASTER_ADMIN".equalsIgnoreCase(role.getName())) {

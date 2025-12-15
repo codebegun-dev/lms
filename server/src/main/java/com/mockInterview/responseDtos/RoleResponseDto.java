@@ -1,18 +1,19 @@
 package com.mockInterview.responseDtos;
 
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
+import java.util.List;
 
-import java.util.Set;
-
-@Getter
-@Setter
-@NoArgsConstructor
+@Data
 @AllArgsConstructor
-@Builder
+@NoArgsConstructor
 public class RoleResponseDto {
-    private Long id;
-    private String name;
+
+    private Long roleId;
+    private String roleName;
     private String description;
-    private Set<String> permissions;
+
+    private List<ModulePermissionResponseDto> modules;
 }

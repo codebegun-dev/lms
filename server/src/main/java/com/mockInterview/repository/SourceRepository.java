@@ -6,4 +6,5 @@ import com.mockInterview.entity.Source;
 public interface SourceRepository extends JpaRepository<Source, Long> {
 
     boolean existsBySourceName(String sourceName);
+    boolean existsBySourceNameAndSourceIdNot(String sourceName, Long sourceId);
 }
