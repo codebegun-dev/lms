@@ -2,9 +2,18 @@ package com.mockInterview.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import org.springframework.data.annotation.CreatedBy;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedBy;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+
+import java.time.LocalDateTime;
+
 @Data
 @Entity
 @Table(name = "campaigns")
+@EntityListeners(AuditingEntityListener.class)
 public class Campaign {
 
     @Id
@@ -14,5 +23,18 @@ public class Campaign {
     @Column(nullable = false, unique = true)
     private String campaignName;
 
-    
+    // 🔹 AUDIT FIELDS
+    @CreatedBy
+    @Column(updatable = false)
+    private Long createdBy;
+
+    @LastModifiedBy
+    private Long updatedBy;
+
+    @CreatedDate
+    @Column(updatable = false)
+    private LocalDateTime createdDate;
+
+    @LastModifiedDate
+    private LocalDateTime updatedDate;
 }

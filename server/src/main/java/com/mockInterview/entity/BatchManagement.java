@@ -7,7 +7,14 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import org.springframework.data.annotation.CreatedBy;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedBy;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 
 @Entity
@@ -15,6 +22,7 @@ import java.time.LocalTime;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@EntityListeners(AuditingEntityListener.class)
 public class BatchManagement {
 
     @Id
@@ -66,6 +74,21 @@ public class BatchManagement {
 
     private String ctcDual;
 
-    
     private String status; // PENDING, ACTIVE, COMPLETED
+
+    // ================= AUDIT FIELDS =================
+
+    @CreatedBy
+    @Column(updatable = false)
+    private Long createdBy;
+
+    @LastModifiedBy
+    private Long updatedBy;
+
+    @CreatedDate
+    @Column(updatable = false)
+    private LocalDateTime createdDateTime;
+
+    @LastModifiedDate
+    private LocalDateTime updatedDateTime;
 }

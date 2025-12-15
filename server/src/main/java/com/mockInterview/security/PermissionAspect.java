@@ -4,10 +4,12 @@ import com.mockInterview.service.PermissionService;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
+import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Component;
 
+import java.lang.reflect.Method;
 
 @Aspect
 @Component
@@ -16,27 +18,45 @@ public class PermissionAspect {
     @Autowired
     private PermissionService permissionService;
 
-    @Before("@annotation(preAuthorize)")
-    public void checkPermissionAnnotation(JoinPoint joinPoint, PreAuthorize preAuthorize) {
-        String value = preAuthorize.value(); // e.g., "hasAuthority('CREATE_ROLE')"
+    /**
+     * Intercept methods annotated with @PreAuthorize
+     * or classes annotated with @PreAuthorize
+     */
+    @Before("execution(* com.mockInterview..controller..*(..))")
+    public void checkPermissions(JoinPoint joinPoint) {
 
-        if (value.contains("hasAuthority")) {
-            String permissionName = value
-                    .replace("hasAuthority(", "")
-                    .replace(")", "")
-                    .replace("'", "")
-                    .trim();
+        MethodSignature signature = (MethodSignature) joinPoint.getSignature();
+        Method method = signature.getMethod();
 
-            permissionService.ensurePermissionExists(permissionName);
+        // ===== METHOD LEVEL @PreAuthorize =====
+        PreAuthorize methodPre = method.getAnnotation(PreAuthorize.class);
+        if (methodPre != null) {
+            processPreAuthorizeExpression(methodPre.value());
         }
 
-        // Optional: support hasAnyAuthority('PERM1','PERM2')
-        if (value.contains("hasAnyAuthority")) {
-            String inside = value.substring(value.indexOf("(") + 1, value.indexOf(")"));
-            String[] permissions = inside.replace("'", "").split(",");
-            for (String perm : permissions) {
-                permissionService.ensurePermissionExists(perm.trim());
+        // ===== CLASS LEVEL @PreAuthorize =====
+        PreAuthorize classPre = method.getDeclaringClass().getAnnotation(PreAuthorize.class);
+        if (classPre != null) {
+            processPreAuthorizeExpression(classPre.value());
+        }
+    }
+
+    private void processPreAuthorizeExpression(String expression) {
+        if (expression.contains("hasAuthority")) {
+            String perm = extractSingle(expression);
+            permissionService.ensurePermissionExists(perm);
+        }
+
+        if (expression.contains("hasAnyAuthority")) {
+            String inside = expression.substring(expression.indexOf("(") + 1, expression.indexOf(")"));
+            String[] perms = inside.replace("'", "").split(",");
+            for (String p : perms) {
+                permissionService.ensurePermissionExists(p.trim());
             }
         }
+    }
+
+    private String extractSingle(String expr) {
+        return expr.substring(expr.indexOf("'") + 1, expr.lastIndexOf("'"));
     }
 }
