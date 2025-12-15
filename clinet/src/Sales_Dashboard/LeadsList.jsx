@@ -11,7 +11,7 @@ function LeadsList() {
   const [sources, setSources] = useState([]);
   const [campaigns, setCampaigns] = useState([]);
   const [allUsers, setAllUsers] = useState([]);
-  const [userRole, setUserRole] = useState("");
+  const [userRole, setUserRole] = useState(""); 
 
   const [searchEmail, setSearchEmail] = useState("");
   const [filterYear, setFilterYear] = useState("");
