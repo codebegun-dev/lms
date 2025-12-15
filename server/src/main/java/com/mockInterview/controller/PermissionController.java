@@ -10,6 +10,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/permissions")
+@CrossOrigin(origins = "*")
 public class PermissionController {
 
     @Autowired
