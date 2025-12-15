@@ -153,20 +153,14 @@
 // export default LoginForm;
 
 
-
-
+ // src/components/LoginForm.jsx
 import React, { useState } from "react";
 import axios from "axios";
 import { useNavigate, Link } from "react-router-dom";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
-import { jwtDecode } from "jwt-decode";
-import registrationImage from "../assets/registrationImage.png";
 
 function LoginForm() {
-  const [formData, setFormData] = useState({
-    emailOrPhone: "",
-    password: "",
-  });
+  const [formData, setFormData] = useState({ emailOrPhone: "", password: "" });
   const [errors, setErrors] = useState({});
   const [generalError, setGeneralError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -197,7 +191,7 @@ function LoginForm() {
 
     try {
       const res = await axios.post(
-        `${import.meta.env.VITE_API_BASE_URL}/api/users/login`,
+        "http://localhost:8080/api/users/login",
         formData
       );
 
@@ -207,27 +201,21 @@ function LoginForm() {
         return;
       }
 
-      // Decode JWT
-      const decoded = jwtDecode(token);
-
-      const role = decoded.roles?.[0];
-      const userId = decoded.userId;
+      // Decode role from token if needed
+      const base64Payload = token.split(".")[1];
+      const payload = JSON.parse(atob(base64Payload));
+      const role = payload.role || "UNKNOWN";
+      const userId = payload.userId;
 
       // Store in localStorage
       localStorage.setItem("token", token);
       localStorage.setItem("role", role);
       localStorage.setItem("userId", userId);
-      localStorage.setItem("permissions", JSON.stringify(decoded.permissions || []));
-
-      window.dispatchEvent(new Event("user-updated"));
 
       // Role-based navigation
       if (role === "STUDENT") navigate("/student-dashboard");
       else if (role === "ADMIN" || role === "MASTER_ADMIN") navigate("/admin-dashboard");
-      else if (role === "INTERVIEWER") navigate("/interviewer-dashboard");
-      else if (role === "SALES_MANAGER") navigate("/sales-dashboard");
-      else if (role === "SA_COUNSELOR") navigate("/sales-counselor");
-      else setGeneralError(`Unknown role: ${role}`);
+      else navigate("/"); // fallback
 
     } catch (err) {
       setGeneralError(err.response?.data?.message || "Invalid credentials");
@@ -236,32 +224,19 @@ function LoginForm() {
 
   return (
     <div className="container mt-5">
-      <div className="row shadow-lg rounded-4 overflow-hidden">
+      <div className="row justify-content-center">
+        <div className="col-md-6 shadow-lg rounded-4 p-4">
 
-        {/* Left */}
-        <div className="col-md-6 bg-light p-4 text-center">
-          <img
-            src={registrationImage}
-            alt="Login"
-            className="img-fluid mb-4"
-            style={{ maxHeight: "280px" }}
-          />
-          <h2 className="fw-bold text-primary">Welcome Back!</h2>
-          <p className="text-secondary">Login to continue</p>
-        </div>
-
-        {/* Right */}
-        <div className="col-md-6 p-4">
-          <h3 className="text-center text-primary fw-bold mb-4">Login</h3>
+          <h3 className="text-center mb-4">Login</h3>
 
           {generalError && (
-            <p className="alert alert-danger text-center">{generalError}</p>
+            <div className="alert alert-danger">{generalError}</div>
           )}
 
           <form onSubmit={handleSubmit}>
             {/* Email/Phone */}
             <div className="mb-3">
-              <label className="form-label fw-semibold">Email or Phone</label>
+              <label className="form-label">Email or Phone</label>
               <input
                 type="text"
                 name="emailOrPhone"
@@ -276,7 +251,7 @@ function LoginForm() {
 
             {/* Password */}
             <div className="mb-3 position-relative">
-              <label className="form-label fw-semibold">Password</label>
+              <label className="form-label">Password</label>
               <input
                 type={showPassword ? "text" : "password"}
                 name="password"
@@ -285,7 +260,7 @@ function LoginForm() {
                 className={`form-control ${errors.password ? "is-invalid" : ""}`}
               />
               <span
-                className="position-absolute top-50 end-0 translate-middle-y me-3 mt-3"
+                className="position-absolute top-50 end-0 translate-middle-y me-3"
                 style={{ cursor: "pointer" }}
                 onClick={() => setShowPassword(!showPassword)}
               >
@@ -296,18 +271,14 @@ function LoginForm() {
               )}
             </div>
 
-            <div className="text-end mb-3">
-              <Link to="/sendresetmail">Forgot Password?</Link>
-            </div>
-
-            <button className="btn btn-primary w-100">Login</button>
+            <button className="btn btn-primary w-100" type="submit">Login</button>
 
             <p className="text-center mt-3">
               Don't have an account? <Link to="/">Register</Link>
             </p>
           </form>
-        </div>
 
+        </div>
       </div>
     </div>
   );
