@@ -39,6 +39,13 @@ public class CourseManagementController {
     public List<CourseManagementDto> getAllCourses() {
         return courseServiceManagement.getAllCourses();
     }
+    
+    @PreAuthorize("hasAuthority('VIEW_ACTIVE_COURSE')")
+    @GetMapping("/active")
+    public List<CourseManagementDto> getAllActiveCourses() {
+        return courseServiceManagement.getAllActiveCourses();
+    }
+
 
     // ✅ Update Course
     @PreAuthorize("hasAuthority('UPDATE_COURSE')")

@@ -90,6 +90,16 @@ public class CourseManagementServiceImpl implements CourseServiceManagement {
         course.setStatus(active ? "ACTIVE" : "INACTIVE");
         return mapToDto(courseRepository.save(course));
     }
+    
+    public List<CourseManagementDto> getAllActiveCourses() {
+        List<CourseManagementDto> dtoList = new ArrayList<>();
+        List<CourseManagement> activeCourses = courseRepository.findByStatusOrderByCourseNameAsc("ACTIVE");
+        for (CourseManagement course : activeCourses) {
+            dtoList.add(mapToDto(course));
+        }
+        return dtoList;
+    }
+
 
     // 🔹 Common Mapper
     private CourseManagementDto mapToDto(CourseManagement course) {

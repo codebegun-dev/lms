@@ -20,12 +20,7 @@ public class UserMapper {
     @Autowired
     private RoleRepository roleRepository;
 
-    /**
-     * Convert DTO to Entity (for both create and update)
-     * @param dto UserRequestDto
-     * @param isPublicStudent true if registration is public/student
-     * @return User entity
-     */
+   
     public User toEntity(UserRequestDto dto, boolean isPublicStudent) {
         User user = new User();
         user.setFirstName(dto.getFirstName());
@@ -67,12 +62,7 @@ public class UserMapper {
         dto.setRole(user.getRole() != null ? user.getRole().getName() : null);
         dto.setStatus(user.getStatus());
 
-        // Auditing fields
-        dto.setCreatedBy(user.getCreatedBy());
-        dto.setUpdatedBy(user.getUpdatedBy());
-        dto.setCreatedDate(user.getCreatedDate());
-        dto.setUpdatedDate(user.getUpdatedDate());
-
+        
         // Profile picture logic
         String baseUrl = ServletUriComponentsBuilder.fromCurrentContextPath().toUriString();
         StudentPersonalInfo info = studentPersonalInfoRepository.findByUser_UserId(user.getUserId());

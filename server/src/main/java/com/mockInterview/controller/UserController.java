@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -11,28 +12,31 @@ import com.mockInterview.requestDtos.ForgotPasswordDto;
 import com.mockInterview.requestDtos.ResetPasswordDto;
 import com.mockInterview.requestDtos.UserRequestDto;
 import com.mockInterview.responseDtos.UserResponseDto;
+import com.mockInterview.security.annotations.ModulePermission;
 import com.mockInterview.service.UserService;
 
 import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/users")
+@ModulePermission("USER_MANAGEMENT")
 @CrossOrigin(origins = "*")
 public class UserController {
 
     @Autowired
     private UserService userService;
+    
+    @Value("${pagination.default-page-size}")
+    private int defaultPageSize;
 
- // -------- SINGLE API FOR BOTH PUBLIC STUDENT + MASTER_ADMIN USER CREATION --------
+
+    // ================= REGISTER USER (PUBLIC + MASTER_ADMIN) =================
     @PostMapping("/register")
     public UserResponseDto registerUser(@Valid @RequestBody UserRequestDto dto) {
-        
         return userService.createUser(dto);
     }
 
-
-
-    // ================= UPDATE USER =================  
+    // ================= UPDATE USER =================
     @PreAuthorize("hasAuthority('UPDATE_USER')")
     @PutMapping("/{userId}")
     public UserResponseDto updateUser(
@@ -50,50 +54,34 @@ public class UserController {
         return userService.assignRoleToUser(userId, roleId);
     }
 
-    // ================= ACTIVATE / DEACTIVATE =================
-    @PreAuthorize("hasAuthority('ACTIVATE_USER')")
-    @PutMapping("/{userId}/activate")
-    public void activateUser(@PathVariable Long userId) {
-        userService.activateUser(userId);
+    // ================= ACTIVATE / DEACTIVATE (SINGLE API) =================
+    @PreAuthorize("hasAuthority('TOGGLE_USER_STATUS')")
+    @PutMapping("/{userId}/status")
+    public void changeUserStatus(
+            @PathVariable Long userId,
+            @RequestParam boolean active) {
+        userService.changeUserStatus(userId, active);
     }
 
-    @PreAuthorize("hasAuthority('DEACTIVATE_USER')")
-    @PutMapping("/{userId}/deactivate")
-    public void deactivateUser(@PathVariable Long userId) {
-        userService.deactivateUser(userId);
-    }
-
-    // ================= DELETE USER =================
-    @PreAuthorize("hasAuthority('DELETE_USER')")
-    @DeleteMapping("/{userId}")
-    public void deleteUser(@PathVariable Long userId) {
-        userService.deleteUser(userId);
-    }
-
-    // ================= GET USERS =================
+    /// ================= GET USERS (ACTIVE FIRST + PAGINATION + COUNTS) =================
     @PreAuthorize("hasAuthority('VIEW_USERS')")
     @GetMapping
-    public List<UserResponseDto> getAllUsers() {
-        return userService.getAllUsersWithStatus();
+    public Map<String, Object> getUsersWithCounts(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(required = false) Integer size) {
+
+        // 🔹 If size not provided in request → use application.properties value
+        int pageSize = (size != null) ? size : defaultPageSize;
+
+        return userService.getUsersWithCounts(page, pageSize);
     }
 
-    @PreAuthorize("hasAuthority('VIEW_ACTIVE_USERS')")
-    @GetMapping("/active")
-    public List<UserResponseDto> getAllActiveUsers() {
-        return userService.getAllActiveUsers();
-    }
 
+    // ================= GET USER BY ID =================
     @PreAuthorize("hasAuthority('VIEW_USER')")
     @GetMapping("/{userId}")
     public UserResponseDto getUserById(@PathVariable Long userId) {
         return userService.getUserById(userId);
-    }
-
-    // ================= DASHBOARD =================
-    @PreAuthorize("hasAuthority('VIEW_DASHBOARD')")
-    @GetMapping("/dashboard")
-    public Map<String, Object> getDashboardCounts() {
-        return userService.getDashboardCounts();
     }
 
     // ================= ASSIGNABLE USERS =================
@@ -112,7 +100,7 @@ public class UserController {
         userService.bulkChangeUsersRoleByAdmin(fromRoleId, toRoleId);
     }
 
- // ================= FORGOT PASSWORD =================
+    // ================= FORGOT PASSWORD =================
     @PostMapping("/forgot-password")
     public String forgotPassword(@RequestBody ForgotPasswordDto dto) {
         return userService.forgotPassword(dto.getEmailOrPhone());
@@ -123,5 +111,4 @@ public class UserController {
     public String resetPassword(@RequestBody ResetPasswordDto dto) {
         return userService.resetPassword(dto.getToken(), dto.getNewPassword());
     }
-
 }

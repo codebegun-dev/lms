@@ -103,6 +103,21 @@ public class BatchManagementServiceImpl implements BatchManagementService {
         }
         return dtos;
     }
+    
+    @Override
+    public List<BatchManagementDto> getAllAvailableBatches() {
+        List<BatchManagementDto> dtos = new ArrayList<>();
+        
+        List<BatchManagement> activeBatches = batchRepo.findByEnableTrueOrderByNameAsc();
+        
+        for (BatchManagement batch : activeBatches) {
+            dtos.add(BatchManagementMapper.toDto(batch));
+        }
+        
+        return dtos;
+    }
+
+
 
     @Override
     public List<BatchManagementDto> getBatchesByStatus(String status) {

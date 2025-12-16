@@ -14,4 +14,5 @@ public interface CourseServiceManagement {
     CourseManagementDto  updateCourse(Long courseId, CourseManagementDto  courseDto);
 
     CourseManagementDto changeCourseStatus(Long courseId, boolean active);
+    public List<CourseManagementDto> getAllActiveCourses();
 }

@@ -40,6 +40,13 @@ public class BatchManagementController {
     public List<BatchManagementDto> getAllBatches() {
         return batchService.getAllBatches();
     }
+    
+    @PreAuthorize("hasAuthority('VIEW_BATCH')")
+    @GetMapping("/available")
+    public List<BatchManagementDto> getAllAvailableBatches() {
+        return batchService.getAllAvailableBatches();
+    }
+
 
     // ✅ Update batch by ID
     @PreAuthorize("hasAuthority('UPDATE_BATCH')")
