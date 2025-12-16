@@ -12,5 +12,6 @@ public class CourseManagementDto {
 	private Long courseId; 
 	private String courseName; 
 	private String subjects; 
+	private String status;
 
 }

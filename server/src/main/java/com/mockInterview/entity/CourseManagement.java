@@ -31,6 +31,17 @@ public class CourseManagement {
     @Column(nullable = false, length = 1000)
     private String subjects; // "Math,Physics,Chemistry"
 
+    // 🔹 Status field (default ACTIVE)
+    @Column(nullable = false)
+    private String status;
+
+    @PrePersist
+    public void setDefaultStatus() {
+        if (this.status == null) {
+            this.status = "ACTIVE";
+        }
+    }
+
     // ================= AUDIT FIELDS =================
 
     @CreatedBy

@@ -74,7 +74,20 @@ public class BatchManagement {
 
     private String ctcDual;
 
+    // 🔹 Lifecycle status (DO NOT TOUCH)
     private String status; // PENDING, ACTIVE, COMPLETED
+
+    // 🔹 Soft delete / enable-disable flag
+    @Column(nullable = false)
+    private Boolean enable;
+
+    // ✅ Default value (enabled)
+    @PrePersist
+    public void setDefaultEnable() {
+        if (this.enable == null) {
+            this.enable = true;
+        }
+    }
 
     // ================= AUDIT FIELDS =================
 

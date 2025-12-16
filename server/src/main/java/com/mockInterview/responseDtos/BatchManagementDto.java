@@ -1,10 +1,9 @@
 package com.mockInterview.responseDtos;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-
-import jakarta.persistence.Column;
 import jakarta.validation.constraints.*;
 import lombok.Data;
+
 import java.time.LocalDate;
 import java.time.LocalTime;
 
@@ -17,8 +16,7 @@ public class BatchManagementDto {
     private String name;
 
     @NotNull(message = "Associated course is required")
-    @Column(nullable = false, unique = true)
-    private String courseName;
+    private Long courseId;  // ✅ changed from courseName to courseId
 
     @Min(value = 1, message = "Batch size must be at least 1")
     private Integer size;
@@ -57,4 +55,5 @@ public class BatchManagementDto {
 
     private String ctcDual;
 
+    private Boolean enable;  // ✅ new field for soft-delete / enable-disable
 }

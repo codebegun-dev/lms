@@ -50,13 +50,7 @@ public class BatchManagementController {
         return batchService.updateBatch(id, batchDto);
     }
 
-    // ✅ Delete batch by ID
-    @PreAuthorize("hasAuthority('DELETE_BATCH')")
-    @DeleteMapping("/delete/{id}")
-    public String deleteBatch(@PathVariable Long id) {
-        batchService.deleteBatch(id);
-        return "Batch with ID " + id + " deleted successfully";
-    }
+    
 
     // ✅ Get batches by status
     @PreAuthorize("hasAuthority('VIEW_BATCH')")
@@ -85,4 +79,15 @@ public class BatchManagementController {
     public List<BatchManagementDto> getCompletedBatches() {
         return batchService.getCompletedBatches();
     }
+    
+ // 🔹 Enable / Disable batch (Soft Delete)
+    @PreAuthorize("hasAuthority('SOFT_DELETE_BATCH')")
+    @PutMapping("/enable/{id}")
+    public BatchManagementDto changeBatchEnableStatus(
+            @PathVariable Long id,
+            @RequestParam boolean enable) {
+
+        return batchService.changeBatchEnableStatus(id, enable);
+    }
+
 }
