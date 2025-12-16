@@ -6,6 +6,7 @@ import com.mockInterview.responseDtos.BatchManagementDto;
 
 public class BatchManagementMapper {
 
+    // ✅ Convert DTO to Entity
     public static BatchManagement fromDto(BatchManagementDto dto, CourseManagement course) {
         BatchManagement batch = new BatchManagement();
         batch.setName(dto.getName());
@@ -23,16 +24,18 @@ public class BatchManagementMapper {
         batch.setSecondInstallment(dto.getSecondInstallment());
         batch.setCtcDual(dto.getCtcDual());
 
-        batch.setStatus("PENDING"); // default PENDING
+        batch.setStatus("PENDING"); // lifecycle status
+        batch.setEnable(dto.getEnable() != null ? dto.getEnable() : true); // ✅ default true if null
 
         return batch;
     }
 
+    // ✅ Convert Entity to DTO
     public static BatchManagementDto toDto(BatchManagement batch) {
         BatchManagementDto dto = new BatchManagementDto();
         dto.setId(batch.getId());
         dto.setName(batch.getName());
-        dto.setCourseName(batch.getCourse() != null ? batch.getCourse().getCourseName() : null);
+        dto.setCourseId(batch.getCourse() != null ? batch.getCourse().getCourseId() : null); // ✅ only courseId
         dto.setSize(batch.getSize());
         dto.setStartDate(batch.getStartDate());
         dto.setEndDate(batch.getEndDate());
@@ -45,7 +48,8 @@ public class BatchManagementMapper {
         dto.setFirstInstallment(batch.getFirstInstallment());
         dto.setSecondInstallment(batch.getSecondInstallment());
         dto.setCtcDual(batch.getCtcDual());
-        // Status is not sent in DTO
+        dto.setEnable(batch.getEnable()); // ✅ include enable status
+
         return dto;
     }
 }

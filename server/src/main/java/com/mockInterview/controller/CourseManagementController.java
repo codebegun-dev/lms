@@ -10,7 +10,6 @@ import com.mockInterview.responseDtos.CourseManagementDto;
 import com.mockInterview.security.annotations.ModulePermission;
 import com.mockInterview.service.CourseServiceManagement;
 
-
 @RestController
 @RequestMapping("/api/courses")
 @CrossOrigin(origins = "*")
@@ -51,11 +50,14 @@ public class CourseManagementController {
         return courseServiceManagement.updateCourse(courseId, courseDto);
     }
 
-    // ✅ Delete Course
-    @PreAuthorize("hasAuthority('DELETE_COURSE')")
-    @DeleteMapping("/delete/{courseId}")
-    public String deleteCourse(@PathVariable Long courseId) {
-        courseServiceManagement.deleteCourse(courseId);
-        return "Course deleted successfully with ID: " + courseId;
+ // 🔹 Enable / Disable Course (Active / Inactive)
+    @PreAuthorize("hasAuthority('TOGGLE_COURSE_STATUS')")
+    @PutMapping("/{courseId}/status")
+    public CourseManagementDto changeCourseStatus(
+            @PathVariable Long courseId,
+            @RequestParam boolean active) { // boolean instead of String
+
+        return courseServiceManagement.changeCourseStatus(courseId, active);
     }
+
 }

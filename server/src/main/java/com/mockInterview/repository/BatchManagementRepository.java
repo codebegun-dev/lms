@@ -28,4 +28,7 @@ public interface BatchManagementRepository extends JpaRepository<BatchManagement
     Optional<BatchManagement> findByName(String name);
     
        boolean existsByName(String name);
+       
+       List<BatchManagement> findAllByOrderByEnableDesc();
+
 }

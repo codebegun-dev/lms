@@ -3,11 +3,11 @@ package com.mockInterview.serviceImpl;
 import java.util.ArrayList;
 import java.util.List;
 
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.mockInterview.entity.CourseManagement;
+import com.mockInterview.exception.DuplicateFieldException;
 import com.mockInterview.exception.ResourceNotFoundException;
 import com.mockInterview.repository.CourseManagementRepository;
 import com.mockInterview.responseDtos.CourseManagementDto;
@@ -22,12 +22,20 @@ public class CourseManagementServiceImpl implements CourseServiceManagement {
     // ✅ Create Course
     @Override
     public CourseManagementDto createCourse(CourseManagementDto dto) {
+
+       
+        if (courseRepository.existsByCourseName(dto.getCourseName())) {
+            throw new DuplicateFieldException("Course already exists with name: " + dto.getCourseName());
+        }
+
         CourseManagement course = new CourseManagement();
         course.setCourseName(dto.getCourseName());
         course.setSubjects(dto.getSubjects());
+        course.setStatus("ACTIVE"); 
 
         return mapToDto(courseRepository.save(course));
     }
+
 
     // ✅ Get Course by ID
     @Override
@@ -38,22 +46,32 @@ public class CourseManagementServiceImpl implements CourseServiceManagement {
         return mapToDto(course);
     }
 
-    // ✅ Get All Courses
     @Override
     public List<CourseManagementDto> getAllCourses() {
         List<CourseManagementDto> dtoList = new ArrayList<>();
-        for (CourseManagement course : courseRepository.findAll()) {
+        for (CourseManagement course : courseRepository.findAllByOrderByStatusAscCourseNameAsc()) {
             dtoList.add(mapToDto(course));
         }
         return dtoList;
     }
 
-    // ✅ Update Course
+
     @Override
     public CourseManagementDto updateCourse(Long courseId, CourseManagementDto dto) {
         CourseManagement course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Course not found with ID: " + courseId));
+
+        // 🔹 Check if course is inactive
+        if ("INACTIVE".equalsIgnoreCase(course.getStatus())) {
+            throw new IllegalStateException("Cannot update an inactive course. Please activate it first.");
+        }
+
+        // 🔹 Check if new course name already exists (excluding current course)
+        if (!course.getCourseName().equalsIgnoreCase(dto.getCourseName()) 
+                && courseRepository.existsByCourseName(dto.getCourseName())) {
+            throw new DuplicateFieldException("Course name already exists: " + dto.getCourseName());
+        }
 
         course.setCourseName(dto.getCourseName());
         course.setSubjects(dto.getSubjects());
@@ -61,14 +79,16 @@ public class CourseManagementServiceImpl implements CourseServiceManagement {
         return mapToDto(courseRepository.save(course));
     }
 
-    // ✅ Delete Course
+
+    // 🔹 Activate / Deactivate Course
     @Override
-    public void deleteCourse(Long courseId) {
+    public CourseManagementDto changeCourseStatus(Long courseId, boolean active) {
         CourseManagement course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Course not found with ID: " + courseId));
 
-        courseRepository.delete(course);
+        course.setStatus(active ? "ACTIVE" : "INACTIVE");
+        return mapToDto(courseRepository.save(course));
     }
 
     // 🔹 Common Mapper
@@ -77,6 +97,7 @@ public class CourseManagementServiceImpl implements CourseServiceManagement {
         dto.setCourseId(course.getCourseId());
         dto.setCourseName(course.getCourseName());
         dto.setSubjects(course.getSubjects());
+        dto.setStatus(course.getStatus());
         return dto;
     }
 }

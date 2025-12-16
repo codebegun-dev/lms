@@ -13,5 +13,5 @@ public interface CourseServiceManagement {
 
     CourseManagementDto  updateCourse(Long courseId, CourseManagementDto  courseDto);
 
-    void deleteCourse(Long courseId);
+    CourseManagementDto changeCourseStatus(Long courseId, boolean active);
 }

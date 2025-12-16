@@ -18,8 +18,7 @@ public interface BatchManagementService {
     // ✅ Update batch by ID
     BatchManagementDto updateBatch(Long batchId, BatchManagementDto batchDto);
 
-    // ✅ Delete batch by ID
-    void deleteBatch(Long batchId);
+    
 
     // ✅ Get batches by status (PENDING, ACTIVE, COMPLETED)
     List<BatchManagementDto> getBatchesByStatus(String status);
@@ -32,4 +31,8 @@ public interface BatchManagementService {
 
     // ✅ Optional: Get completed batches (completedDate <= today)
     List<BatchManagementDto> getCompletedBatches();
+    
+ // ✅ Enable / Disable batch (soft delete)
+    BatchManagementDto changeBatchEnableStatus(Long batchId, boolean enable);
+
 }

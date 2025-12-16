@@ -1,5 +1,6 @@
 package com.mockInterview.repository;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -15,6 +16,8 @@ public interface CourseManagementRepository extends JpaRepository<CourseManageme
 	    
 	    boolean existsByCourseName(String courseName);
 	    Optional<CourseManagement> findByCourseName(String courseName); 
+	    List<CourseManagement> findAllByOrderByStatusAscCourseNameAsc();
+
 
 	}
 
