@@ -48,7 +48,7 @@ public class RoleController {
 
     // ================= DELETE ROLE =================
     @PreAuthorize("hasAuthority('DELETE_ROLE')")
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/{id}") 
     public String deleteRole(@PathVariable Long id) {
         roleService.deleteRole(id);
         return "Role deleted successfully";

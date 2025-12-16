@@ -1,422 +1,4 @@
-// // import React, { useState, useEffect, useRef } from "react";
-// // import axios from "axios";
-// // import { FaEdit, FaTrash } from "react-icons/fa";
-
-// // const BASE_URL = "http://localhost:8080/api/roles"; // Change if needed
-
-// // // 👇 convert "Permission1, Permission2" → ["Permission1", "Permission2"]
-// // const parsePermissions = (txt) => {
-// //   if (!txt) return [];
-// //   return txt
-// //     .split(",")
-// //     .map((p) => p.trim())
-// //     .filter(Boolean);
-// // };
-
-// // // 👇 convert ["P1","P2"] → "P1, P2"
-// // const stringifyPermissions = (arr) => (arr && arr.length ? arr.join(", ") : "");
-
-// // const ManageRoles = () => {
-// //   const [roles, setRoles] = useState([]);
-// //   const [name, setName] = useState("");
-// //   const [permsText, setPermsText] = useState("");
-// //   const [editingId, setEditingId] = useState(null);
-// //   const [message, setMessage] = useState(null);
-// //   const dismissRef = useRef(null);
-
-// //   // ✅ Load roles from backend
-// //   useEffect(() => {
-// //     fetchRoles();
-// //   }, []);
-
-// //   const fetchRoles = async () => {
-// //     try {
-// //       const res = await axios.get(BASE_URL);
-// //       setRoles(res.data);
-// //     } catch (e) {
-// //       showMessage("Failed to load roles", "danger");
-// //       console.error(e);
-// //     }
-// //   };
-
-// //   const resetForm = () => {
-// //     setName("");
-// //     setPermsText("");
-// //     setEditingId(null);
-// //   };
-
-// //   const showMessage = (text, variant = "success", timeout = 3000) => {
-// //     setMessage({ text, variant });
-// //     if (dismissRef.current) clearTimeout(dismissRef.current);
-// //     dismissRef.current = setTimeout(() => setMessage(null), timeout);
-// //   };
-
-// //   // ✅ Create OR Update role
-// //   const handleSave = async () => {
-// //     const trimmed = name.trim();
-// //     if (!trimmed) {
-// //       showMessage("Please enter a role name", "danger");
-// //       return;
-// //     }
-
-// //     const permissions = parsePermissions(permsText);
-
-// //     // ✅ Get masterAdminId from localStorage
-// //     const masterAdminId = localStorage.getItem("masterAdminId");
-// //     if (!masterAdminId) {
-// //       showMessage("Master Admin not found. Please login as Master Admin.", "danger");
-// //       return;
-// //     }
-
-// //     const payload = {
-// //       name: trimmed,
-// //       permissions,
-// //       adminAuthId: parseInt(masterAdminId), // Send adminId for create/update
-// //     };
-
-// //     try {
-// //       if (editingId) {
-// //         await axios.put(`${BASE_URL}/${editingId}`, payload);
-// //         showMessage("Role updated successfully", "success");
-// //       } else {
-// //         await axios.post(BASE_URL, payload);
-// //         showMessage("Role created successfully", "success");
-// //       }
-
-// //       resetForm();
-// //       fetchRoles();
-// //     } catch (e) {
-// //       showMessage(e.response?.data?.message || "Failed to save role", "danger");
-// //       console.error(e);
-// //     }
-// //   };
-
-// //   // ✅ Edit role
-// //   const handleEdit = (role) => {
-// //     setEditingId(role.id);
-// //     setName(role.name);
-// //     setPermsText(stringifyPermissions(role.permissions));
-// //   };
-
-// //   // ✅ Delete role (no admin required)
-// //   const handleDelete = async (id) => {
-// //     if (!window.confirm("Are you sure?")) return;
-
-// //     try {
-// //       await axios.delete(`${BASE_URL}/${id}`);
-// //       fetchRoles();
-// //       showMessage("Role deleted successfully", "warning");
-// //       if (editingId === id) resetForm();
-// //     } catch (e) {
-// //       showMessage(e.response?.data?.message || "Failed to delete role", "danger");
-// //       console.error(e);
-// //     }
-// //   };
-
-// //   return (
-// //     <div className="container py-4">
-// //       <h2 className="mb-3">Manage Roles</h2>
-
-// //       {/* Create / Edit Form */}
-// //       <div className="card mb-3">
-// //         <div className="card-body">
-// //           <div className="row g-2 align-items-center">
-// //             <div className="col-sm-4">
-// //               <input
-// //                 className="form-control"
-// //                 placeholder="Role name"
-// //                 value={name}
-// //                 onChange={(e) => setName(e.target.value)}
-// //               />
-// //             </div>
-
-// //             <div className="col-sm-5">
-// //               <input
-// //                 className="form-control"
-// //                 placeholder="Permissions (comma separated)"
-// //                 value={permsText}
-// //                 onChange={(e) => setPermsText(e.target.value)}
-// //               />
-// //             </div>
-
-// //             <div className="col-sm-3 d-flex gap-2">
-// //               <button className="btn btn-primary" onClick={handleSave}>
-// //                 {editingId ? "Save" : "Create Role"}
-// //               </button>
-
-// //               {editingId && (
-// //                 <button className="btn btn-secondary" onClick={resetForm}>
-// //                   Cancel
-// //                 </button>
-// //               )}
-// //             </div>
-// //           </div>
-// //         </div>
-// //       </div>
-
-// //       {/* Display roles */}
-// //       <div>
-// //         {roles.length === 0 && <div className="text-muted">No roles found.</div>}
-
-// //         <div className="list-group">
-// //           {roles.map((r) => (
-// //             <div key={r.id} className="list-group-item d-flex justify-content-between align-items-center">
-// //               <div>
-// //                 <div className="fw-semibold">{r.name}</div>
-// //                 <div className="mt-1">
-// //                   {r.permissions?.length ? (
-// //                     r.permissions.map((p, i) => (
-// //                       <span key={i} className="badge bg-secondary me-1">{p}</span>
-// //                     ))
-// //                   ) : (
-// //                     <span className="text-muted small">No Permissions</span>
-// //                   )}
-// //                 </div>
-// //               </div>
-
-// //               <div className="btn-group">
-// //                 <button className="btn btn-sm btn-outline-primary d-flex align-items-center" onClick={() => handleEdit(r)}>
-// //                   <FaEdit className="me-1" /> Edit
-// //                 </button>
-// //                 <button className="btn btn-sm btn-outline-danger d-flex align-items-center" onClick={() => handleDelete(r.id)}>
-// //                   <FaTrash className="me-1" /> Delete
-// //                 </button>
-// //               </div>
-// //             </div>
-// //           ))}
-// //         </div>
-// //       </div>
-
-// //       {/* Bootstrap Toast */}
-// //       {message && (
-// //         <div className="position-fixed bottom-0 end-0 p-3" style={{ zIndex: 1060 }}>
-// //           <div className={`alert alert-${message.variant} shadow`} role="alert">
-// //             {message.text}
-// //           </div>
-// //         </div>
-// //       )}
-// //     </div>
-// //   );
-// // };
-
-// // export default ManageRoles;
- 
-
-
-
-
-
-// import React, { useEffect, useState, useRef } from "react";
-// import axios from "axios";
-// import { FaEdit, FaTrash } from "react-icons/fa";
-
-// const ROLE_API = "http://localhost:8080/api/roles";
-// const PERMISSION_API = "http://localhost:8080/api/permissions";
-
-// const ManageRoles = () => {
-//   const [roles, setRoles] = useState([]);
-//   const [permissions, setPermissions] = useState([]);
-//   const [selectedPerms, setSelectedPerms] = useState([]);
-//   const [name, setName] = useState("");
-//   const [editingId, setEditingId] = useState(null);
-//   const [toast, setToast] = useState(null);
-//   const timerRef = useRef(null);
-
-//   // Axios config with JWT
-//   const axiosAuth = axios.create({
-//     baseURL: ROLE_API,
-//     headers: {
-//       Authorization: `Bearer ${localStorage.getItem("token")}`,
-//       "Content-Type": "application/json",
-//     },
-//   });
-
-//   useEffect(() => {
-//     loadRoles();
-//     loadPermissions();
-//     return () => timerRef.current && clearTimeout(timerRef.current);
-//   }, []);
-
-//   const showToast = (msg, type = "success") => {
-//     setToast({ msg, type });
-//     timerRef.current = setTimeout(() => setToast(null), 3000);
-//   };
-
-//   const loadRoles = async () => {
-//     try {
-//       const res = await axiosAuth.get("");
-//       setRoles(res.data);
-//     } catch {
-//       showToast("Failed to load roles", "danger");
-//     }
-//   };
-
-//   const loadPermissions = async () => {
-//     try {
-//       const res = await axios.get(PERMISSION_API); // no auth needed if backend allows CORS
-//       setPermissions(res.data);
-//     } catch {
-//       showToast("Failed to load permissions", "danger");
-//     }
-//   };
-
-//   const resetForm = () => {
-//     setName("");
-//     setSelectedPerms([]);
-//     setEditingId(null);
-//   };
-
-//   const saveRole = async () => {
-//     if (!name.trim()) {
-//       showToast("Role name required", "danger");
-//       return;
-//     }
-
-//     const payload = {
-//       name: name.trim(),
-//       permissions: selectedPerms,
-//     };
-
-//     try {
-//       if (editingId) {
-//         await axiosAuth.put(`/${editingId}`, payload);
-//         showToast("Role updated");
-//       } else {
-//         await axiosAuth.post("", payload);
-//         showToast("Role created");
-//       }
-//       resetForm();
-//       loadRoles();
-//     } catch (e) {
-//       showToast(e.response?.data?.message || "Permission denied", "danger");
-//     }
-//   };
-
-//   const editRole = (role) => {
-//     setEditingId(role.id);
-//     setName(role.name);
-//     setSelectedPerms(role.permissions || []);
-//   };
-
-//   const deleteRole = async (id) => {
-//     if (!window.confirm("Delete this role?")) return;
-//     try {
-//       await axiosAuth.delete(`/${id}`);
-//       showToast("Role deleted", "warning");
-//       loadRoles();
-//       if (editingId === id) resetForm();
-//     } catch {
-//       showToast("Delete not allowed", "danger");
-//     }
-//   };
-
-//   return (
-//     <div className="container mt-4">
-//       <h4 className="mb-3">Manage Roles</h4>
-
-//       {/* FORM */}
-//       <div className="card mb-3">
-//         <div className="card-body row g-2">
-//           <div className="col-md-4">
-//             <input
-//               className="form-control"
-//               placeholder="Role Name"
-//               value={name}
-//               onChange={(e) => setName(e.target.value)}
-//             />
-//           </div>
-
-//           <div className="col-md-5">
-//             <select
-//               className="form-select"
-//               multiple
-//               value={selectedPerms}
-//               onChange={(e) =>
-//                 setSelectedPerms(
-//                   Array.from(e.target.selectedOptions, (option) => option.value)
-//                 )
-//               }
-//             >
-//               {permissions.map((p) => (
-//                 <option key={p.id} value={p.name}>
-//                   {p.name}
-//                 </option>
-//               ))}
-//             </select>
-//           </div>
-
-//           <div className="col-md-3 d-flex gap-2">
-//             <button className="btn btn-primary" onClick={saveRole}>
-//               {editingId ? "Update" : "Create"}
-//             </button>
-//             {editingId && (
-//               <button className="btn btn-secondary" onClick={resetForm}>
-//                 Cancel
-//               </button>
-//             )}
-//           </div>
-//         </div>
-//       </div>
-
-//       {/* LIST */}
-//       <div className="list-group">
-//         {roles.length === 0 && <div className="text-muted">No roles found</div>}
-//         {roles.map((r) => (
-//           <div
-//             key={r.id}
-//             className="list-group-item d-flex justify-content-between align-items-center"
-//           >
-//             <div>
-//               <div className="fw-bold">{r.name}</div>
-//               <div className="mt-1">
-//                 {r.permissions?.length ? (
-//                   r.permissions.map((p, i) => (
-//                     <span key={i} className="badge bg-secondary me-1">
-//                       {p}
-//                     </span>
-//                   ))
-//                 ) : (
-//                   <small className="text-muted">No permissions</small>
-//                 )}
-//               </div>
-//             </div>
-
-//             <div className="btn-group">
-//               <button
-//                 className="btn btn-outline-primary btn-sm"
-//                 onClick={() => editRole(r)}
-//               >
-//                 <FaEdit />
-//               </button>
-//               <button
-//                 className="btn btn-outline-danger btn-sm"
-//                 onClick={() => deleteRole(r.id)}
-//               >
-//                 <FaTrash />
-//               </button>
-//             </div>
-//           </div>
-//         ))}
-//       </div>
-
-//       {/* TOAST */}
-//       {toast && (
-//         <div
-//           className="position-fixed bottom-0 end-0 p-3"
-//           style={{ zIndex: 1055 }}
-//         >
-//           <div className={`alert alert-${toast.type}`}>{toast.msg}</div>
-//         </div>
-//       )}
-//     </div>
-//   );
-// };
-
-// export default ManageRoles;
-
-
-
-import React, { useEffect, useState, useRef } from "react";
+ import React, { useEffect, useState, useRef } from "react";
 import axios from "axios";
 import { FaEdit, FaTrash } from "react-icons/fa";
 
@@ -426,13 +8,13 @@ const PERMISSION_API = "http://localhost:8080/api/permissions";
 const ManageRoles = () => {
   const [roles, setRoles] = useState([]);
   const [permissions, setPermissions] = useState([]);
-  const [selectedPerms, setSelectedPerms] = useState([]);
+  const [selectedPermIds, setSelectedPermIds] = useState([]);
+  const [selectedPermission, setSelectedPermission] = useState("");
   const [name, setName] = useState("");
   const [editingId, setEditingId] = useState(null);
   const [toast, setToast] = useState(null);
   const timerRef = useRef(null);
 
-  // Axios instance with JWT for roles
   const axiosAuth = axios.create({
     baseURL: ROLE_API,
     headers: {
@@ -452,7 +34,6 @@ const ManageRoles = () => {
     timerRef.current = setTimeout(() => setToast(null), 3000);
   };
 
-  // Load all roles
   const loadRoles = async () => {
     try {
       const res = await axiosAuth.get("");
@@ -462,23 +43,23 @@ const ManageRoles = () => {
     }
   };
 
-  // Load all permissions
   const loadPermissions = async () => {
-    try {
-      const res = await axios.get(PERMISSION_API); // no auth needed if backend allows CORS
-      setPermissions(res.data);
-    } catch {
-      showToast("Failed to load permissions", "danger");
-    }
+    const res = await axios.get(PERMISSION_API, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+    });
+    setPermissions(res.data);
   };
 
   const resetForm = () => {
     setName("");
-    setSelectedPerms([]);
+    setSelectedPermIds([]);
+    setSelectedPermission("");
     setEditingId(null);
   };
 
-  // Create or update role
+  // CREATE / UPDATE ROLE
   const saveRole = async () => {
     if (!name.trim()) {
       showToast("Role name required", "danger");
@@ -487,7 +68,8 @@ const ManageRoles = () => {
 
     const payload = {
       name: name.trim(),
-      permissions: selectedPerms, // send array of permission names
+      description: "",
+      permissionIds: selectedPermIds,
     };
 
     try {
@@ -505,10 +87,16 @@ const ManageRoles = () => {
     }
   };
 
+  // EDIT ROLE
   const editRole = (role) => {
     setEditingId(role.id);
     setName(role.name);
-    setSelectedPerms(role.permissions || []);
+
+    const ids = permissions
+      .filter((p) => role.permissions.includes(p.name))
+      .map((p) => p.id);
+
+    setSelectedPermIds(ids);
   };
 
   const deleteRole = async (id) => {
@@ -529,7 +117,7 @@ const ManageRoles = () => {
 
       {/* FORM */}
       <div className="card mb-3">
-        <div className="card-body row g-2">
+        <div className="card-body row g-3 align-items-start">
           <div className="col-md-4">
             <input
               className="form-control"
@@ -540,22 +128,60 @@ const ManageRoles = () => {
           </div>
 
           <div className="col-md-5">
-            <select
-              className="form-select"
-              multiple
-              value={selectedPerms}
-              onChange={(e) =>
-                setSelectedPerms(
-                  Array.from(e.target.selectedOptions, (option) => option.value)
-                )
-              }
-            >
-              {permissions.map((p) => (
-                <option key={p.id} value={p.name}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
+            {/* NORMAL DROPDOWN */}
+            <div className="d-flex gap-2">
+              <select
+                className="form-select"
+                value={selectedPermission}
+                onChange={(e) => setSelectedPermission(e.target.value)}
+              >
+                <option value="">Select Permission</option>
+                {permissions.map((p) => (
+                  <option
+                    key={p.id}
+                    value={p.id}
+                    disabled={selectedPermIds.includes(p.id)}
+                  >
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+
+              <button
+                className="btn btn-outline-primary"
+                type="button"
+                onClick={() => {
+                  if (!selectedPermission) return;
+                  setSelectedPermIds((prev) => [
+                    ...prev,
+                    Number(selectedPermission),
+                  ]);
+                  setSelectedPermission("");
+                }}
+              >
+                Add
+              </button>
+            </div>
+
+            {/* SELECTED PERMISSIONS */}
+            <div className="mt-2">
+              {permissions
+                .filter((p) => selectedPermIds.includes(p.id))
+                .map((p) => (
+                  <span key={p.id} className="badge bg-primary me-2">
+                    {p.name}
+                    <button
+                      type="button"
+                      className="btn-close btn-close-white btn-sm ms-2"
+                      onClick={() =>
+                        setSelectedPermIds((prev) =>
+                          prev.filter((id) => id !== p.id)
+                        )
+                      }
+                    ></button>
+                  </span>
+                ))}
+            </div>
           </div>
 
           <div className="col-md-3 d-flex gap-2">
@@ -571,26 +197,24 @@ const ManageRoles = () => {
         </div>
       </div>
 
-      {/* LIST */}
+      {/* ROLE LIST */}
       <div className="list-group">
-        {roles.length === 0 && <div className="text-muted">No roles found</div>}
+        {roles.length === 0 && (
+          <div className="text-muted">No roles found</div>
+        )}
         {roles.map((r) => (
           <div
             key={r.id}
-            className="list-group-item d-flex justify-content-between align-items-center"
+            className="list-group-item d-flex justify-content-between"
           >
             <div>
               <div className="fw-bold">{r.name}</div>
               <div className="mt-1">
-                {r.permissions?.length ? (
-                  r.permissions.map((p, i) => (
-                    <span key={i} className="badge bg-secondary me-1">
-                      {p}
-                    </span>
-                  ))
-                ) : (
-                  <small className="text-muted">No permissions</small>
-                )}
+                {r.permissions?.map((p, i) => (
+                  <span key={i} className="badge bg-secondary me-1">
+                    {p}
+                  </span>
+                ))}
               </div>
             </div>
 
@@ -612,12 +236,8 @@ const ManageRoles = () => {
         ))}
       </div>
 
-      {/* TOAST */}
       {toast && (
-        <div
-          className="position-fixed bottom-0 end-0 p-3"
-          style={{ zIndex: 1055 }}
-        >
+        <div className="position-fixed bottom-0 end-0 p-3">
           <div className={`alert alert-${toast.type}`}>{toast.msg}</div>
         </div>
       )}
@@ -626,4 +246,3 @@ const ManageRoles = () => {
 };
 
 export default ManageRoles;
-
