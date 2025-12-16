@@ -34,5 +34,7 @@ public interface BatchManagementService {
     
  // ✅ Enable / Disable batch (soft delete)
     BatchManagementDto changeBatchEnableStatus(Long batchId, boolean enable);
+    List<BatchManagementDto> getAllAvailableBatches();
+
 
 }

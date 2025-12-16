@@ -23,7 +23,7 @@ public class SalesCourseController {
 	
 	
 	// inside class
-	@Value("${lead.pagination.default-page-size}")
+	@Value("${pagination.default-page-size}")
 	private int defaultPageSize;
 
 

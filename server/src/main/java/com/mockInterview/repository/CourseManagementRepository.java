@@ -17,6 +17,8 @@ public interface CourseManagementRepository extends JpaRepository<CourseManageme
 	    boolean existsByCourseName(String courseName);
 	    Optional<CourseManagement> findByCourseName(String courseName); 
 	    List<CourseManagement> findAllByOrderByStatusAscCourseNameAsc();
+	    List<CourseManagement> findByStatusOrderByCourseNameAsc(String status);
+
 
 
 	}

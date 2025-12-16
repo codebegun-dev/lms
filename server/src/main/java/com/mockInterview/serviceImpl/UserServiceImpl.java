@@ -1,11 +1,20 @@
 package com.mockInterview.serviceImpl;
 
+
 import java.security.SecureRandom;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+
+
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -58,64 +67,7 @@ public class UserServiceImpl implements UserService {
     @Value("${app.frontend.base-url}")
     private String FRONTEND_BASE_URL;
 
-// // ================= CREATE USER =================
-//    @Override
-//    @Transactional
-//    public UserResponseDto createUser(UserRequestDto dto, boolean isPublicStudent) {
-//        if (dto == null) 
-//            throw new UnauthorizedActionException("User data is empty");
-//
-//        // =================== DUPLICATE CHECK ===================
-//        if (dto.getEmail() != null && userRepository.findByEmail(dto.getEmail()) != null)
-//            throw new DuplicateFieldException("Email already exists!");
-//        if (dto.getPhone() != null &&
-//            (userRepository.findByPhone(dto.getPhone()) != null ||
-//             studentPersonalInfoRepository.findByParentMobileNumber(dto.getPhone()) != null))
-//            throw new DuplicateFieldException("Phone already exists!");
-//
-//        // =================== MAP DTO TO ENTITY ===================
-//        User user = userMapper.toEntity(dto, isPublicStudent);
-//
-//        // =================== ROLE ASSIGNMENT ===================
-//        if (isPublicStudent) {
-//            // Public registration → STUDENT role only
-//            Role studentRole = roleRepository.findByName("STUDENT");
-//            if (studentRole == null) 
-//                throw new ResourceNotFoundException("STUDENT role not found");
-//            user.setRole(studentRole);
-//
-//            // Public users → createdBy / updatedBy = null
-//            user.setCreatedBy(null);
-//            user.setUpdatedBy(null);
-//        } else {
-//            // Admin registration → can assign any role
-//            if (user.getRole() == null) {
-//                Role studentRole = roleRepository.findByName("STUDENT");
-//                if (studentRole == null) 
-//                    throw new ResourceNotFoundException("STUDENT role not found");
-//                user.setRole(studentRole); // default STUDENT if role not provided
-//            }
-//            // Admin registration → createdBy / updatedBy handled by Auditor
-//        }
-//
-//        // =================== PASSWORD ===================
-//        if (dto.getPassword() == null || dto.getPassword().isEmpty())
-//            throw new UnauthorizedActionException("Password is required");
-//        validatePassword(dto.getPassword());
-//        user.setPassword(passwordEncoder.encode(dto.getPassword()));
-//
-//        user.setStatus("ACTIVE");
-//
-//        // =================== SAVE USER ===================
-//        User savedUser = userRepository.save(user);
-//
-//        // =================== SEND WELCOME EMAIL ===================
-//        emailService.sendWelcomeEmail(savedUser.getEmail(), savedUser.getFirstName());
-//
-//        return userMapper.toResponse(savedUser);
-//    }
-//    
-//    
+
     
     @Override
     @Transactional
@@ -204,6 +156,10 @@ public class UserServiceImpl implements UserService {
         if (user.getRole() != null && "MASTER_ADMIN".equalsIgnoreCase(user.getRole().getName()))
             throw new UnauthorizedActionException("Master Admin details cannot be edited");
 
+        if ("INACTIVE".equalsIgnoreCase(user.getStatus()))
+            throw new IllegalStateException("Cannot update an inactive user. Please activate the user first.");
+
+        
         // Duplicate checks
         if (dto.getEmail() != null && !dto.getEmail().equals(user.getEmail()) &&
             userRepository.findByEmail(dto.getEmail()) != null)
@@ -273,18 +229,69 @@ public class UserServiceImpl implements UserService {
         userRepository.saveAll(nonStudentUsers);
     }
 
-    // ================= GET USERS =================
     @Override
-    public List<UserResponseDto> getAllActiveUsers() {
-        return userRepository.findByStatusAndRole_NameNot("ACTIVE", "MASTER_ADMIN")
-                .stream().map(userMapper::toResponse).toList();
+    public Map<String, Object> getUsersWithCounts(int page, int size) {
+
+    	Pageable pageable = PageRequest.of(page, size, Sort.by("userId").ascending());
+
+
+        List<UserResponseDto> users = new ArrayList<>();
+
+        // ================= COUNTS =================
+        long totalUsers = userRepository.countByRole_NameNot("MASTER_ADMIN");
+        long activeUsersCount = userRepository.countByStatusAndRole_NameNot("ACTIVE", "MASTER_ADMIN");
+        long inactiveUsersCount = userRepository.countByStatusAndRole_NameNot("INACTIVE", "MASTER_ADMIN");
+
+        // ================= FETCH ACTIVE USERS FIRST =================
+        Page<User> activePage = userRepository.findByStatusAndRole_NameNot(
+                "ACTIVE", "MASTER_ADMIN", pageable
+        );
+
+        for (User user : activePage.getContent()) {
+            users.add(userMapper.toResponse(user));
+        }
+
+        // ================= FILL WITH INACTIVE USERS =================
+        if (users.size() < size) {
+
+            int remaining = size - users.size();
+
+            Pageable inactivePageable = PageRequest.of(
+                    0, // always start inactive from first page
+                    remaining,
+                    Sort.by("userId").ascending()
+            );
+
+            Page<User> inactivePage = userRepository.findByStatusAndRole_NameNot(
+                    "INACTIVE", "MASTER_ADMIN", inactivePageable
+            );
+
+            for (User user : inactivePage.getContent()) {
+                users.add(userMapper.toResponse(user));
+            }
+        }
+
+        // ================= ROLE COUNTS =================
+        List<Object[]> roleCountsList = userRepository.findRoleWiseCountsExcludingMasterAdmin();
+        Map<String, Long> roleCounts = new HashMap<>();
+        for (Object[] row : roleCountsList) {
+            roleCounts.put((String) row[0], (Long) row[1]);
+        }
+
+        // ================= RESPONSE =================
+        Map<String, Object> response = new HashMap<>();
+        response.put("USERS", users);
+        response.put("TOTAL_USERS", totalUsers);
+        response.put("ACTIVE_USERS", activeUsersCount);
+        response.put("INACTIVE_USERS", inactiveUsersCount);
+        response.put("ROLE_COUNTS", roleCounts);
+        response.put("CURRENT_PAGE", page);
+        response.put("PAGE_SIZE", size);
+        response.put("TOTAL_PAGES", (int) Math.ceil((double) totalUsers / size));
+
+        return response;
     }
 
-    @Override
-    public List<UserResponseDto> getAllUsersWithStatus() {
-        return userRepository.findByRole_NameNot("MASTER_ADMIN")
-                .stream().map(userMapper::toResponse).toList();
-    }
 
     @Override
     public UserResponseDto getUserById(Long userId) {
@@ -297,53 +304,31 @@ public class UserServiceImpl implements UserService {
         return userMapper.toResponse(user);
     }
 
-    // ================= STATUS MANAGEMENT =================
-    @Override
-    public void deactivateUser(Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-        if ("MASTER_ADMIN".equalsIgnoreCase(user.getRole() != null ? user.getRole().getName() : ""))
-            throw new UnauthorizedActionException("Master Admin cannot be deactivated");
-        user.setStatus("INACTIVE");
-        userRepository.save(user);
-    }
-
-    @Override
-    public void activateUser(Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-        if ("ACTIVE".equalsIgnoreCase(user.getStatus()))
-            throw new UnauthorizedActionException("User already active");
-        user.setStatus("ACTIVE");
-        userRepository.save(user);
-    }
-
+ // ================= STATUS MANAGEMENT =================
     @Override
     @Transactional
-    public void deleteUser(Long userId) {
+    public void changeUserStatus(Long userId, boolean active) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-        if ("MASTER_ADMIN".equalsIgnoreCase(user.getRole() != null ? user.getRole().getName() : ""))
-            throw new UnauthorizedActionException("Master Admin cannot be deleted");
-        tokenRepository.deleteByUser(user);
-        userRepository.delete(user);
+
+        // Prevent changing status of MASTER_ADMIN
+        if ("MASTER_ADMIN".equalsIgnoreCase(user.getRole() != null ? user.getRole().getName() : "")) {
+            throw new UnauthorizedActionException("Master Admin cannot be deactivated or modified");
+        }
+
+        // Check if already in desired status
+        String currentStatus = user.getStatus();
+        String newStatus = active ? "ACTIVE" : "INACTIVE";
+        if (newStatus.equalsIgnoreCase(currentStatus)) {
+            throw new UnauthorizedActionException("User is already " + newStatus);
+        }
+
+        user.setStatus(newStatus);
+        userRepository.save(user);
     }
 
-    // ================= DASHBOARD =================
-    @Override
-    public Map<String, Object> getDashboardCounts() {
-        Map<String, Object> response = new HashMap<>();
-        response.put("TOTAL_USERS", userRepository.count());
-        response.put("ACTIVE_USERS", userRepository.countByStatus("ACTIVE"));
-        response.put("INACTIVE_USERS", userRepository.countByStatus("INACTIVE"));
 
-        List<Object[]> roleCounts = userRepository.findRoleWiseCounts();
-        Map<String, Long> roleMap = new HashMap<>();
-        for (Object[] row : roleCounts) roleMap.put((String) row[0], (Long) row[1]);
-        response.put("ROLE_COUNTS", roleMap);
-
-        return response;
-    }
+    
 
     // ================= ASSIGNABLE USERS =================
     @Override
