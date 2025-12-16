@@ -18,10 +18,7 @@ public class PermissionAspect {
     @Autowired
     private PermissionService permissionService;
 
-    /**
-     * Intercept methods annotated with @PreAuthorize
-     * or classes annotated with @PreAuthorize
-     */
+    
     @Before("execution(* com.mockInterview..controller..*(..))")
     public void checkPermissions(JoinPoint joinPoint) {
 
