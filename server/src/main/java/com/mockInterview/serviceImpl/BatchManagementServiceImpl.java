@@ -3,6 +3,7 @@ package com.mockInterview.serviceImpl;
 import com.mockInterview.entity.BatchManagement;
 import com.mockInterview.entity.CourseManagement;
 import com.mockInterview.exception.DuplicateFieldException;
+import com.mockInterview.exception.InactiveResourceException;
 import com.mockInterview.exception.ResourceNotFoundException;
 import com.mockInterview.mapper.BatchManagementMapper;
 import com.mockInterview.repository.BatchManagementRepository;
@@ -52,7 +53,7 @@ public class BatchManagementServiceImpl implements BatchManagementService {
                 .orElseThrow(() ->
                         new ResourceNotFoundException("Batch not found with ID: " + batchId));
         if (!batch.getEnable()) {
-            throw new IllegalStateException("Cannot update a disabled batch. Enable it first.");
+            throw new InactiveResourceException("Cannot update a disabled batch. Enable it first.");
         }
 
         if (!batch.getName().equals(batchDto.getName()) && batchRepo.existsByName(batchDto.getName())) {
