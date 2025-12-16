@@ -42,7 +42,7 @@ public class UserController {
     public UserResponseDto updateUser(
             @PathVariable Long userId,
             @Valid @RequestBody UserRequestDto dto) {
-        return userService.updateUser(userId, dto);
+        return userService.updateUser(userId, dto); 
     }
 
     // ================= ASSIGN ROLE =================
