@@ -126,11 +126,12 @@ const UserRow = ({ user, onEditFullProfile, onViewBasicInfo, onDelete, onToggleS
           {roleName}
         </span>
       </td>
+      
       <td className="align-middle">
-        <span className={`badge px-3 py-2 ${user.status === "active" ? "bg-success" : "bg-secondary"}`} style={{ borderRadius: "20px" }}>
-          {user.status === "active" ? <><FaCheckCircle className="me-1" /> Active</> : <><FaTimesCircle className="me-1" /> Inactive</>}
-        </span>
-      </td>
+  <span className={`badge px-3 py-2 ${user.status === "active" ? "bg-success" : "bg-secondary"}`} style={{ borderRadius: "20px" }}>
+    {user.status === "active" ? <><FaCheckCircle className="me-1" /> ACTIVE</> : <><FaTimesCircle className="me-1" /> INACTIVE</>}
+  </span>
+</td>
       <td className="align-middle text-center pe-4">
         <div className="d-flex justify-content-center gap-2">
           <button className="btn btn-sm shadow-sm" onClick={onEditFullProfile} title="Edit Full Profile" style={{ background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)", color: "white", borderRadius: "8px", border: "none" }}>
@@ -153,9 +154,9 @@ const UserRow = ({ user, onEditFullProfile, onViewBasicInfo, onDelete, onToggleS
                 <FaBan />
               </button>
 
-              <button className="btn btn-sm btn-outline-danger shadow-sm" onClick={onDelete} title="Delete User" style={{ borderRadius: "8px" }}>
+              {/* <button className="btn btn-sm btn-outline-danger shadow-sm" onClick={onDelete} title="Delete User" style={{ borderRadius: "8px" }}>
                 <FaTrash />
-              </button>
+              </button> */}
             </>
           )}
         </div>
