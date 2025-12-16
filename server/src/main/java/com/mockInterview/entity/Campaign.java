@@ -1,5 +1,6 @@
 package com.mockInterview.entity;
 
+
 import jakarta.persistence.*;
 import lombok.Data;
 import org.springframework.data.annotation.CreatedBy;
@@ -23,6 +24,11 @@ public class Campaign {
     @Column(nullable = false, unique = true)
     private String campaignName;
 
+    // 🔹 COMMON STATUS FIELD
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Status status;
+
     // 🔹 AUDIT FIELDS
     @CreatedBy
     @Column(updatable = false)
@@ -37,4 +43,12 @@ public class Campaign {
 
     @LastModifiedDate
     private LocalDateTime updatedDate;
+
+    // 🔹 DEFAULT STATUS
+    @PrePersist
+    public void setDefaultStatus() {
+        if (this.status == null) {
+            this.status = Status.ACTIVE;
+        }
+    }
 }

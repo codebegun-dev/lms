@@ -5,6 +5,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import com.mockInterview.entity.Campaign;
+import com.mockInterview.entity.Status;
 import com.mockInterview.security.annotations.ModulePermission;
 import com.mockInterview.service.CampaignService;
 
@@ -26,11 +27,21 @@ public class CampaignController {
         return campaignService.createCampaign(campaign);
     }
 
-    // UPDATE
+    // UPDATE (only ACTIVE allowed – handled in service)
     @PreAuthorize("hasAuthority('UPDATE_CAMPAIGN')")
     @PutMapping("/{id}")
     public Campaign updateCampaign(@PathVariable Long id, @RequestBody Campaign campaign) {
         return campaignService.updateCampaign(id, campaign);
+    }
+
+    // 🔹 ACTIVATE / INACTIVATE
+    @PreAuthorize("hasAuthority('UPDATE_STATUS_CAMPAIGN')")
+    @PutMapping("/{id}/status")
+    public Campaign updateCampaignStatus(
+            @PathVariable Long id,
+            @RequestParam Status status) {
+
+        return campaignService.updateCampaignStatus(id, status);
     }
 
     // DELETE
@@ -52,5 +63,12 @@ public class CampaignController {
     @GetMapping
     public List<Campaign> getAllCampaigns() {
         return campaignService.getAllCampaigns();
+    }
+
+    // 🔹 GET ONLY ACTIVE CAMPAIGNS
+    @PreAuthorize("hasAuthority('VIEW_CAMPAIGN')")
+    @GetMapping("/active")
+    public List<Campaign> getActiveCampaigns() {
+        return campaignService.getActiveCampaigns();
     }
 }

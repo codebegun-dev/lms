@@ -1,9 +1,10 @@
 package com.mockInterview.controller;
 
+
+import com.mockInterview.entity.Status;
 import com.mockInterview.responseDtos.CategoryDto;
 import com.mockInterview.security.annotations.ModulePermission;
 import com.mockInterview.service.CategoryService;
-
 
 import jakarta.validation.Valid;
 
@@ -35,6 +36,21 @@ public class CategoryController {
     public List<CategoryDto> getAllCategories() {
         return categoryService.getAllCategories();
     }
+    
+ // GET Category by ID
+    @PreAuthorize("hasAuthority('VIEW_CATEGORY')")
+    @GetMapping("/{id}")
+    public CategoryDto getCategoryById(@PathVariable Long id) {
+        return categoryService.getCategoryById(id);
+    }
+
+
+    // ✅ Get Only ACTIVE Categories
+    @PreAuthorize("hasAuthority('VIEW_CATEGORY')")
+    @GetMapping("/active")
+    public List<CategoryDto> getActiveCategories() {
+        return categoryService.getActiveCategories();
+    }
 
     // ✅ Update Category
     @PreAuthorize("hasAuthority('UPDATE_CATEGORY')")
@@ -46,7 +62,17 @@ public class CategoryController {
         return categoryService.updateCategory(id, dto);
     }
 
-    // ✅ Delete Category
+    // ✅ Update Category Status (ACTIVE / INACTIVE)
+    @PreAuthorize("hasAuthority('UPDATE_STATUS_CATEGORY')")
+    @PutMapping("/{id}/status")
+    public CategoryDto updateCategoryStatus(
+            @PathVariable Long id,
+            @RequestParam Status status) {
+
+        return categoryService.updateCategoryStatus(id, status);
+    }
+
+ // ✅ Delete Category
     @PreAuthorize("hasAuthority('DELETE_CATEGORY')")
     @DeleteMapping("/{id}")
     public void deleteCategory(@PathVariable Long id) {

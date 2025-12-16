@@ -12,6 +12,8 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import java.time.LocalDateTime;
 import java.util.List;
 
+
+
 @Entity
 @Table(name = "categories")
 @Getter
@@ -32,8 +34,12 @@ public class Category {
     @OneToMany(mappedBy = "category", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Topic> topics;
 
-    // ================= AUDIT FIELDS =================
+    // 🔹 STATUS FIELD
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Status status;
 
+    // ================= AUDIT FIELDS =================
     @CreatedBy
     @Column(updatable = false)
     private Long createdBy;
@@ -47,4 +53,12 @@ public class Category {
 
     @LastModifiedDate
     private LocalDateTime updatedDate;
+
+    // 🔹 DEFAULT STATUS
+    @PrePersist
+    public void setDefaultStatus() {
+        if (this.status == null) {
+            this.status = Status.ACTIVE;
+        }
+    }
 }

@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 
 import com.mockInterview.entity.CourseManagement;
 import com.mockInterview.exception.DuplicateFieldException;
+import com.mockInterview.exception.InactiveResourceException;
 import com.mockInterview.exception.ResourceNotFoundException;
 import com.mockInterview.repository.CourseManagementRepository;
 import com.mockInterview.responseDtos.CourseManagementDto;
@@ -64,7 +65,7 @@ public class CourseManagementServiceImpl implements CourseServiceManagement {
 
         // 🔹 Check if course is inactive
         if ("INACTIVE".equalsIgnoreCase(course.getStatus())) {
-            throw new IllegalStateException("Cannot update an inactive course. Please activate it first.");
+            throw new InactiveResourceException("Cannot update an inactive course. Please activate it first.");
         }
 
         // 🔹 Check if new course name already exists (excluding current course)
