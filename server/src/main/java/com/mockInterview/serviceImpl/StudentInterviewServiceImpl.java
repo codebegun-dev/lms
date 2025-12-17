@@ -129,49 +129,7 @@ public class StudentInterviewServiceImpl implements StudentInterviewService {
     }
     
     
-//    @Override
-//    public StudentInterviewResponseDto endInterview(Long interviewId, MultipartFile videoFile, MultipartFile audioFile) {
-//
-//        StudentInterview interview = interviewRepository.findById(interviewId)
-//                .orElseThrow(() -> new ResourceNotFoundException("Interview not found: " + interviewId));
-//
-//        // Update interview status
-//        interview.setStatus(InterviewStatus.COMPLETED);
-//        interview.setEndTime(LocalDateTime.now());
-//
-//        if (interview.getStartTime() != null) {
-//            long duration = java.time.Duration.between(interview.getStartTime(), interview.getEndTime()).getSeconds();
-//            interview.setDurationSeconds(duration);
-//        }
-//
-//        interviewRepository.save(interview);
-//
-//        // Save files locally
-//        String videoPath = null;
-//        String audioPath = null;
-//        
-//        try {
-//            Long studentId = interview.getStudent().getUserId();   // ✅ added
-//
-//            videoPath = FileStorageUtil.saveFile(videoFile, studentId, "interviews/" + interviewId + "/video");
-//            audioPath = FileStorageUtil.saveFile(audioFile, studentId, "interviews/" + interviewId + "/audio");
-//
-//        } catch (Exception e) {
-//            throw new RuntimeException("File upload failed");
-//        }
-//
-//        // Save to InterviewMedia table
-//        InterviewMedia media = InterviewMedia.builder()
-//                .interview(interview)
-//                .videoPath(videoPath)
-//                .audioPath(audioPath)
-//                .build();
-//
-//        interviewMediaRepository.save(media);
-//
-//        return StudentInterviewMapper.toDto(interview);
-//    }
-    
+
     @Override
     public StudentInterviewResponseDto endInterview(Long interviewId, MultipartFile videoFile, MultipartFile audioFile) {
 
