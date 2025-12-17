@@ -8,6 +8,8 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
 
+
+
 @Entity
 @Table(name = "sources")
 @Getter
@@ -25,7 +27,12 @@ public class Source {
     @Column(nullable = false, unique = true)
     private String sourceName;
 
-    
+    // 🔹 STATUS FIELD
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Status status;
+
+    // ================= AUDIT FIELDS =================
     @CreatedBy
     @Column(updatable = false)
     private Long createdBy;
@@ -39,4 +46,12 @@ public class Source {
 
     @LastModifiedDate
     private LocalDateTime updatedDate;
+
+    // 🔹 DEFAULT STATUS = ACTIVE
+    @PrePersist
+    public void setDefaultStatus() {
+        if (this.status == null) {
+            this.status = Status.ACTIVE;
+        }
+    }
 }

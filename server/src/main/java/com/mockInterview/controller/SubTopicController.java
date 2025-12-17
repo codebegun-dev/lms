@@ -1,5 +1,6 @@
 package com.mockInterview.controller;
 
+import com.mockInterview.entity.Status;
 import com.mockInterview.responseDtos.SubTopicDto;
 import com.mockInterview.security.annotations.ModulePermission;
 import com.mockInterview.service.SubTopicService;
@@ -27,11 +28,18 @@ public class SubTopicController {
         return subTopicService.addSubTopic(dto);
     }
 
-    // ✅ Get All SubTopics
+    // ✅ Get All SubTopics (Active first, then Inactive)
     @PreAuthorize("hasAuthority('VIEW_SUBTOPIC')")
     @GetMapping
     public List<SubTopicDto> getAllSubTopics() {
-        return subTopicService.getAllSubTopics();
+        return subTopicService.getAllSubTopicsWithStatus();
+    }
+
+    // ✅ Get Active SubTopics only
+    @PreAuthorize("hasAuthority('VIEW_SUBTOPIC')")
+    @GetMapping("/active")
+    public List<SubTopicDto> getActiveSubTopics() {
+        return subTopicService.getActiveSubTopics();
     }
 
     // ✅ Get SubTopics by Topic
@@ -53,5 +61,19 @@ public class SubTopicController {
     @DeleteMapping("/{id}")
     public void deleteSubTopic(@PathVariable Long id) {
         subTopicService.deleteSubTopic(id);
+    }
+
+    // ✅ Activate / Deactivate SubTopic
+    @PreAuthorize("hasAuthority('UPDATE_STATUS_SUBTOPIC')")
+    @PutMapping("/{id}/status")
+    public SubTopicDto updateSubTopicStatus(@PathVariable Long id, @RequestParam Status status) {
+        return subTopicService.updateSubTopicStatus(id, status);
+    }
+
+    // ✅ Get SubTopic by ID
+    @PreAuthorize("hasAuthority('VIEW_SUBTOPIC')")
+    @GetMapping("/{id}")
+    public SubTopicDto getSubTopicById(@PathVariable Long id) {
+        return subTopicService.getSubTopicById(id);
     }
 }

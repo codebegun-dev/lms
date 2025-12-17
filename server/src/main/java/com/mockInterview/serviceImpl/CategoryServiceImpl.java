@@ -3,6 +3,7 @@ package com.mockInterview.serviceImpl;
 import com.mockInterview.entity.Category;
 import com.mockInterview.entity.Status;
 import com.mockInterview.exception.DuplicateFieldException;
+import com.mockInterview.exception.InactiveResourceException;
 import com.mockInterview.exception.ResourceNotFoundException;
 import com.mockInterview.repository.CategoryRepository;
 import com.mockInterview.responseDtos.CategoryDto;
@@ -40,7 +41,7 @@ public class CategoryServiceImpl implements CategoryService {
                 .orElseThrow(() -> new ResourceNotFoundException("Category not found with id: " + id));
 
         if (category.getStatus() == Status.INACTIVE) {
-            throw new IllegalStateException("Inactive category cannot be updated");
+            throw new InactiveResourceException("Inactive category cannot be updated");
         }
 
         // Check duplicate name excluding self

@@ -1,5 +1,7 @@
 package com.mockInterview.controller;
 
+
+import com.mockInterview.entity.Status;
 import com.mockInterview.responseDtos.TopicDto;
 import com.mockInterview.security.annotations.ModulePermission;
 import com.mockInterview.service.TopicService;
@@ -20,35 +22,62 @@ public class TopicController {
     @Autowired
     private TopicService topicService;
 
-    // ✅ Create Topic
+    // ✅ CREATE
     @PreAuthorize("hasAuthority('CREATE_TOPIC')")
     @PostMapping
     public TopicDto addTopic(@Valid @RequestBody TopicDto dto) {
         return topicService.addTopic(dto);
     }
 
-    // ✅ Get All Topics
+    // ✅ GET ALL (ACTIVE → INACTIVE)
     @PreAuthorize("hasAuthority('VIEW_TOPIC')")
     @GetMapping
     public List<TopicDto> getAllTopics() {
         return topicService.getAllTopics();
     }
 
-    // ✅ Get Topics by Category
+    // ✅ GET ONLY ACTIVE TOPICS
+    @PreAuthorize("hasAuthority('VIEW_TOPIC')")
+    @GetMapping("/active")
+    public List<TopicDto> getActiveTopics() {
+        return topicService.getActiveTopics();
+    }
+
+    // ✅ GET BY ID
+    @PreAuthorize("hasAuthority('VIEW_TOPIC')")
+    @GetMapping("/{id}")
+    public TopicDto getTopicById(@PathVariable Long id) {
+        return topicService.getTopicById(id);
+    }
+
+    // ✅ GET TOPICS BY CATEGORY
     @PreAuthorize("hasAuthority('VIEW_TOPIC')")
     @GetMapping("/category/{categoryId}")
     public List<TopicDto> getTopicsByCategory(@PathVariable Long categoryId) {
         return topicService.getTopicsByCategoryId(categoryId);
     }
 
-    // ✅ Update Topic
+    // ✅ UPDATE (only ACTIVE allowed – enforced in service)
     @PreAuthorize("hasAuthority('UPDATE_TOPIC')")
     @PutMapping("/{id}")
-    public TopicDto updateTopic(@PathVariable Long id, @Valid @RequestBody TopicDto dto) {
+    public TopicDto updateTopic(
+            @PathVariable Long id,
+            @Valid @RequestBody TopicDto dto) {
+
         return topicService.updateTopic(id, dto);
     }
 
-    // ✅ Delete Topic
+    // ✅ ACTIVATE / INACTIVATE
+    @PreAuthorize("hasAuthority('UPDATE_STATUS_TOPIC')")
+    @PutMapping("/{id}/status")
+    public TopicDto updateTopicStatus(
+            @PathVariable Long id,
+            @RequestParam Status status) {
+
+        return topicService.updateTopicStatus(id, status);
+    }
+
+ // ✅ DELETE
     @PreAuthorize("hasAuthority('DELETE_TOPIC')")
     @DeleteMapping("/{id}")
     public void deleteTopic(@PathVariable Long id) {
