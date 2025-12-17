@@ -562,18 +562,24 @@ public class QuestionBankServiceImpl implements QuestionBankService {
         return response;
     }
 
-    // ✅ Helper: Convert Entity → DTO
+ // ✅ Helper: Convert Entity → DTO
     private QuestionBankResponseDto convertToResponseDto(QuestionBank question) {
         QuestionBankResponseDto dto = new QuestionBankResponseDto();
         dto.setId(question.getId());
         dto.setTitle(question.getTitle());
         dto.setDifficulty(question.getDifficulty());
+        
         dto.setCategoryName(question.getCategory() != null ? question.getCategory().getName() : null);
         dto.setTopicName(question.getTopic() != null ? question.getTopic().getName() : null);
         dto.setSubTopicName(question.getSubTopic() != null ? question.getSubTopic().getName() : null);
-        
+
+        // 🔹 Map auditing fields
+        dto.setCreatedBy(question.getCreatedBy() != null ? question.getCreatedBy().toString() : null);
+        dto.setCreatedDate(question.getCreatedDateTime() != null ? question.getCreatedDateTime().toLocalDate() : null);
+
         return dto;
     }
+
 
     // ✅ Helper: Convert List<Entity> → List<DTO>
     private List<QuestionBankResponseDto> convertListToResponse(List<QuestionBank> list) {
