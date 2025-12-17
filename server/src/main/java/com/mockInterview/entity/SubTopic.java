@@ -10,6 +10,7 @@ import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 @Entity
 @Table(name = "subtopics")
@@ -18,23 +19,32 @@ import org.springframework.data.annotation.LastModifiedDate;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@EntityListeners(AuditingEntityListener.class)
 public class SubTopic {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String name; // e.g. Loops, OOPs, Exception Handling
+    @Column(nullable = false)
+    private String name; 
 
-    // ✅ Make topic optional
+    
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "topic_id", nullable = true) // allow null
+    @JoinColumn(name = "topic_id", nullable = true)
     private Topic topic;
 
     @OneToMany(mappedBy = "subTopic", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<QuestionBank> questions;
+
     
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @Builder.Default
+    private Status status = Status.ACTIVE;
+
     
+
     @CreatedBy
     @Column(updatable = false)
     private Long createdBy;
