@@ -70,7 +70,7 @@ public class UserController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(required = false) Integer size) {
 
-        // 🔹 If size not provided in request → use application.properties value
+        
         int pageSize = (size != null) ? size : defaultPageSize;
 
         return userService.getUsersWithCounts(page, pageSize);
