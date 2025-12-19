@@ -1,5 +1,6 @@
 package com.mockInterview.security;
 
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 public final class SecurityUtils {
@@ -18,4 +19,26 @@ public final class SecurityUtils {
         }
         return null;
     }
+    
+    // ✅ THIS IS WHAT YOU ARE MISSING
+    public static boolean hasAuthority(String permission) {
+
+        if (SecurityContextHolder.getContext().getAuthentication() == null) {
+            return false;
+        }
+
+        for (GrantedAuthority auth :
+                SecurityContextHolder.getContext()
+                        .getAuthentication()
+                        .getAuthorities()) {
+
+            if (permission.equals(auth.getAuthority())
+                    || "ALL_PERMISSIONS".equals(auth.getAuthority())) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    
 }

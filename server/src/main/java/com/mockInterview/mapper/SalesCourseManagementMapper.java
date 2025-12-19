@@ -1,14 +1,23 @@
 package com.mockInterview.mapper;
 
-import com.mockInterview.entity.CourseManagement;
 import com.mockInterview.entity.SalesCourseManagement;
-import com.mockInterview.requestDtos.SalesCourseManagementRequestDto;
 import com.mockInterview.responseDtos.SalesCourseManagementResponseDto;
+import com.mockInterview.requestDtos.SalesCourseManagementRequestDto;
+import com.mockInterview.entity.CourseManagement;
+
+import java.time.format.DateTimeFormatter;
 
 public class SalesCourseManagementMapper {
 
-    // ------------------- TO ENTITY -------------------
-    public static SalesCourseManagement toEntity(SalesCourseManagementRequestDto dto, CourseManagement course) {
+    private static final DateTimeFormatter FORMATTER =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+    // ================= TO ENTITY =================
+    // NOTE: Source, Campaign, AssignedTo MUST be set in SERVICE layer
+    public static SalesCourseManagement toEntity(
+            SalesCourseManagementRequestDto dto,
+            CourseManagement course) {
+
         SalesCourseManagement sc = new SalesCourseManagement();
 
         sc.setLeadName(dto.getLeadName());
@@ -18,26 +27,20 @@ public class SalesCourseManagementMapper {
         sc.setPassedOutYear(dto.getPassedOutYear());
         sc.setQualification(dto.getQualification());
         sc.setCourseManagement(course);
-
-        if (dto.getStatus() != null) {
-            sc.setStatus(dto.getStatus());
-        }
-
         sc.setCollege(dto.getCollege());
         sc.setCity(dto.getCity());
-        sc.setSource(dto.getSource());
-        sc.setCampaign(dto.getCampaign());
+        sc.setStatus(dto.getStatus() != null ? dto.getStatus() : "NEW");
 
-        // ❗ Default: always Unassigned → so assignedTo = null
-        sc.setAssignedTo(null);
-
+        // assignment / source / campaign handled in service
         return sc;
     }
 
+    // ================= TO RESPONSE DTO =================
+    public static SalesCourseManagementResponseDto toResponseDto(
+            SalesCourseManagement sc) {
 
-    // ------------------- TO RESPONSE DTO -------------------
-    public static SalesCourseManagementResponseDto toResponseDto(SalesCourseManagement sc) {
-        SalesCourseManagementResponseDto dto = new SalesCourseManagementResponseDto();
+        SalesCourseManagementResponseDto dto =
+                new SalesCourseManagementResponseDto();
 
         dto.setLeadId(sc.getLeadId());
         dto.setLeadName(sc.getLeadName());
@@ -47,26 +50,54 @@ public class SalesCourseManagementMapper {
         dto.setPassedOutYear(sc.getPassedOutYear());
         dto.setQualification(sc.getQualification());
 
-        if (sc.getCourseManagement() != null) {
-            dto.setCourseId(sc.getCourseManagement().getCourseId());
-        }
+        dto.setCourseId(
+                sc.getCourseManagement() != null
+                        ? sc.getCourseManagement().getCourseId()
+                        : null
+        );
+
+        dto.setSourceId(
+                sc.getSource() != null
+                        ? sc.getSource().getSourceId()
+                        : null
+        );
+
+        dto.setCampaignId(
+                sc.getCampaign() != null
+                        ? sc.getCampaign().getCampaignId()
+                        : null
+        );
 
         dto.setStatus(sc.getStatus());
         dto.setCollege(sc.getCollege());
         dto.setCity(sc.getCity());
-        dto.setSource(sc.getSource());
-        dto.setCampaign(sc.getCampaign());
 
-        // Convert assigned User → dto String
-        if (sc.getAssignedTo() == null) {
-            dto.setAssignedTo("Unassigned");
-        } else {
-            dto.setAssignedTo(String.valueOf(sc.getAssignedTo().getUserId()));
-        }
-        
-        dto.setAssignedBy(sc.getAssignedBy() != null ? sc.getAssignedBy().getUserId() : null);
+        dto.setAssignedTo(
+                sc.getAssignedTo() != null
+                        ? sc.getAssignedTo().getUserId()
+                        : null
+        );
 
+        dto.setAssignedAt(
+                sc.getAssignedAt() != null
+                        ? sc.getAssignedAt().format(FORMATTER)
+                        : null
+        );
+
+        // ===== AUDIT =====
+        dto.setCreatedBy(sc.getCreatedBy());
+        dto.setUpdatedBy(sc.getUpdatedBy());
+        dto.setCreatedDate(
+                sc.getCreatedDate() != null
+                        ? sc.getCreatedDate().format(FORMATTER)
+                        : null
+        );
+        dto.setUpdatedDate(
+                sc.getUpdatedDate() != null
+                        ? sc.getUpdatedDate().format(FORMATTER)
+                        : null
+        );
 
         return dto;
-    } 
+    }
 }
