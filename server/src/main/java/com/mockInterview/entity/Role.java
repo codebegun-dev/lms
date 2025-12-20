@@ -1,11 +1,9 @@
 package com.mockInterview.entity;
 
 import jakarta.persistence.*;
+import jakarta.persistence.Id;
 import lombok.*;
-import org.springframework.data.annotation.CreatedBy;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedBy;
-import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.annotation.*;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
@@ -17,7 +15,7 @@ import java.util.Set;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+
 @EntityListeners(AuditingEntityListener.class)
 public class Role {
 
@@ -30,7 +28,17 @@ public class Role {
 
     private String description;
 
-    @OneToMany(mappedBy = "role", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    // ✅ STATUS ENUM (DEFAULT ACTIVE)
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Status status = Status.ACTIVE;
+
+    @OneToMany(
+        mappedBy = "role",
+        cascade = CascadeType.ALL,
+        orphanRemoval = true,
+        fetch = FetchType.EAGER
+    )
     private Set<RoleModulePermission> modulePermissions;
 
     @CreatedBy

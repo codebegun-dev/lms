@@ -4,6 +4,7 @@ import com.mockInterview.requestDtos.StudentInterviewRequestDto;
 import com.mockInterview.responseDtos.QuestionBankResponseDto;
 import com.mockInterview.responseDtos.StartInterviewResponseDto;
 import com.mockInterview.responseDtos.StudentInterviewResponseDto;
+import com.mockInterview.security.annotations.ModulePermission;
 import com.mockInterview.service.StudentInterviewService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -11,6 +12,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
+@ModulePermission("STUDENT_MANAGEMENT")
 @RestController
 @RequestMapping("/api/interviews")
 @CrossOrigin(origins = "*")

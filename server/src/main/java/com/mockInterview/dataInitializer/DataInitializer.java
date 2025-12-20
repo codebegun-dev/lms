@@ -2,6 +2,7 @@ package com.mockInterview.dataInitializer;
 
 
 import com.mockInterview.entity.Role;
+import com.mockInterview.entity.Status;
 import com.mockInterview.entity.User;
 
 import com.mockInterview.repository.RoleRepository;
@@ -55,6 +56,7 @@ public class DataInitializer implements CommandLineRunner {
         Role role = roleRepository.findByName(roleName);
         if (role == null) {
             role = new Role();
+            role.setStatus(Status.ACTIVE);
             role.setName(roleName);
             roleRepository.save(role);
             System.out.println("→ Created fallback role: " + roleName);
