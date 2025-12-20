@@ -1,5 +1,6 @@
 package com.mockInterview.service;
 
+import com.mockInterview.entity.Status;
 import com.mockInterview.requestDtos.RoleRequestDto;
 import com.mockInterview.responseDtos.RoleResponseDto;
 
@@ -11,4 +12,8 @@ public interface RoleService {
     RoleResponseDto getRole(Long roleId);
     List<RoleResponseDto> getAllRoles();
     void deleteRole(Long roleId);
+   
+    public void changeRoleStatus(Long roleId, Status status);
+
+    List<RoleResponseDto> getActiveRoles();
 }

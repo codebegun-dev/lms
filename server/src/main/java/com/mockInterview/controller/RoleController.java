@@ -1,5 +1,6 @@
 package com.mockInterview.controller;
 
+import com.mockInterview.entity.Status;
 import com.mockInterview.requestDtos.RoleRequestDto;
 import com.mockInterview.responseDtos.RoleResponseDto;
 import com.mockInterview.security.annotations.ModulePermission;
@@ -45,6 +46,12 @@ public class RoleController {
     public List<RoleResponseDto> getAllRoles() {
         return roleService.getAllRoles();
     }
+    
+    @PreAuthorize("hasAuthority('VIEW_ROLE')")
+    @GetMapping("/active")
+    public List<RoleResponseDto> getActiveRoles() {
+        return roleService.getActiveRoles();
+    }
 
     // ================= DELETE ROLE =================
     @PreAuthorize("hasAuthority('DELETE_ROLE')")
@@ -53,4 +60,15 @@ public class RoleController {
         roleService.deleteRole(id);
         return "Role deleted successfully";
     }
+    
+    @PreAuthorize("hasAuthority('DELETE_ROLE')")
+    @PutMapping("/{roleId}/status/{status}")
+    public String changeRoleStatus(
+            @PathVariable Long roleId,
+            @PathVariable Status status) {
+
+        roleService.changeRoleStatus(roleId, status);
+        return "Role status updated successfully";
+    }
+
 }
