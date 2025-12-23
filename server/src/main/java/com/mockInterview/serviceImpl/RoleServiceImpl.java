@@ -7,6 +7,7 @@ import com.mockInterview.entity.RoleModulePermission;
 import com.mockInterview.entity.Status;
 import com.mockInterview.entity.User;
 import com.mockInterview.exception.DuplicateFieldException;
+import com.mockInterview.exception.ResourceNotFoundException;
 import com.mockInterview.repository.ModuleRepository;
 import com.mockInterview.repository.PermissionRepository;
 import com.mockInterview.repository.RoleModulePermissionRepository;
@@ -65,11 +66,11 @@ public class RoleServiceImpl implements RoleService {
             for (ModulePermissionRequestDto mDto : dto.getModules()) {
 
                 Module module = moduleRepository.findById(mDto.getModuleId())
-                        .orElseThrow(() -> new RuntimeException("Module not found"));
+                        .orElseThrow(() -> new ResourceNotFoundException("Module not found"));
 
                 for (Long permId : mDto.getPermissionIds()) {
                     Permission permission = permissionRepository.findById(permId)
-                            .orElseThrow(() -> new RuntimeException("Permission not found"));
+                            .orElseThrow(() -> new ResourceNotFoundException("Permission not found"));
 
                     RoleModulePermission rmp = new RoleModulePermission();
                     rmp.setRole(role);
@@ -95,12 +96,12 @@ public class RoleServiceImpl implements RoleService {
 
         // ❌ Inactive role cannot be edited
         if (role.getStatus() == Status.INACTIVE) {
-            throw new RuntimeException("Inactive role cannot be edited");
+            throw new ResourceNotFoundException("Inactive role cannot be edited");
         }
 
         // ❌ MASTER_ADMIN / DEFAULT fully protected
         if (isProtectedRole(role.getName())) {
-            throw new RuntimeException(role.getName() + " role cannot be updated");
+            throw new ResourceNotFoundException(role.getName() + " role cannot be updated");
         }
 
         // ❌ STUDENT name cannot be changed
@@ -110,7 +111,7 @@ public class RoleServiceImpl implements RoleService {
             // Duplicate check only if name is editable
             boolean exists = roleRepository.existsByNameAndIdNot(dto.getRoleName(), roleId);
             if (exists) {
-                throw new RuntimeException("Role name already exists");
+                throw new ResourceNotFoundException("Role name already exists");
             }
             role.setName(dto.getRoleName());
             role.setDescription(dto.getDescription());
@@ -124,11 +125,11 @@ public class RoleServiceImpl implements RoleService {
             for (ModulePermissionRequestDto mDto : dto.getModules()) {
 
                 Module module = moduleRepository.findById(mDto.getModuleId())
-                        .orElseThrow(() -> new RuntimeException("Module not found"));
+                        .orElseThrow(() -> new ResourceNotFoundException("Module not found"));
 
                 for (Long permId : mDto.getPermissionIds()) {
                     Permission permission = permissionRepository.findById(permId)
-                            .orElseThrow(() -> new RuntimeException("Permission not found"));
+                            .orElseThrow(() -> new ResourceNotFoundException("Permission not found"));
 
                     RoleModulePermission rmp = new RoleModulePermission();
                     rmp.setRole(role);
@@ -148,7 +149,7 @@ public class RoleServiceImpl implements RoleService {
     @Override
     public RoleResponseDto getRole(Long roleId) {
         Role role = roleRepository.findById(roleId)
-                .orElseThrow(() -> new RuntimeException("Role not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Role not found"));
         return mapToDto(role);
     }
 
@@ -186,17 +187,17 @@ public class RoleServiceImpl implements RoleService {
     public void deleteRole(Long roleId) {
 
         Role role = roleRepository.findById(roleId)
-                .orElseThrow(() -> new RuntimeException("Role not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Role not found"));
 
         // ❌ Protected roles
         if (isProtectedRole(role.getName()) || isStudentRole(role.getName())) {
-            throw new RuntimeException(role.getName() + " role cannot be deleted");
+            throw new ResourceNotFoundException(role.getName() + " role cannot be deleted");
         }
 
         // ✅ Get DEFAULT role
         Role defaultRole = roleRepository.findByName("DEFAULT");
         if (defaultRole == null) {
-            throw new RuntimeException("DEFAULT role not found");
+            throw new ResourceNotFoundException("DEFAULT role not found");
         }
 
         // ✅ Find users with this role
@@ -219,16 +220,16 @@ public class RoleServiceImpl implements RoleService {
     public void changeRoleStatus(Long roleId, Status status) {
 
         Role role = roleRepository.findById(roleId)
-                .orElseThrow(() -> new RuntimeException("Role not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Role not found"));
 
         // ❌ Protected roles (cannot be activated/deactivated)
         if (isProtectedRole(role.getName()) || isStudentRole(role.getName())) {
-            throw new RuntimeException(role.getName() + " role status cannot be changed");
+            throw new ResourceNotFoundException(role.getName() + " role status cannot be changed");
         }
 
         // ❌ Prevent unnecessary update
         if (role.getStatus() == status) {
-            throw new RuntimeException("Role is already " + status);
+            throw new ResourceNotFoundException("Role is already " + status);
         }
 
         role.setStatus(status);
@@ -268,6 +269,7 @@ public class RoleServiceImpl implements RoleService {
         RoleResponseDto response = new RoleResponseDto();
         response.setRoleId(role.getId());
         response.setRoleName(role.getName());
+        response.setStatus(role.getStatus());
         response.setDescription(role.getDescription());
         response.setModules(new ArrayList<>(moduleMap.values()));
 
@@ -276,12 +278,14 @@ public class RoleServiceImpl implements RoleService {
     
     
     private boolean isProtectedRole(String roleName) {
-        return roleName.equalsIgnoreCase("MASTER_ADMIN")
-            || roleName.equalsIgnoreCase("DEFAULT");
+        return roleName.equalsIgnoreCase("MASTER_ADMIN");
+            
     }
 
     private boolean isStudentRole(String roleName) {
-        return roleName.equalsIgnoreCase("STUDENT");
+        return roleName.equalsIgnoreCase("STUDENT") || 
+        		roleName.equalsIgnoreCase("MASTER_ADMIN") 
+        		||roleName.equalsIgnoreCase("DEFAULT");
     }
 
 }
