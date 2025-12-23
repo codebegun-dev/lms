@@ -61,7 +61,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         for (RoleModulePermission rmp : role.getModulePermissions()) {
                             Permission p = rmp.getPermission();  // get the Permission object
                             if (p != null && p.getName() != null) {
-                                permissionNames.add(p.getName());
+                            	permissionNames.add(
+                            		    p.getName().trim().toUpperCase()
+                            		);
+
                             }
                         }
                     }
@@ -76,7 +79,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         List<Permission> all = permissionRepository.findAll();
                         for (Permission p : all) {
                             if (p != null && p.getName() != null) {
-                                permissionNames.add(p.getName());
+                            	permissionNames.add(
+                            		    p.getName().trim().toUpperCase()
+                            		);
+
                             }
                         }
                     }
