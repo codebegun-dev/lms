@@ -3,13 +3,18 @@ package com.mockInterview.service;
 import java.util.List;
 import java.util.Map;
 
+
+
 import com.mockInterview.requestDtos.UserRequestDto;
 import com.mockInterview.responseDtos.UserResponseDto;
 
 public interface UserService {
 
     // ---------- CREATE ----------
-	public UserResponseDto createUser(UserRequestDto dto);
+//	public UserResponseDto createUser(UserRequestDto dto);
+	
+	 public UserResponseDto registerUser(UserRequestDto dto);
+//    public UserResponseDto createUserByAdmin(UserRequestDto dto);
 
     // ---------- PASSWORD MANAGEMENT ----------
     String forgotPassword(String emailOrPhone);
@@ -23,7 +28,7 @@ public interface UserService {
     // ---------- STATUS MANAGEMENT ----------
     public void changeUserStatus(Long userId, boolean active);
     // ---------- SPECIAL ADMIN OPERATIONS ----------
-    void syncPasswordsWithMasterAdmin();
+//    void syncPasswordsWithMasterAdmin();
     public UserResponseDto assignRoleToUser(Long userId, Long roleId);
 
     // Master Admin can bulk change user roles (JWT will be used to check)
