@@ -29,7 +29,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
-@ModulePermission("LEAD_MANAGEMENT")
+@ModulePermission("SALES_MANAGEMENT")
 @RestController
 @RequestMapping("/api/leads")
 @CrossOrigin(origins = "*")

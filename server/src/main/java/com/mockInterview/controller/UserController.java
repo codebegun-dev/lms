@@ -32,9 +32,10 @@ public class UserController {
 
     // ================= REGISTER USER (PUBLIC + MASTER_ADMIN) =================
     @PostMapping("/register")
-    public UserResponseDto registerUser(@Valid @RequestBody UserRequestDto dto) {
-        return userService.createUser(dto);
+    public UserResponseDto register(@Valid @RequestBody UserRequestDto dto) {
+        return userService.registerUser(dto);
     }
+
 
     // ================= UPDATE USER =================
     @PreAuthorize("hasAuthority('UPDATE_USER')")
