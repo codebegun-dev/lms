@@ -216,6 +216,26 @@ public class RoleServiceImpl implements RoleService {
 
 
     
+//    @Override
+//    public void changeRoleStatus(Long roleId, Status status) {
+//
+//        Role role = roleRepository.findById(roleId)
+//                .orElseThrow(() -> new ResourceNotFoundException("Role not found"));
+//
+//        // ❌ Protected roles (cannot be activated/deactivated)
+//        if (isProtectedRole(role.getName()) || isStudentRole(role.getName())) {
+//            throw new ResourceNotFoundException(role.getName() + " role status cannot be changed");
+//        }
+//
+//        // ❌ Prevent unnecessary update
+//        if (role.getStatus() == status) {
+//            throw new ResourceNotFoundException("Role is already " + status);
+//        }
+//
+//        role.setStatus(status);
+//        roleRepository.save(role);
+//    }
+    
     @Override
     public void changeRoleStatus(Long roleId, Status status) {
 
@@ -234,7 +254,28 @@ public class RoleServiceImpl implements RoleService {
 
         role.setStatus(status);
         roleRepository.save(role);
+
+        // ✅ If role is deactivated, reassign users to DEFAULT role
+        if (status == Status.INACTIVE) {
+
+            // Get DEFAULT role
+            Role defaultRole = roleRepository.findByName("DEFAULT");
+            if (defaultRole == null) {
+                throw new ResourceNotFoundException("DEFAULT role not found");
+            }
+
+            // Find users with this role
+            List<User> usersWithRole = userRepository.findByRole(role);
+
+            // Reassign users to DEFAULT role
+            for (User user : usersWithRole) {
+                user.setRole(defaultRole);
+            }
+
+            userRepository.saveAll(usersWithRole);
+        }
     }
+
 
 
 

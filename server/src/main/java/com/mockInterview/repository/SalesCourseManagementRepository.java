@@ -81,5 +81,5 @@ public interface SalesCourseManagementRepository extends JpaRepository<SalesCour
 
     
     
-
+   
 }

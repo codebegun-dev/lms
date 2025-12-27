@@ -41,22 +41,27 @@ public class AutoAssignLeadServiceImpl implements AutoAssignLeadService {
     private UserRepository userRepo;
 
     @Override
+    @Transactional
     public void autoAssignLeads() {
 
-        // 1️⃣ Eligible users
-        List<User> users =
-                userRepo.findUsersByPermission("AUTO_ASSIGN_LEADS");
+        // 1️⃣ Fetch eligible users
+        List<User> users = userRepo.findUsersByPermission("AUTO_ASSIGN_LEADS");
 
+        // 2️⃣ Fetch NEW & unassigned leads
+        List<SalesCourseManagement> leads = leadRepo.findNewUnassignedLeads();
+
+        if (leads.isEmpty()) return; // nothing to assign
+
+        // 3️⃣ If no eligible users, just save leads unassigned
         if (users.isEmpty()) {
-            throw new ResourceNotFoundException("No users with AUTO_ASSIGN_LEADS permission");
+            for (SalesCourseManagement lead : leads) {
+                lead.setAssignedTo(null); // explicit, just for clarity
+            }
+            leadRepo.saveAll(leads);
+            return;
         }
 
-        // 2️⃣ NEW & unassigned leads
-        List<SalesCourseManagement> leads =
-                leadRepo.findNewUnassignedLeads();
-
-        if (leads.isEmpty()) return;
-
+        // 4️⃣ Eligible users exist → split leads equally
         int userCount = users.size();
         int totalLeads = leads.size();
 
@@ -65,7 +70,7 @@ public class AutoAssignLeadServiceImpl implements AutoAssignLeadService {
 
         int leadIndex = 0;
 
-        // ================= PHASE 1: ROUND ROBIN =================
+        // ✅ PHASE 1: ROUND-ROBIN
         for (User user : users) {
             for (int i = 0; i < equalShare && leadIndex < totalLeads; i++) {
                 SalesCourseManagement lead = leads.get(leadIndex++);
@@ -74,16 +79,13 @@ public class AutoAssignLeadServiceImpl implements AutoAssignLeadService {
             }
         }
 
-        // ================= PHASE 2: STATUS-BASED =================
+        // ✅ PHASE 2: REMAINING LEADS → assign to user with least NEW leads
         while (remaining > 0 && leadIndex < totalLeads) {
-
             User selectedUser = null;
             long minNewCount = Long.MAX_VALUE;
 
             for (User user : users) {
-                long newCount =
-                        leadRepo.countNewLeadsByUser(user.getUserId());
-
+                long newCount = leadRepo.countNewLeadsByUser(user.getUserId());
                 if (newCount < minNewCount) {
                     minNewCount = newCount;
                     selectedUser = user;
@@ -93,15 +95,13 @@ public class AutoAssignLeadServiceImpl implements AutoAssignLeadService {
             SalesCourseManagement lead = leads.get(leadIndex++);
             lead.setAssignedTo(selectedUser);
             lead.setAssignedAt(LocalDateTime.now());
-
             remaining--;
         }
 
-        // 3️⃣ Save all
-        leadRepo.saveAll(leads);  
+        // 5️⃣ Save all
+        leadRepo.saveAll(leads);
     }
-    
-    
+
     
 
     @Override
