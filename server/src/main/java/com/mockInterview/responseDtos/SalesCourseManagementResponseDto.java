@@ -14,10 +14,10 @@ public class SalesCourseManagementResponseDto {
     private String passedOutYear;
     private String qualification;
 
-    // ===== RELATION IDS ONLY =====
-    private Long courseId;
-    private Long sourceId;
-    private Long campaignId;
+    // ===== RELATION NAMES (UI FRIENDLY) =====
+    private String courseName;
+    private String sourceName;
+    private String campaignName;
 
     // ===== STATUS & LOCATION =====
     private String status;
@@ -25,12 +25,12 @@ public class SalesCourseManagementResponseDto {
     private String city;
 
     // ===== ASSIGNMENT =====
-    private Long assignedTo;
+    private String assignedToName;
     private String assignedAt;
 
     // ===== AUDIT =====
-    private Long createdBy;
-    private Long updatedBy;
+    private String createdByName;
+    private String updatedByName;
     private String createdDate;
     private String updatedDate;
 }

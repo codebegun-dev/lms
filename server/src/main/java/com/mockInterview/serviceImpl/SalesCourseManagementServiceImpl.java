@@ -234,23 +234,37 @@ public class SalesCourseManagementServiceImpl implements SalesCourseManagementSe
         Page<SalesCourseManagement> leadsPage =
                 leadRepo.findAllLeadsPaginated(pageable);
 
-        Long totalLeads =
-                leadRepo.countAllLeads();
+        Long totalLeads = leadRepo.countAllLeads();
 
-        List<Object[]> rawStatusData =
-                leadRepo.countLeadsByStatus();
+        List<Object[]> rawStatusData = leadRepo.countLeadsByStatus();
 
         Map<String, Long> statusCounts = new HashMap<>();
         for (Object[] row : rawStatusData) {
             statusCounts.put(String.valueOf(row[0]), (Long) row[1]);
         }
 
-        Long assignedUsersCount =
-                leadRepo.countAssignedUsers();
+        Long assignedUsersCount = leadRepo.countAssignedUsers();
 
         List<SalesCourseManagementResponseDto> leadDtos = new ArrayList<>();
         for (SalesCourseManagement lead : leadsPage.getContent()) {
-            leadDtos.add(SalesCourseManagementMapper.toResponseDto(lead));
+            // Convert entity to DTO (basic fields)
+            SalesCourseManagementResponseDto dto = SalesCourseManagementMapper.toResponseDto(lead);
+
+            // ✅ Manually set createdByName
+            if (lead.getCreatedBy() != null) {
+                userRepo.findById(lead.getCreatedBy()).ifPresent(user ->
+                        dto.setCreatedByName(user.getFirstName() + " " + user.getLastName())
+                );
+            }
+
+            // ✅ Manually set updatedByName
+            if (lead.getUpdatedBy() != null) {
+                userRepo.findById(lead.getUpdatedBy()).ifPresent(user ->
+                        dto.setUpdatedByName(user.getFirstName() + " " + user.getLastName())
+                );
+            }
+
+            leadDtos.add(dto);
         }
 
         LeadsDashboardResponseDto response = new LeadsDashboardResponseDto();
@@ -264,6 +278,7 @@ public class SalesCourseManagementServiceImpl implements SalesCourseManagementSe
 
         return response;
     }
+
 
    
     
