@@ -74,4 +74,6 @@ public class SalesCourseManagement {
 
     @LastModifiedDate
     private LocalDateTime updatedDate;
+    
+    
 }

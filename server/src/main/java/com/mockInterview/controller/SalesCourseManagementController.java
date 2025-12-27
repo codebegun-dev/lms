@@ -76,12 +76,22 @@ public class SalesCourseManagementController {
 
         int finalPageSize = (pageSize != null) ? pageSize : defaultPageSize;
 
-        if (SecurityUtils.hasAuthority("AUTO_ASSIGN_LEADS")) {
+        boolean isAutoAssignUser =
+                SecurityUtils.hasAuthority("AUTO_ASSIGN_LEADS");
+
+        boolean isMasterAdmin =
+                SecurityUtils.hasAuthority("MASTER_ADMIN");
+
+        // 🔐 ONLY auto-assign users (NOT admins)
+        if (isAutoAssignUser && !isMasterAdmin) {
             return autoAssignLeadService.getUserDashboard(page, finalPageSize);
         }
 
+        // 🔐 Admins & others
         return salesService.getAllLeadsDashboard(page, finalPageSize);
     }
+
+
 
 
     @PreAuthorize("hasAuthority('UPDATE_LEAD')")

@@ -42,6 +42,7 @@ public class SalesCourseManagementMapper {
         SalesCourseManagementResponseDto dto =
                 new SalesCourseManagementResponseDto();
 
+        // ===== LEAD DETAILS =====
         dto.setLeadId(sc.getLeadId());
         dto.setLeadName(sc.getLeadName());
         dto.setPhone(sc.getPhone());
@@ -50,31 +51,35 @@ public class SalesCourseManagementMapper {
         dto.setPassedOutYear(sc.getPassedOutYear());
         dto.setQualification(sc.getQualification());
 
-        dto.setCourseId(
+        // ===== RELATION NAMES =====
+        dto.setCourseName(
                 sc.getCourseManagement() != null
-                        ? sc.getCourseManagement().getCourseId()
+                        ? sc.getCourseManagement().getCourseName()
                         : null
         );
 
-        dto.setSourceId(
+        dto.setSourceName(
                 sc.getSource() != null
-                        ? sc.getSource().getSourceId()
+                        ? sc.getSource().getSourceName()
                         : null
         );
 
-        dto.setCampaignId(
+        dto.setCampaignName(
                 sc.getCampaign() != null
-                        ? sc.getCampaign().getCampaignId()
+                        ? sc.getCampaign().getCampaignName()
                         : null
         );
 
+        // ===== STATUS & LOCATION =====
         dto.setStatus(sc.getStatus());
         dto.setCollege(sc.getCollege());
         dto.setCity(sc.getCity());
 
-        dto.setAssignedTo(
+        // ===== ASSIGNMENT =====
+        dto.setAssignedToName(
                 sc.getAssignedTo() != null
-                        ? sc.getAssignedTo().getUserId()
+                        ? sc.getAssignedTo().getFirstName() + " " +
+                          sc.getAssignedTo().getLastName()
                         : null
         );
 
@@ -84,14 +89,14 @@ public class SalesCourseManagementMapper {
                         : null
         );
 
-        // ===== AUDIT =====
-        dto.setCreatedBy(sc.getCreatedBy());
-        dto.setUpdatedBy(sc.getUpdatedBy());
+        
+
         dto.setCreatedDate(
                 sc.getCreatedDate() != null
                         ? sc.getCreatedDate().format(FORMATTER)
                         : null
         );
+
         dto.setUpdatedDate(
                 sc.getUpdatedDate() != null
                         ? sc.getUpdatedDate().format(FORMATTER)

@@ -120,8 +120,7 @@ public class AutoAssignLeadServiceImpl implements AutoAssignLeadService {
         List<Object[]> rawStatusData =
                 leadRepo.countLeadsByStatusForUser(userId);
 
-        Long totalLeads =
-                leadRepo.countLeadsForUser(userId);
+        Long totalLeads = leadRepo.countLeadsForUser(userId);
 
         Map<String, Long> statusCounts = new HashMap<>();
         for (Object[] row : rawStatusData) {
@@ -130,7 +129,23 @@ public class AutoAssignLeadServiceImpl implements AutoAssignLeadService {
 
         List<SalesCourseManagementResponseDto> dtoList = new ArrayList<>();
         for (SalesCourseManagement lead : leadPage.getContent()) {
-            dtoList.add(SalesCourseManagementMapper.toResponseDto(lead));
+            SalesCourseManagementResponseDto dto = SalesCourseManagementMapper.toResponseDto(lead);
+
+            // ✅ Set createdByName
+            if (lead.getCreatedBy() != null) {
+                userRepo.findById(lead.getCreatedBy()).ifPresent(user ->
+                        dto.setCreatedByName(user.getFirstName() + " " + user.getLastName())
+                );
+            }
+
+            // ✅ Set updatedByName
+            if (lead.getUpdatedBy() != null) {
+                userRepo.findById(lead.getUpdatedBy()).ifPresent(user ->
+                        dto.setUpdatedByName(user.getFirstName() + " " + user.getLastName())
+                );
+            }
+
+            dtoList.add(dto);
         }
 
         LeadsDashboardResponseDto response = new LeadsDashboardResponseDto();
