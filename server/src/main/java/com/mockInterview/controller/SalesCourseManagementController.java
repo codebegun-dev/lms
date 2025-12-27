@@ -6,11 +6,10 @@ import com.mockInterview.requestDtos.BulkLeadStatusUpdateRequestDto;
 import com.mockInterview.requestDtos.BulkReassignLeadsRequestDto;
 import com.mockInterview.requestDtos.SalesCourseManagementRequestDto;
 import com.mockInterview.responseDtos.AssignableUserDto;
-import com.mockInterview.responseDtos.AssignedLeadsUserDashboardResponseDto;
 import com.mockInterview.responseDtos.BulkUploadResponseDto;
 import com.mockInterview.responseDtos.LeadsDashboardResponseDto;
 import com.mockInterview.responseDtos.SalesCourseManagementResponseDto;
-
+import com.mockInterview.security.SecurityUtils;
 import com.mockInterview.security.annotations.ModulePermission;
 import com.mockInterview.service.AutoAssignLeadService;
 import com.mockInterview.service.SalesCourseManagementService;
@@ -43,7 +42,7 @@ public class SalesCourseManagementController {
     
     @Value("${pagination.default-page-size}")
     private int defaultPageSize;
-    
+     
 
     // ================= CREATE SINGLE LEAD =================
     @PreAuthorize("hasAuthority('CREATE_LEAD')")
@@ -76,18 +75,12 @@ public class SalesCourseManagementController {
             @RequestParam(required = false) Integer pageSize) {
 
         int finalPageSize = (pageSize != null) ? pageSize : defaultPageSize;
+
+        if (SecurityUtils.hasAuthority("AUTO_ASSIGN_LEADS")) {
+            return autoAssignLeadService.getUserDashboard(page, finalPageSize);
+        }
+
         return salesService.getAllLeadsDashboard(page, finalPageSize);
-    }
-
-    
-    @PreAuthorize("hasAuthority('All_LEADS_WITH_ASSIGNED_USERS')")
-    @GetMapping("/usersdashboard")
-    public AssignedLeadsUserDashboardResponseDto getAllLeadsWithAssignedUsers(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(required = false) Integer pageSize) {
-
-        int finalPageSize = (pageSize != null) ? pageSize : defaultPageSize;
-        return autoAssignLeadService.getAllLeadsWithAssignedUsers(page, finalPageSize);
     }
 
 
@@ -120,7 +113,7 @@ public class SalesCourseManagementController {
         return "Leads reassigned successfully";
     }
 
-    @PreAuthorize("hasAuthority('BULK_UPDATE_REASSIGN_LEADS')")
+    @PreAuthorize("hasAuthority('BULK_REASSIGN_LEADS')")
     @PostMapping("/assign")
     public String assignLeadsToUser(
             @Valid @RequestBody BulkLeadAssignRequestDto dto) {

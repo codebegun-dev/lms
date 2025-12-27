@@ -231,36 +231,33 @@ public class SalesCourseManagementServiceImpl implements SalesCourseManagementSe
 
         Pageable pageable = PageRequest.of(page, pageSize);
 
-        // 1️⃣ Fetch paginated leads using new method
-        Page<SalesCourseManagement> leadsPage = leadRepo.findAllLeadsPaginated(pageable);
+        Page<SalesCourseManagement> leadsPage =
+                leadRepo.findAllLeadsPaginated(pageable);
 
-        // 2️⃣ Total leads count
-        Long totalLeads = leadRepo.countAllLeads();
+        Long totalLeads =
+                leadRepo.countAllLeads();
 
-        // 3️⃣ Status wise count
-        List<Object[]> rawStatusData = leadRepo.countLeadsByStatus();
+        List<Object[]> rawStatusData =
+                leadRepo.countLeadsByStatus();
+
         Map<String, Long> statusCounts = new HashMap<>();
         for (Object[] row : rawStatusData) {
             statusCounts.put(String.valueOf(row[0]), (Long) row[1]);
         }
 
-        // 4️⃣ Assigned users count
-        Long assignedUsersCount = leadRepo.countAssignedUsers();
+        Long assignedUsersCount =
+                leadRepo.countAssignedUsers();
 
-        // 5️⃣ Map paginated leads to DTOs
         List<SalesCourseManagementResponseDto> leadDtos = new ArrayList<>();
         for (SalesCourseManagement lead : leadsPage.getContent()) {
             leadDtos.add(SalesCourseManagementMapper.toResponseDto(lead));
         }
 
-        // 6️⃣ Build response
         LeadsDashboardResponseDto response = new LeadsDashboardResponseDto();
         response.setTotalLeads(totalLeads);
         response.setAssignedUsersCount(assignedUsersCount);
         response.setStatusCounts(statusCounts);
         response.setLeadsList(leadDtos);
-
-        // 7️⃣ Pagination info
         response.setCurrentPage(page);
         response.setPageSize(pageSize);
         response.setTotalPages(leadsPage.getTotalPages());
