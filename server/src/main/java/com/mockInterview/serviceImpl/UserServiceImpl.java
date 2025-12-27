@@ -148,8 +148,17 @@ public class UserServiceImpl implements UserService {
         // ================= DUPLICATE EMAIL CHECK =================
         if (userRepository.findByEmail(dto.getEmail()) != null) {
             throw new DuplicateFieldException("Email already exists");
+            
+            
         }
+        
+        if (dto.getPhone() != null &&
+             (userRepository.findByPhone(dto.getPhone()) != null ||
+              studentPersonalInfoRepository.findByParentMobileNumber(dto.getPhone()) != null)) {
+         throw new DuplicateFieldException("Phone already exists!");
 
+        }
+        
         // ================= CHECK LOGGED-IN USER =================
         Long currentUserId = SecurityUtils.getCurrentUserId();
 
@@ -218,11 +227,19 @@ public class UserServiceImpl implements UserService {
         user.setRole(role);
         user.setStatus("ACTIVE");
 
-        // Temporary password
-        String tempPassword = UUID.randomUUID().toString().substring(0, 10);
+//        // Temporary password
+//        String tempPassword = UUID.randomUUID().toString().substring(0, 10);
+//        user.setPassword(passwordEncoder.encode(tempPassword));
+//
+//        User savedUser = userRepository.save(user);
+     // Default password for testing
+        String tempPassword = "Test@123";
+
+        // Encode and set password
         user.setPassword(passwordEncoder.encode(tempPassword));
 
         User savedUser = userRepository.save(user);
+
 
         // ================= SEND RESET PASSWORD LINK =================
         String token = generateToken();

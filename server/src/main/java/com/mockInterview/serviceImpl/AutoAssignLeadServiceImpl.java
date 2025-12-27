@@ -23,7 +23,7 @@ import com.mockInterview.repository.UserRepository;
 import com.mockInterview.requestDtos.BulkLeadAssignRequestDto;
 import com.mockInterview.requestDtos.BulkReassignLeadsRequestDto;
 import com.mockInterview.responseDtos.AssignableUserDto;
-import com.mockInterview.responseDtos.AssignedLeadsUserDashboardResponseDto;
+import com.mockInterview.responseDtos.LeadsDashboardResponseDto;
 import com.mockInterview.responseDtos.SalesCourseManagementResponseDto;
 import com.mockInterview.security.SecurityUtils;
 import com.mockInterview.service.AutoAssignLeadService;
@@ -105,48 +105,43 @@ public class AutoAssignLeadServiceImpl implements AutoAssignLeadService {
     
 
     @Override
-    public AssignedLeadsUserDashboardResponseDto getAllLeadsWithAssignedUsers(int page, int pageSize) {
+    public LeadsDashboardResponseDto getUserDashboard(int page, int pageSize) {
 
-        // 1️⃣ Get logged-in user
         Long userId = SecurityUtils.getCurrentUserId();
         if (userId == null) {
             throw new ResourceNotFoundException("User not logged in");
         }
 
-        // 2️⃣ Create pageable object
         Pageable pageable = PageRequest.of(page, pageSize);
 
-        // 3️⃣ Fetch paginated leads assigned to this user
-        Page<SalesCourseManagement> leadPage = leadRepo.findLeadsByUserIdPaginated(userId, pageable);
+        Page<SalesCourseManagement> leadPage =
+                leadRepo.findLeadsByUserIdPaginated(userId, pageable);
 
-        // 4️⃣ Fetch status counts for this user
-        List<Object[]> rawStatusData = leadRepo.countLeadsByStatusForUser(userId);
+        List<Object[]> rawStatusData =
+                leadRepo.countLeadsByStatusForUser(userId);
 
-        // 5️⃣ Total leads assigned to user
-        Long totalLeads = leadRepo.countLeadsForUser(userId);
+        Long totalLeads =
+                leadRepo.countLeadsForUser(userId);
 
-        // 6️⃣ Convert status counts
         Map<String, Long> statusCounts = new HashMap<>();
         for (Object[] row : rawStatusData) {
             statusCounts.put((String) row[0], (Long) row[1]);
         }
 
-        // 7️⃣ Convert leads to DTOs
         List<SalesCourseManagementResponseDto> dtoList = new ArrayList<>();
         for (SalesCourseManagement lead : leadPage.getContent()) {
             dtoList.add(SalesCourseManagementMapper.toResponseDto(lead));
         }
 
-        // 8️⃣ Build response
-        AssignedLeadsUserDashboardResponseDto response = new AssignedLeadsUserDashboardResponseDto();
+        LeadsDashboardResponseDto response = new LeadsDashboardResponseDto();
         response.setTotalLeads(totalLeads);
         response.setStatusCounts(statusCounts);
         response.setLeadsList(dtoList);
-
-        // 9️⃣ Pagination info
         response.setCurrentPage(page);
         response.setPageSize(pageSize);
         response.setTotalPages(leadPage.getTotalPages());
+
+        // assignedUsersCount intentionally NOT set
 
         return response;
     }
