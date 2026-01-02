@@ -34,28 +34,28 @@ public class QuestionBankController {
     }
 
     // ✅ Get Question by ID
-    @PreAuthorize("hasAuthority('VIEW_QUESTION')")
+//    @PreAuthorize("hasAuthority('VIEW_QUESTION')")
     @GetMapping("/{id}")
     public QuestionBankResponseDto getQuestionById(@PathVariable Long id) {
         return questionBankService.getQuestionById(id);
     }
 
     // ✅ Get All Questions
-    @PreAuthorize("hasAuthority('VIEW_QUESTION')")
+//    @PreAuthorize("hasAuthority('VIEW_QUESTION')")
     @GetMapping
     public List<QuestionBankResponseDto> getAllQuestions() {
         return questionBankService.getAllQuestions();
     }
 
     // ✅ Get Questions by SubTopic ID
-    @PreAuthorize("hasAuthority('VIEW_QUESTION')")
+//    @PreAuthorize("hasAuthority('VIEW_QUESTION')")
     @GetMapping("/subtopic/{subTopicId}")
     public List<QuestionBankResponseDto> getQuestionsBySubTopic(@PathVariable Long subTopicId) {
         return questionBankService.getQuestionsBySubTopicId(subTopicId);
     }
 
     // ✅ Search using IDs
-    @PreAuthorize("hasAuthority('VIEW_QUESTION')")
+//    @PreAuthorize("hasAuthority('VIEW_QUESTION')")
     @GetMapping("/search")
     public List<QuestionBankResponseDto> searchQuestions(
             @RequestParam(required = false) Long categoryId,
@@ -68,7 +68,7 @@ public class QuestionBankController {
     }
 
     // ✅ Search using Names
-    @PreAuthorize("hasAuthority('VIEW_QUESTION')")
+//    @PreAuthorize("hasAuthority('VIEW_QUESTION')")
     @GetMapping("/filter")
     public List<QuestionBankResponseDto> getQuestionsByFilters(
             @RequestParam(required = false) String category,
@@ -89,14 +89,14 @@ public class QuestionBankController {
     }
 
     // ✅ Get Random Questions by Category
-    @PreAuthorize("hasAuthority('VIEW_QUESTION')")
+//    @PreAuthorize("hasAuthority('VIEW_QUESTION')")
     @GetMapping("/random")
     public List<QuestionBankResponseDto> getRandomQuestionsByCategory(@RequestParam Long categoryId) {
         return questionBankService.getRandomQuestionsByCategory(categoryId);
     }
 
     // ✅ Get Question Counts by Category
-    @PreAuthorize("hasAuthority('VIEW_STATS')")
+//    @PreAuthorize("hasAuthority('VIEW_STATS')")
     @GetMapping("/count-by-category")
     public QuestionCategoryCountDto getQuestionCountsByCategory() {
         return questionBankService.getQuestionCountsByCategory();

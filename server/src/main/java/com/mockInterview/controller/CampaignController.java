@@ -52,21 +52,21 @@ public class CampaignController {
     }
 
     // GET BY ID
-    @PreAuthorize("hasAuthority('VIEW_CAMPAIGN')")
+//    @PreAuthorize("hasAuthority('VIEW_CAMPAIGN')")
     @GetMapping("/{id}")
     public Campaign getCampaignById(@PathVariable Long id) {
         return campaignService.getCampaignById(id);
     }
 
     // GET ALL
-    @PreAuthorize("hasAuthority('VIEW_CAMPAIGN')")
+//    @PreAuthorize("hasAuthority('VIEW_CAMPAIGN')")
     @GetMapping
     public List<Campaign> getAllCampaigns() {
         return campaignService.getAllCampaigns();
     }
 
     // 🔹 GET ONLY ACTIVE CAMPAIGNS
-    @PreAuthorize("hasAuthority('VIEW_CAMPAIGN')")
+//    @PreAuthorize("hasAuthority('VIEW_CAMPAIGN')")
     @GetMapping("/active")
     public List<Campaign> getActiveCampaigns() {
         return campaignService.getActiveCampaigns();

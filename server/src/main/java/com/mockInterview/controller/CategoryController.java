@@ -31,14 +31,14 @@ public class CategoryController {
     }
 
     // ✅ Get All Categories
-    @PreAuthorize("hasAuthority('VIEW_CATEGORY')")
+//    @PreAuthorize("hasAuthority('VIEW_CATEGORY')")
     @GetMapping
     public List<CategoryDto> getAllCategories() {
         return categoryService.getAllCategories();
     }
     
  // GET Category by ID
-    @PreAuthorize("hasAuthority('VIEW_CATEGORY')")
+//    @PreAuthorize("hasAuthority('VIEW_CATEGORY')")
     @GetMapping("/{id}")
     public CategoryDto getCategoryById(@PathVariable Long id) {
         return categoryService.getCategoryById(id);
@@ -46,7 +46,7 @@ public class CategoryController {
 
 
     // ✅ Get Only ACTIVE Categories
-    @PreAuthorize("hasAuthority('VIEW_CATEGORY')")
+//    @PreAuthorize("hasAuthority('VIEW_CATEGORY')")
     @GetMapping("/active")
     public List<CategoryDto> getActiveCategories() {
         return categoryService.getActiveCategories();
