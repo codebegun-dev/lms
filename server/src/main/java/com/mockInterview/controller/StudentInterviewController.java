@@ -31,7 +31,7 @@ public class StudentInterviewController {
     }
      
     @PreAuthorize("hasAuthority('INTERVIEW_QUESTIONS')")
-    @GetMapping("/{interviewId}/next-question")
+//    @GetMapping("/{interviewId}/next-question")
     public QuestionBankResponseDto getNextQuestion(@PathVariable Long interviewId) {
         return studentInterviewService.getNextQuestion(interviewId);
     }
@@ -39,7 +39,7 @@ public class StudentInterviewController {
 
     // ---------------- ALL INTERVIEWS BY STUDENT ----------------
     @PreAuthorize("hasAuthority('VIEW_STUDENT_INTERVIEWS')")
-    @GetMapping("/student/{studentId}")
+//    @GetMapping("/student/{studentId}")
     public List<StudentInterviewResponseDto> getInterviewsByStudent(
             @PathVariable Long studentId
     ) {

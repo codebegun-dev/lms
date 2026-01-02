@@ -52,21 +52,21 @@ public class SourceController {
     }
 
     // ✅ GET BY ID
-    @PreAuthorize("hasAuthority('VIEW_SOURCE')")
+//    @PreAuthorize("hasAuthority('VIEW_SOURCE')")
     @GetMapping("/{id}")
     public Source getSourceById(@PathVariable Long id) {
         return sourceService.getSourceById(id);
     }
 
     // ✅ GET ALL (ACTIVE first, then INACTIVE)
-    @PreAuthorize("hasAuthority('VIEW_SOURCE')")
+//    @PreAuthorize("hasAuthority('VIEW_SOURCE')")
     @GetMapping
     public List<Source> getAllSources() {
         return sourceService.getAllSources();
     }
 
     // ✅ GET ONLY ACTIVE SOURCES
-    @PreAuthorize("hasAuthority('VIEW_SOURCE')")
+//    @PreAuthorize("hasAuthority('VIEW_SOURCE')")
     @GetMapping("/active")
     public List<Source> getActiveSources() {
         return sourceService.getActiveSources();

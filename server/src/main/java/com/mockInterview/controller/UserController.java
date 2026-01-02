@@ -65,7 +65,7 @@ public class UserController {
     }
 
     /// ================= GET USERS (ACTIVE FIRST + PAGINATION + COUNTS) =================
-    @PreAuthorize("hasAuthority('VIEW_USERS')")
+//    @PreAuthorize("hasAuthority('VIEW_USERS')")
     @GetMapping
     public Map<String, Object> getUsersWithCounts(
             @RequestParam(defaultValue = "0") int page,
@@ -79,14 +79,14 @@ public class UserController {
 
 
     // ================= GET USER BY ID =================
-    @PreAuthorize("hasAuthority('VIEW_USER')")
+//    @PreAuthorize("hasAuthority('VIEW_USER')")
     @GetMapping("/{userId}")
     public UserResponseDto getUserById(@PathVariable Long userId) {
         return userService.getUserById(userId);
     }
 
     // ================= ASSIGNABLE USERS =================
-    @PreAuthorize("hasAuthority('VIEW_ASSIGNABLE_USERS')")
+//    @PreAuthorize("hasAuthority('VIEW_ASSIGNABLE_USERS')")
     @GetMapping("/assignable")
     public List<UserResponseDto> getAssignableUsers() {
         return userService.getAssignableUsers();

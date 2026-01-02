@@ -69,7 +69,7 @@ public class SalesCourseManagementController {
     }
     
 //    @PreAuthorize("hasAuthority('VIEW_LEADS')")
-    @PreAuthorize("hasAuthority('VIEW')")
+//    @PreAuthorize("hasAuthority('VIEW')")
     @GetMapping("/dashboard")
     public LeadsDashboardResponseDto getDashboard(
             @RequestParam(defaultValue = "0") int page,
@@ -134,7 +134,7 @@ public class SalesCourseManagementController {
     }
     
     
-    @PreAuthorize("hasAuthority('VIEW')")
+//    @PreAuthorize("hasAuthority('VIEW')")
     @GetMapping("/assignable-users")
     public List<AssignableUserDto> getAssignableUsers() {
         return autoAssignLeadService.getAllAutoAssignUsers();

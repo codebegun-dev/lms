@@ -29,21 +29,21 @@ public class SubTopicController {
     }
 
     // ✅ Get All SubTopics (Active first, then Inactive)
-    @PreAuthorize("hasAuthority('VIEW_SUBTOPIC')")
+//    @PreAuthorize("hasAuthority('VIEW_SUBTOPIC')")
     @GetMapping
     public List<SubTopicDto> getAllSubTopics() {
         return subTopicService.getAllSubTopicsWithStatus();
     }
 
     // ✅ Get Active SubTopics only
-    @PreAuthorize("hasAuthority('VIEW_SUBTOPIC')")
+//    @PreAuthorize("hasAuthority('VIEW_SUBTOPIC')")
     @GetMapping("/active")
     public List<SubTopicDto> getActiveSubTopics() {
         return subTopicService.getActiveSubTopics();
     }
 
     // ✅ Get SubTopics by Topic
-    @PreAuthorize("hasAuthority('VIEW_SUBTOPIC')")
+//    @PreAuthorize("hasAuthority('VIEW_SUBTOPIC')")
     @GetMapping("/topic/{topicId}")
     public List<SubTopicDto> getSubTopicsByTopicId(@PathVariable Long topicId) {
         return subTopicService.getSubTopicsByTopicId(topicId);
@@ -71,7 +71,7 @@ public class SubTopicController {
     }
 
     // ✅ Get SubTopic by ID
-    @PreAuthorize("hasAuthority('VIEW_SUBTOPIC')")
+//    @PreAuthorize("hasAuthority('VIEW_SUBTOPIC')")
     @GetMapping("/{id}")
     public SubTopicDto getSubTopicById(@PathVariable Long id) {
         return subTopicService.getSubTopicById(id);

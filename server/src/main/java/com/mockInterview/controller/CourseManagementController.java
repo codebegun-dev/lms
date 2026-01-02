@@ -27,20 +27,20 @@ public class CourseManagementController {
     }
 
     // ✅ Get Course by ID
-    @PreAuthorize("hasAuthority('VIEW_COURSE')")
+//    @PreAuthorize("hasAuthority('VIEW_COURSE')")
     @GetMapping("/{courseId}")
     public CourseManagementDto getCourseById(@PathVariable Long courseId) {
         return courseServiceManagement.getCourseById(courseId);
     }
 
     // ✅ Get All Courses
-    @PreAuthorize("hasAuthority('VIEW_COURSE')")
+//    @PreAuthorize("hasAuthority('VIEW_COURSE')")
     @GetMapping("/all")
     public List<CourseManagementDto> getAllCourses() {
         return courseServiceManagement.getAllCourses();
     }
     
-    @PreAuthorize("hasAuthority('VIEW_ACTIVE_COURSE')")
+//    @PreAuthorize("hasAuthority('VIEW_ACTIVE_COURSE')")
     @GetMapping("/active")
     public List<CourseManagementDto> getAllActiveCourses() {
         return courseServiceManagement.getAllActiveCourses();

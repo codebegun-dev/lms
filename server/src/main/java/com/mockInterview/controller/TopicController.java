@@ -30,28 +30,28 @@ public class TopicController {
     }
 
     // ✅ GET ALL (ACTIVE → INACTIVE)
-    @PreAuthorize("hasAuthority('VIEW_TOPIC')")
+//    @PreAuthorize("hasAuthority('VIEW_TOPIC')")
     @GetMapping
     public List<TopicDto> getAllTopics() {
         return topicService.getAllTopics();
     }
 
     // ✅ GET ONLY ACTIVE TOPICS
-    @PreAuthorize("hasAuthority('VIEW_TOPIC')")
+//    @PreAuthorize("hasAuthority('VIEW_TOPIC')")
     @GetMapping("/active")
     public List<TopicDto> getActiveTopics() {
         return topicService.getActiveTopics();
     }
 
     // ✅ GET BY ID
-    @PreAuthorize("hasAuthority('VIEW_TOPIC')")
+//    @PreAuthorize("hasAuthority('VIEW_TOPIC')")
     @GetMapping("/{id}")
     public TopicDto getTopicById(@PathVariable Long id) {
         return topicService.getTopicById(id);
     }
 
     // ✅ GET TOPICS BY CATEGORY
-    @PreAuthorize("hasAuthority('VIEW_TOPIC')")
+//    @PreAuthorize("hasAuthority('VIEW_TOPIC')")
     @GetMapping("/category/{categoryId}")
     public List<TopicDto> getTopicsByCategory(@PathVariable Long categoryId) {
         return topicService.getTopicsByCategoryId(categoryId);

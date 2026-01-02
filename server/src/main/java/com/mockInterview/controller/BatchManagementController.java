@@ -28,20 +28,20 @@ public class BatchManagementController {
     }
 
     // ✅ Get batch by ID
-    @PreAuthorize("hasAuthority('VIEW_BATCH')")
+//    @PreAuthorize("hasAuthority('VIEW_BATCH')")
     @GetMapping("/{id}")
     public BatchManagementDto getBatchById(@PathVariable Long id) {
         return batchService.getBatchById(id);
     }
 
     // ✅ Get all batches
-    @PreAuthorize("hasAuthority('VIEW_BATCH')")
+//    @PreAuthorize("hasAuthority('VIEW_BATCH')")
     @GetMapping("/all")
     public List<BatchManagementDto> getAllBatches() {
         return batchService.getAllBatches();
     }
     
-    @PreAuthorize("hasAuthority('VIEW_BATCH')")
+//    @PreAuthorize("hasAuthority('VIEW_BATCH')")
     @GetMapping("/available")
     public List<BatchManagementDto> getAllAvailableBatches() {
         return batchService.getAllAvailableBatches();
@@ -60,28 +60,28 @@ public class BatchManagementController {
     
 
     // ✅ Get batches by status
-    @PreAuthorize("hasAuthority('VIEW_BATCH')")
+//    @PreAuthorize("hasAuthority('VIEW_BATCH')")
     @GetMapping("/status/{status}")
     public List<BatchManagementDto> getBatchesByStatus(@PathVariable String status) {
         return batchService.getBatchesByStatus(status);
     }
 
     // ✅ Get upcoming batches
-    @PreAuthorize("hasAuthority('VIEW_BATCH')")
+//    @PreAuthorize("hasAuthority('VIEW_BATCH')")
     @GetMapping("/upcoming")
     public List<BatchManagementDto> getUpcomingBatches() {
         return batchService.getUpcomingBatches();
     }
 
     // ✅ Get active batches
-    @PreAuthorize("hasAuthority('VIEW_BATCH')")
+//    @PreAuthorize("hasAuthority('VIEW_BATCH')")
     @GetMapping("/active")
     public List<BatchManagementDto> getActiveBatches() {
         return batchService.getActiveBatches();
     }
 
     // ✅ Get completed batches
-    @PreAuthorize("hasAuthority('VIEW_BATCH')")
+//    @PreAuthorize("hasAuthority('VIEW_BATCH')")
     @GetMapping("/completed")
     public List<BatchManagementDto> getCompletedBatches() {
         return batchService.getCompletedBatches();
