@@ -1,5 +1,7 @@
 package com.mockInterview.responseDtos;
 
+import java.time.LocalDateTime;
+
 import lombok.*;
 
 @Data
@@ -7,10 +9,15 @@ import lombok.*;
 @NoArgsConstructor
 public class TenthGradeDto {
 
-    private Long id;
+   
     private Long userId;
     private String board;
     private String schoolName;
-    private String yearOfPassout;
-    private String marksPercentage;
+    private Integer yearOfPassout;
+    private Double marksPercentage;
+    
+
+    private LocalDateTime updatedAt;
+
+    private String updatedBy;
 }
