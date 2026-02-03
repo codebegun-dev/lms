@@ -1,226 +1,201 @@
 package com.mockInterview.serviceImpl;
 
+import java.io.IOException;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+
+import org.springframework.security.access.AccessDeniedException;
+
 import com.mockInterview.entity.StudentGenericDetails;
 import com.mockInterview.entity.User;
 import com.mockInterview.exception.ResourceNotFoundException;
-import com.mockInterview.exception.UnauthorizedActionException;
+
 import com.mockInterview.repository.StudentGenericDetailsRepository;
 import com.mockInterview.repository.UserRepository;
-import com.mockInterview.responseDtos.StudentGenericDetailsDto;
+
+import com.mockInterview.responseDtos.StudentGenericDetailsResponseDto;
+import com.mockInterview.security.SecurityUtils;
 import com.mockInterview.service.StudentGenericDetailsService;
 import com.mockInterview.util.FileStorageUtil;
-import com.mockInterview.util.RoleValidator;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.UrlResource;
-import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
-
-import java.net.MalformedURLException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-
+import lombok.RequiredArgsConstructor;
 
 @Service
+@RequiredArgsConstructor
+@Transactional
 public class StudentGenericDetailsServiceImpl implements StudentGenericDetailsService {
 
-    @Autowired
-    private StudentGenericDetailsRepository genericRepo;
-
-    @Autowired
-    private UserRepository userRepo;
+    private final StudentGenericDetailsRepository genericDetailsRepository;
+    private final UserRepository userRepository;
 
     @Override
-    public StudentGenericDetailsDto updateGenericDetails(StudentGenericDetailsDto dto) {
+    public StudentGenericDetailsResponseDto updateStudentGenericDetails(
+            Long targetUserId,
+            StudentGenericDetails request,
+            MultipartFile adhaarFile,
+            MultipartFile resumeFile
+    ) {
 
-        User currentUser = userRepo.findById(dto.getUserId())
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + dto.getUserId()));
+        User loggedInUser = getCurrentUser();
+        validateUpdatePermission(loggedInUser, targetUserId);
 
-        // Prevent MASTER_ADMIN from creating/updating their own generic details
-        RoleValidator.preventMasterAdminGenericUpdate(currentUser);
+        User targetUser = userRepository.findById(targetUserId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        // STUDENT can update their own details, MASTER_ADMIN can update any student
-        if (!"MASTER_ADMIN".equalsIgnoreCase(currentUser.getRole().getName())) {
-            RoleValidator.validateStudentAccess(currentUser);
-        }
+        // ================= FETCH OR CREATE =================
+        StudentGenericDetails details =
+                genericDetailsRepository.findByUser_UserId(targetUserId);
 
-        StudentGenericDetails details = genericRepo.findByUser_UserId(dto.getUserId());
         if (details == null) {
             details = new StudentGenericDetails();
-            details.setUser(currentUser);
+            details.setUser(targetUser);
         }
 
-        // Update all fields
-        details.setWorkExperience(dto.getWorkExperience());
-        details.setCareerGap(dto.getCareerGap());
-        details.setCurrentState(dto.getCurrentState());
-        details.setCurrentDistrict(dto.getCurrentDistrict());
-        details.setCurrentSubDistrict(dto.getCurrentSubDistrict());
-        details.setCurrentVillage(dto.getCurrentVillage());
-        details.setCurrentStreet(dto.getCurrentStreet());
-        details.setCurrentPincode(dto.getCurrentPincode());
-        details.setPermanentState(dto.getPermanentState());
-        details.setPermanentDistrict(dto.getPermanentDistrict());
-        details.setPermanentSubDistrict(dto.getPermanentSubDistrict());
-        details.setPermanentVillage(dto.getPermanentVillage());
-        details.setPermanentStreet(dto.getPermanentStreet());
-        details.setPermanentPincode(dto.getPermanentPincode());
-        details.setGithubProfile(dto.getGithubProfile());
-        details.setLinkedinProfile(dto.getLinkedinProfile());
+        // ================= UPDATE CAREER INFO =================
+        if (request.getWorkExperience() != null)
+            details.setWorkExperience(request.getWorkExperience());
 
-        genericRepo.save(details);
-        return mapToDto(details);
-    }
+        if (request.getCareerGap() != null)
+            details.setCareerGap(request.getCareerGap());
 
-    @Override
-    public StudentGenericDetailsDto uploadDocument(Long userId, MultipartFile file) {
+        // ================= UPDATE ADDRESS =================
+        if (request.getCurrentState() != null)
+            details.setCurrentState(request.getCurrentState());
+        if (request.getCurrentDistrict() != null)
+            details.setCurrentDistrict(request.getCurrentDistrict());
+        if (request.getCurrentSubDistrict() != null)
+            details.setCurrentSubDistrict(request.getCurrentSubDistrict());
+        if (request.getCurrentVillage() != null)
+            details.setCurrentVillage(request.getCurrentVillage());
+        if (request.getCurrentStreet() != null)
+            details.setCurrentStreet(request.getCurrentStreet());
+        if (request.getCurrentPincode() != null)
+            details.setCurrentPincode(request.getCurrentPincode());
 
-        if (file == null || file.isEmpty()) {
-            throw new IllegalArgumentException("File cannot be empty");
-        }
+        if (request.getPermanentState() != null)
+            details.setPermanentState(request.getPermanentState());
+        if (request.getPermanentDistrict() != null)
+            details.setPermanentDistrict(request.getPermanentDistrict());
+        if (request.getPermanentSubDistrict() != null)
+            details.setPermanentSubDistrict(request.getPermanentSubDistrict());
+        if (request.getPermanentVillage() != null)
+            details.setPermanentVillage(request.getPermanentVillage());
+        if (request.getPermanentStreet() != null)
+            details.setPermanentStreet(request.getPermanentStreet());
+        if (request.getPermanentPincode() != null)
+            details.setPermanentPincode(request.getPermanentPincode());
 
-        User user = userRepo.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + userId));
+        // ================= SOCIAL LINKS =================
+        if (request.getGithubProfile() != null)
+            details.setGithubProfile(request.getGithubProfile());
+        if (request.getLinkedinProfile() != null)
+            details.setLinkedinProfile(request.getLinkedinProfile());
 
-        // MASTER_ADMIN can upload only for students
-        if ("MASTER_ADMIN".equalsIgnoreCase(user.getRole().getName())) {
-            User targetUser = userRepo.findById(userId)
-                    .orElseThrow(() -> new ResourceNotFoundException("Target student not found"));
-            if (!"STUDENT".equalsIgnoreCase(targetUser.getRole().getName())) {
-                throw new UnauthorizedActionException("MASTER_ADMIN can only update student documents");
+        // ================= FILE UPLOADS =================
+        if (adhaarFile != null && !adhaarFile.isEmpty()) {
+            try {
+                String path = FileStorageUtil.saveFile(adhaarFile, targetUserId, "documents");
+                details.setAdhaarFilePath(path);
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to upload Adhaar file", e);
             }
-            user = targetUser; // save for the student
-        } else {
-            // STUDENT can upload only their own files
-            RoleValidator.validateStudentAccess(user);
         }
 
-        StudentGenericDetails details = genericRepo.findByUser_UserId(user.getUserId());
-        if (details == null) {
-            details = new StudentGenericDetails();
-            details.setUser(user);
-        }
-
-        try {
-            String savedPath = FileStorageUtil.saveStudentDocument(file, user.getUserId());
-
-            // Decide which field to use
-            if (details.getAdhaarFilePath() == null || details.getAdhaarFilePath().isEmpty()) {
-                details.setAdhaarFilePath(savedPath);
-            } else {
-                details.setResumeFilePath(savedPath);
+        if (resumeFile != null && !resumeFile.isEmpty()) {
+            try {
+                String path = FileStorageUtil.saveFile(resumeFile, targetUserId, "documents");
+                details.setResumeFilePath(path);
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to upload Resume file", e);
             }
-
-            genericRepo.save(details);
-
-        } catch (Exception e) {
-            throw new RuntimeException("File upload failed: " + e.getMessage(), e);
         }
 
-        return mapToDto(details);
+        // ================= SAVE =================
+        genericDetailsRepository.save(details);
+
+        return mapToResponseDto(details);
     }
 
-
-
+    // ================= GET BY USER ID =================
     @Override
-    public StudentGenericDetailsDto getGenericDetails(Long userId) {
+    public StudentGenericDetailsResponseDto getByUserId(Long userId) {
+        User loggedInUser = getCurrentUser();
 
-        User user = userRepo.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + userId));
-
-        // ⭐ ROLE VALIDATION
-        RoleValidator.validateStudentOrMasterAdmin(user);
-
-        StudentGenericDetails details = genericRepo.findByUser_UserId(userId);
-        if (details == null) {
-            details = new StudentGenericDetails();
-            details.setUser(user);
+        if ("STUDENT".equalsIgnoreCase(loggedInUser.getRole().getName())
+                && !loggedInUser.getUserId().equals(userId)) {
+            throw new AccessDeniedException("Students can view only their own profile");
         }
 
-        return mapToDto(details);
+        StudentGenericDetails details =
+                genericDetailsRepository.findByUser_UserId(userId);
+
+        if (details == null) {
+            throw new ResourceNotFoundException("Student generic details not found");
+        }
+
+        return mapToResponseDto(details);
     }
 
-    @Override
-    public Resource viewDocument(Long userId) {
+    // ================= SECURITY =================
+    private User getCurrentUser() {
+        Long currentUserId = SecurityUtils.getCurrentUserId();
 
-        User user = userRepo.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + userId));
+        if (currentUserId == null)
+            throw new AccessDeniedException("Unauthenticated access");
 
-        // ⭐ ROLE VALIDATION
-        RoleValidator.validateStudentOrMasterAdmin(user);
+        return userRepository.findById(currentUserId)
+                .orElseThrow(() -> new ResourceNotFoundException("Logged-in user not found"));
+    }
 
-        StudentGenericDetails details = genericRepo.findByUser_UserId(userId);
-        if (details == null) {
-            throw new ResourceNotFoundException("Student details not found for user ID: " + userId);
+    private void validateUpdatePermission(User loggedInUser, Long targetUserId) {
+        // Only STUDENT users can have generic details
+        User targetUser = userRepository.findById(targetUserId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        if (!"STUDENT".equalsIgnoreCase(targetUser.getRole().getName())) {
+            throw new AccessDeniedException("Generic details can be updated only for STUDENT users");
         }
 
-        String relativePath = null;
+        if (SecurityUtils.isMasterAdmin()) return;
 
-        // Prefer adhaarFilePath if exists, else resumeFilePath
-        if (details.getAdhaarFilePath() != null && !details.getAdhaarFilePath().isEmpty()) {
-            relativePath = details.getAdhaarFilePath();
-        } else if (details.getResumeFilePath() != null && !details.getResumeFilePath().isEmpty()) {
-            relativePath = details.getResumeFilePath();
-        }
-
-        if (relativePath == null) {
-            throw new ResourceNotFoundException("No uploaded document found for user ID: " + userId);
-        }
-
-        try {
-            Path filePath = Paths.get(System.getProperty("user.dir") + "/uploads")
-                    .resolve(relativePath)
-                    .normalize();
-
-            Resource resource = new UrlResource(filePath.toUri());
-
-            if (!resource.exists()) {
-                throw new ResourceNotFoundException("File not found: " + relativePath);
-            }
-
-            return resource;
-
-        } catch (MalformedURLException e) {
-            throw new RuntimeException("Error reading file: " + e.getMessage(), e);
+        if (!SecurityUtils.hasAuthority("UPDATE_STUDENT")) {
+            throw new AccessDeniedException("You do not have permission to update student details");
         }
     }
 
-    private StudentGenericDetailsDto mapToDto(StudentGenericDetails details) {
-
-        StudentGenericDetailsDto dto = new StudentGenericDetailsDto();
+    // ================= MAPPER =================
+    private StudentGenericDetailsResponseDto mapToResponseDto(StudentGenericDetails details) {
+        StudentGenericDetailsResponseDto dto = new StudentGenericDetailsResponseDto();
 
         dto.setUserId(details.getUser().getUserId());
-        dto.setFirstName(details.getUser().getFirstName());
-        dto.setLastName(details.getUser().getLastName());
-        dto.setMobileNumber(details.getUser().getPhone());
-
+        dto.setUserId(details.getUser().getUserId());
         dto.setWorkExperience(details.getWorkExperience());
         dto.setCareerGap(details.getCareerGap());
+
         dto.setCurrentState(details.getCurrentState());
         dto.setCurrentDistrict(details.getCurrentDistrict());
         dto.setCurrentSubDistrict(details.getCurrentSubDistrict());
         dto.setCurrentVillage(details.getCurrentVillage());
         dto.setCurrentStreet(details.getCurrentStreet());
         dto.setCurrentPincode(details.getCurrentPincode());
+
         dto.setPermanentState(details.getPermanentState());
         dto.setPermanentDistrict(details.getPermanentDistrict());
         dto.setPermanentSubDistrict(details.getPermanentSubDistrict());
         dto.setPermanentVillage(details.getPermanentVillage());
         dto.setPermanentStreet(details.getPermanentStreet());
         dto.setPermanentPincode(details.getPermanentPincode());
+
         dto.setGithubProfile(details.getGithubProfile());
         dto.setLinkedinProfile(details.getLinkedinProfile());
 
-        String baseUrl = ServletUriComponentsBuilder.fromCurrentContextPath().build().toUriString();
+        dto.setAdhaarFilePath(details.getAdhaarFilePath());
+        dto.setResumeFilePath(details.getResumeFilePath());
 
-        if (details.getAdhaarFilePath() != null) {
-            dto.setAdhaarFilePath(baseUrl + "/api/student/" + details.getUser().getUserId() + "/document/adhaar");
-        }
-        if (details.getResumeFilePath() != null) {
-            dto.setResumeFilePath(baseUrl + "/api/student/" + details.getUser().getUserId() + "/document/resume");
-        }
+        dto.setUpdatedAt(details.getUpdatedAt());
+        dto.setUpdatedBy(details.getUpdatedBy() != null ? String.valueOf(details.getUpdatedBy()) : null);
 
         return dto;
     }

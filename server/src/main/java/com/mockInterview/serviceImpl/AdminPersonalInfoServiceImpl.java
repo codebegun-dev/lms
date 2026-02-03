@@ -10,7 +10,7 @@ import com.mockInterview.requestDtos.AdminPersonalInfoUpdateRequestDto;
 import com.mockInterview.responseDtos.AdminPersonalInfoResponseDto;
 import com.mockInterview.service.AdminPersonalInfoService;
 import com.mockInterview.util.FileStorageUtil;
-import com.mockInterview.util.RoleValidator;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;

@@ -6,6 +6,8 @@ import com.mockInterview.repository.ModuleRepository;
 import com.mockInterview.repository.PermissionRepository;
 import com.mockInterview.security.annotations.ModulePermission;
 
+
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -67,25 +69,28 @@ public class PermissionScanner implements ApplicationRunner {
 
     private void extractPermissions(String expression, Module module) {
 
-        // hasAuthority('X')
-        if (expression.contains("hasAuthority")) {
-            String perm = extractSingle(expression);
-            savePermissionIfNotExists(perm, module);
-        }
+       // hasAuthority('X')
+       if (expression.contains("hasAuthority")) {
+           String perm = extractSingle(expression);
+           savePermissionIfNotExists(perm, module);
+       }
 
-        // hasAnyAuthority('A','B')
-        if (expression.contains("hasAnyAuthority")) {
+       // hasAnyAuthority('A','B')
+       if (expression.contains("hasAnyAuthority")) {
             String inside = expression.substring(
-                    expression.indexOf("(") + 1,
+                   expression.indexOf("(") + 1,
                     expression.indexOf(")")
-            );
+           );
 
-            String[] perms = inside.replace("'", "").split(",");
-            for (String p : perms) {
-                savePermissionIfNotExists(p.trim(), module);
-            }
+           String[] perms = inside.replace("'", "").split(",");
+           for (String p : perms) {
+               savePermissionIfNotExists(p.trim(), module);
+           }
         }
     }
+    
+  
+
 
     private String extractSingle(String expr) {
         return expr.substring(expr.indexOf("'") + 1, expr.lastIndexOf("'"));

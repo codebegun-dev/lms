@@ -1,5 +1,11 @@
 package com.mockInterview.entity;
 
+import java.time.LocalDateTime;
+
+import org.springframework.data.annotation.LastModifiedBy;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.*;
@@ -8,7 +14,14 @@ import lombok.*;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@Table(name = "student_twelfth_grade")
+
+@EntityListeners(AuditingEntityListener.class)
+@Table(
+    name = "student_twelfth_grade",
+    uniqueConstraints = {
+        @UniqueConstraint(columnNames = "user_id")
+    }
+)
 public class StudentTwelfthGrade {
 
     @Id
@@ -38,8 +51,24 @@ public class StudentTwelfthGrade {
     @DecimalMax(value = "100.0", message = "Marks percentage cannot exceed 100")
     private Double marksPercentage;
 
-    // ✅ Relationship with User
-    @OneToOne
-    @JoinColumn(name = "user_id", referencedColumnName = "userId", nullable = false)
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(
+        name = "user_id",
+        referencedColumnName = "userId",
+        nullable = false,
+        updatable = false
+    )
     private User user;
+
+    
+
+    // ================= AUDIT FIELDS =================
+
+    @LastModifiedDate
+    @Column(name = "updated_at", nullable = false)
+    private LocalDateTime updatedAt;
+
+    @LastModifiedBy
+    @Column(name = "updated_by")
+    private Long updatedBy;
 }

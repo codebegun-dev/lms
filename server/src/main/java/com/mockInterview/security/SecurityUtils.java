@@ -40,5 +40,13 @@ public final class SecurityUtils {
         return false;
     }
     
+   
+    // ✅ ADD THIS (nothing else)
+    public static boolean isMasterAdmin() {
+        return hasAuthority("ROLE_MASTER_ADMIN")
+                || hasAuthority("ALL_PERMISSIONS");
+    }
+    
     
 }
+
