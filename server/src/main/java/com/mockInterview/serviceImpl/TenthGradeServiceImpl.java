@@ -1,71 +1,136 @@
 package com.mockInterview.serviceImpl;
 
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.mockInterview.entity.TenthGrade;
 import com.mockInterview.entity.User;
+import com.mockInterview.exception.ResourceNotFoundException;
 import com.mockInterview.repository.TenthGradeRepository;
 import com.mockInterview.repository.UserRepository;
 import com.mockInterview.responseDtos.TenthGradeDto;
+import com.mockInterview.security.SecurityUtils;
 import com.mockInterview.service.TenthGradeService;
 
-import java.util.Optional;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
+import lombok.RequiredArgsConstructor;
 
 @Service
+@RequiredArgsConstructor
+@Transactional
 public class TenthGradeServiceImpl implements TenthGradeService {
 
-    @Autowired
-    private TenthGradeRepository tenthGradeRepository;
+    private final TenthGradeRepository tenthGradeRepository;
+    private final UserRepository userRepository;
 
-    @Autowired
-    private UserRepository userRepository;
+    // ================= GET =================
 
     @Override
     public TenthGradeDto getTenthGradeDetails(Long userId) {
-        TenthGrade tenth = tenthGradeRepository.findByUser_UserId(userId);
-        if (tenth == null) {
-            return null;
+
+        User loggedInUser = getCurrentUser();
+
+        // STUDENT → only own data
+        if ("STUDENT".equalsIgnoreCase(loggedInUser.getRole().getName())
+                && !loggedInUser.getUserId().equals(userId)) {
+            throw new SecurityException("Students can view only their own tenth grade details");
         }
 
-        TenthGradeDto dto = new TenthGradeDto();
-        dto.setId(tenth.getId());
-        dto.setUserId(userId);
-        dto.setBoard(tenth.getBoard());
-        dto.setSchoolName(tenth.getSchoolName());
-        dto.setYearOfPassout(tenth.getYearOfPassout());
-        dto.setMarksPercentage(tenth.getMarksPercentage());
-        return dto;
+        TenthGrade details =
+                tenthGradeRepository.findByUser_UserId(userId)
+                        .orElseThrow(() ->
+                                new ResourceNotFoundException("Student tenth grade details not found"));
+
+        return mapToDto(details);
     }
+
+    // ================= UPDATE =================
 
     @Override
-    public TenthGradeDto updateTenthGradeDetails(TenthGradeDto dto) {
-        // Find user
-        Optional<User> userOpt = userRepository.findById(dto.getUserId());
-        if (!userOpt.isPresent()) {
-            throw new RuntimeException("User not found with ID: " + dto.getUserId());
+    public TenthGradeDto updateTenthGradeDetails(TenthGrade dto) {
+
+        User loggedInUser = getCurrentUser();
+        Long targetUserId = dto.getUser().getUserId();
+
+        validateUpdatePermission(loggedInUser, targetUserId);
+
+        User targetUser = userRepository.findById(targetUserId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        TenthGrade details =
+                tenthGradeRepository.findByUser_UserId(targetUserId)
+                        .orElse(null);
+
+        if (details == null) {
+            details = new TenthGrade();
+            details.setUser(targetUser);
         }
-        User user = userOpt.get();
 
-        // Find TenthGrade details
-        TenthGrade tenth = tenthGradeRepository.findByUser_UserId(dto.getUserId());
+        // ---------- UPDATE FIELDS ----------
+        details.setBoard(dto.getBoard());
+        details.setSchoolName(dto.getSchoolName());
+        details.setYearOfPassout(dto.getYearOfPassout());
+        details.setMarksPercentage(dto.getMarksPercentage());
 
-        // If not found, create new
-        if (tenth == null) {
-            tenth = new TenthGrade();
-            tenth.setUser(user);
-        }
+        details = tenthGradeRepository.save(details);
 
-        // Update fields
-        tenth.setBoard(dto.getBoard());
-        tenth.setSchoolName(dto.getSchoolName());
-        tenth.setYearOfPassout(dto.getYearOfPassout());
-        tenth.setMarksPercentage(dto.getMarksPercentage());
-
-        // Save and return DTO
-        tenth = tenthGradeRepository.save(tenth);
-        dto.setId(tenth.getId());
-        return dto;
+        return mapToDto(details);
     }
 
+    // ================= SECURITY =================
+
+    private User getCurrentUser() {
+
+        Long currentUserId = SecurityUtils.getCurrentUserId();
+
+        if (currentUserId == null) {
+            throw new SecurityException("Unauthenticated access");
+        }
+
+        return userRepository.findById(currentUserId)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Logged-in user not found"));
+    }
+
+    private void validateUpdatePermission(User loggedInUser, Long targetUserId) {
+
+        User targetUser = userRepository.findById(targetUserId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        if (!"STUDENT".equalsIgnoreCase(targetUser.getRole().getName())) {
+            throw new SecurityException("Tenth grade details can be updated only for STUDENT users");
+        }
+
+        // MASTER_ADMIN → full access
+        if (SecurityUtils.isMasterAdmin()) {
+            return;
+        }
+
+        // OTHER ROLES → permission required
+        if (!SecurityUtils.hasAuthority("UPDATE_STUDENT")) {
+            throw new SecurityException("You do not have permission to update student details");
+        }
+    }
+
+    // ================= MAPPER =================
+
+    private TenthGradeDto mapToDto(TenthGrade entity) {
+
+        TenthGradeDto dto = new TenthGradeDto();
+
+       
+        dto.setUserId(entity.getUser().getUserId());
+        dto.setBoard(entity.getBoard());
+        dto.setSchoolName(entity.getSchoolName());
+        dto.setYearOfPassout(entity.getYearOfPassout());
+        dto.setMarksPercentage(entity.getMarksPercentage());
+
+        dto.setUpdatedAt(entity.getUpdatedAt());
+        dto.setUpdatedBy(
+                entity.getUpdatedBy() != null
+                        ? String.valueOf(entity.getUpdatedBy())
+                        : null
+        );
+
+        return dto;
+    }
 }

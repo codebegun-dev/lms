@@ -1,8 +1,13 @@
 package com.mockInterview.controller;
 
+import com.mockInterview.entity.StudentProject;
+import com.mockInterview.entity.User;
 import com.mockInterview.responseDtos.StudentProjectDto;
 import com.mockInterview.service.StudentProjectService;
-import org.springframework.beans.factory.annotation.Autowired;
+
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -10,28 +15,32 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/student/projects")
 @CrossOrigin(origins = "*")
+@RequiredArgsConstructor
 public class StudentProjectController {
 
-    @Autowired
-    private StudentProjectService projectService;
+    private final StudentProjectService projectService;
 
-    // ✅ Get all projects for a user
+    // ================= GET =================
     @GetMapping("/{userId}")
     public List<StudentProjectDto> getAllProjects(@PathVariable Long userId) {
         return projectService.getAllProjectsByUser(userId);
     }
 
-    // ✅ Add or update project
-    @PostMapping
-    public StudentProjectDto addOrUpdateProject(@RequestBody StudentProjectDto dto) {
-        return projectService.addOrUpdateProject(dto);
+    // ================= CREATE / UPDATE =================
+    @PutMapping("/update/{userId}")
+    @PreAuthorize("hasAuthority('UPDATE_STUDENT')")
+    public StudentProjectDto addOrUpdateProject(
+            @PathVariable Long userId,
+            @RequestBody @Valid StudentProject request
+    ) {
+        return projectService.addOrUpdateProject(userId, request);
     }
 
- // ✅ Delete a project
+    // ================= DELETE =================
     @DeleteMapping("/{projectId}")
-    public String deleteProject(@PathVariable Long projectId, @RequestParam Long userId) {
-        projectService.deleteProject(projectId, userId);
+    @PreAuthorize("hasAuthority('UPDATE_STUDENT')")
+    public String deleteProject(@PathVariable Long projectId) {
+        projectService.deleteProject(projectId);
         return "Project deleted successfully with ID: " + projectId;
     }
-
 }
