@@ -7,7 +7,7 @@ import com.mockInterview.repository.StudentCourseDetailsRepository;
 import com.mockInterview.repository.UserRepository;
 import com.mockInterview.responseDtos.StudentCourseDetailsDto;
 import com.mockInterview.service.StudentCourseDetailsService;
-import com.mockInterview.util.RoleValidator;
+
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -40,8 +40,7 @@ public class StudentCourseDetailsServiceImpl implements StudentCourseDetailsServ
         User user = userRepository.findById(dto.getUserId())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + dto.getUserId()));
 
-        // ⭐ Allow STUDENT or MASTER_ADMIN
-        RoleValidator.validateStudentOrMasterAdmin(user);
+       
 
         // Fetch or create new course details
         StudentCourseDetails details = repository.findByUser_UserId(dto.getUserId());

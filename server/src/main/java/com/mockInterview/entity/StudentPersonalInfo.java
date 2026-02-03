@@ -1,41 +1,65 @@
 package com.mockInterview.entity;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.*;
 import lombok.*;
+
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.annotation.LastModifiedBy;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-@Table(name = "student_personal_info")
+@EntityListeners(AuditingEntityListener.class)
+@Table(
+    name = "student_personal_info",
+    uniqueConstraints = {
+        @UniqueConstraint(columnNames = "user_id")
+    }
+)
 public class StudentPersonalInfo {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Column(name = "student_personal_info_id")
+    private Long studentPersonalInfoId;
 
-    @NotBlank(message = "Gender is required")
-    @Pattern(regexp = "Male|Female|Other", message = "Gender must be Male, Female, or Other")
+    @Column(nullable = false, length = 10)
     private String gender;
 
-    @NotNull(message = "Date of Birth is required")
-    @Past(message = "Date of Birth must be in the past")
+    @Column(name = "date_of_birth", nullable = false)
     private LocalDate dateOfBirth;
 
-    @NotBlank(message = "Parent mobile number is required")
-    @Pattern(regexp = "^[0-9]{10}$", message = "Parent mobile number must be 10 digits")
+    @Column(name = "parent_mobile_number", nullable = false, length = 10)
     private String parentMobileNumber;
 
-    @NotBlank(message = "Blood group is required")
-    @Pattern(regexp = "A\\+|A\\-|B\\+|B\\-|O\\+|O\\-|AB\\+|AB\\-", message = "Invalid blood group")
+    @Column(name = "blood_group", nullable = false, length = 5)
     private String bloodGroup;
 
-    private String profilePicturePath; // relative path for frontend
+    @Column(name = "profile_picture_path")
+    private String profilePicturePath;
 
-    @OneToOne
-    @JoinColumn(name = "user_id", referencedColumnName = "userId")
-    @NotNull(message = "User is required")
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(
+        name = "user_id",
+        referencedColumnName = "userId",
+        nullable = false,
+        updatable = false
+    )
     private User user;
+
+    // ================= AUDIT FIELDS =================
+
+    @LastModifiedDate
+    @Column(name = "updated_at", nullable = false)
+    private LocalDateTime updatedAt;
+
+    @LastModifiedBy
+    @Column(name = "updated_by")
+    private Long updatedBy; // stores userId safely
 }
+

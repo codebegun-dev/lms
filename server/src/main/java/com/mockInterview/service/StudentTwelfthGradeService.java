@@ -1,5 +1,6 @@
 package com.mockInterview.service;
 
+import com.mockInterview.entity.StudentTwelfthGrade;
 import com.mockInterview.responseDtos.StudentTwelfthGradeDto;
 
 public interface StudentTwelfthGradeService {
@@ -8,5 +9,5 @@ public interface StudentTwelfthGradeService {
     StudentTwelfthGradeDto getTwelfthGradeDetails(Long userId);
 
     // ✅ Create or Update Twelfth Grade details
-    StudentTwelfthGradeDto updateTwelfthGradeDetails(StudentTwelfthGradeDto dto);
+    StudentTwelfthGradeDto updateTwelfthGradeDetails(StudentTwelfthGrade dto);
 }
